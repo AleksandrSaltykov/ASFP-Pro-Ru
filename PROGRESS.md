@@ -18,3 +18,13 @@
 - Result: ветка main опубликована в https://github.com/AleksandrSaltykov/ASFP-Pro-Ru.
 - Next steps: после проверки стенда добавить health-checkи и тесты.
 
+### 2025-09-22 22:29:19
+- Action: проверка сервисов /health.
+- Result: gateway/crm/wms не стартуют из-за ошибки S3 Ч Ceph demo контейнер падает (требует корректной MON_IP/NETWORK конфигурации). Tarantool фиксирован, Ceph всЄ ещЄ в статусе Exited.
+- Next steps: настроить ceph-demo (указать CEPH_DEMO_BUCKET, CEPH_PUBLIC_NETWORK, CEPH_CLUSTER_NETWORK, корректный MON_IP/NETWORK_AUTO_DETECT) либо временно заменить на MinIO дл€ dev, затем повторить health-check.
+
+### 2025-09-22 23:16:53
+- Action: заменили demo Ceph на MinIO (S3-совместимый стенд), добавили fallback дл€ OpenAPI и пересобрали сервисы.
+- Result: MinIO запущен на :7480/:9001, gateway/crm/wms отдают 200 на /health.
+- Next steps: уточнить в документации, что дл€ продакшена требуетс€ Ceph RGW, и при необходимости добавить healthcheck MinIO.
+

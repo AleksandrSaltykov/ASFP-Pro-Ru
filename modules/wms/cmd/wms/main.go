@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	stdlog "log"
 	"os"
 	"time"
@@ -38,7 +39,7 @@ func main() {
 	service := service.NewInventoryService(repo, logger)
 	h := handler.NewInventoryHandler(service)
 
-	openapi, err := os.ReadFile("modules/wms/docs/openapi/openapi.json")
+	openapi, err := readOpenAPI("modules/wms/docs/openapi/openapi.json", "WMS_OPENAPI_PATH")
 	if err != nil {
 		logger.Fatal().Err(err).Msg("load openapi")
 	}
@@ -54,4 +55,21 @@ func main() {
 	if err := app.Listen(addr); err != nil {
 		logger.Fatal().Err(err).Msg("wms stopped")
 	}
+}
+
+func readOpenAPI(defaultPath, envVar string) ([]byte, error) {
+	if override := os.Getenv(envVar); override != "" {
+		if data, err := os.ReadFile(override); err == nil {
+			return data, nil
+		}
+	}
+
+	paths := []string{defaultPath, "openapi.json"}
+	for _, p := range paths {
+		if data, err := os.ReadFile(p); err == nil {
+			return data, nil
+		}
+	}
+
+	return nil, fmt.Errorf("openapi spec not found")
 }

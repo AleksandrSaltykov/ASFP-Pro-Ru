@@ -30,7 +30,7 @@ type Server struct {
 
 // NewServer constructs HTTP server with base middlewares.
 func NewServer(cfg config.AppConfig, logger zerolog.Logger, storage *s3.Client) (*Server, error) {
-	openapi, err := os.ReadFile("gateway/docs/openapi/openapi.json")
+	openapi, err := readOpenAPI("gateway/docs/openapi/openapi.json", "GATEWAY_OPENAPI_PATH")
 	if err != nil {
 		return nil, fmt.Errorf("load openapi: %w", err)
 	}
@@ -108,4 +108,21 @@ func requestIDMiddleware(c *fiber.Ctx) error {
 	}
 	c.Set("X-Request-ID", id)
 	return c.Next()
+}
+
+func readOpenAPI(defaultPath, envVar string) ([]byte, error) {
+	if override := os.Getenv(envVar); override != "" {
+		if data, err := os.ReadFile(override); err == nil {
+			return data, nil
+		}
+	}
+
+	paths := []string{defaultPath, "openapi.json"}
+	for _, p := range paths {
+		if data, err := os.ReadFile(p); err == nil {
+			return data, nil
+		}
+	}
+
+	return nil, fmt.Errorf("openapi spec not found")
 }

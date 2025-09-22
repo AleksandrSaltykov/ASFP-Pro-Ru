@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	stdlog "log"
 	"os"
 	"time"
@@ -45,7 +46,7 @@ func main() {
 	service := service.NewDealService(repo, publisher, logger)
 	h := handler.NewDealHandler(service)
 
-	openapi, err := os.ReadFile("modules/crm/docs/openapi/openapi.json")
+	openapi, err := readOpenAPI("modules/crm/docs/openapi/openapi.json", "CRM_OPENAPI_PATH")
 	if err != nil {
 		logger.Fatal().Err(err).Msg("load openapi")
 	}
@@ -61,4 +62,21 @@ func main() {
 	if err := app.Listen(addr); err != nil {
 		logger.Fatal().Err(err).Msg("crm stopped")
 	}
+}
+
+func readOpenAPI(defaultPath, envVar string) ([]byte, error) {
+	if override := os.Getenv(envVar); override != "" {
+		if data, err := os.ReadFile(override); err == nil {
+			return data, nil
+		}
+	}
+
+	paths := []string{defaultPath, "openapi.json"}
+	for _, p := range paths {
+		if data, err := os.ReadFile(p); err == nil {
+			return data, nil
+		}
+	}
+
+	return nil, fmt.Errorf("openapi spec not found")
 }
