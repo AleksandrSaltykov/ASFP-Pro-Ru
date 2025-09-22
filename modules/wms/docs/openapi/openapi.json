@@ -1,0 +1,100 @@
+﻿{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ASFP WMS API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Service status",
+        "responses": {
+          "200": {
+            "description": "WMS healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stock/": {
+      "get": {
+        "summary": "List stock",
+        "parameters": [
+          {
+            "name": "warehouse",
+            "in": "query",
+            "schema": {"type": "string"}
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "maximum": 500}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stock items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/StockItem"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Upsert stock item",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/StockItem"}
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/StockItem"}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "StockItem": {
+        "type": "object",
+        "required": ["sku", "warehouse", "quantity"],
+        "properties": {
+          "sku": {"type": "string"},
+          "warehouse": {"type": "string"},
+          "quantity": {"type": "number"},
+          "uom": {"type": "string"},
+          "updatedAt": {"type": "string", "format": "date-time"}
+        }
+      }
+    }
+  }
+}

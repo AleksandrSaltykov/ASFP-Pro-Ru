@@ -1,0 +1,15 @@
+# Build artifacts
+coverage.out
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Local toolchains and coverage
+.tools/
+coverage/
+coverage
+deploy/.env
