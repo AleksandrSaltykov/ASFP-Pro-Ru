@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -18,23 +19,47 @@ type service struct {
 
 func TestSmokeEndpoints(t *testing.T) {
 	services := []service{
-		{"gateway", getenv("SMOKE_GATEWAY_URL", "http://localhost:8080")},
-		{"crm", getenv("SMOKE_CRM_URL", "http://localhost:8081")},
-		{"wms", getenv("SMOKE_WMS_URL", "http://localhost:8082")},
+		{name: "gateway", url: getenv("SMOKE_GATEWAY_URL", "http://localhost:8080")},
+		{name: "crm", url: getenv("SMOKE_CRM_URL", "http://localhost:8081")},
+		{name: "wms", url: getenv("SMOKE_WMS_URL", "http://localhost:8082")},
 	}
 
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	for _, svc := range services {
+		svc := svc
 		t.Run(svc.name+"_health", func(t *testing.T) {
 			resp, err := client.Get(svc.url + "/health")
 			if err != nil {
 				t.Fatalf("%s health request failed: %v", svc.name, err)
 			}
-			t.Cleanup(func() { resp.Body.Close() })
+			t.Cleanup(func() { _ = resp.Body.Close() })
 
 			if resp.StatusCode != http.StatusOK {
 				t.Fatalf("%s health status: %d", svc.name, resp.StatusCode)
+			}
+		})
+
+		t.Run(svc.name+"_openapi", func(t *testing.T) {
+			resp, err := client.Get(svc.url + "/openapi.json")
+			if err != nil {
+				t.Fatalf("%s openapi request failed: %v", svc.name, err)
+			}
+			t.Cleanup(func() { _ = resp.Body.Close() })
+
+			if resp.StatusCode != http.StatusOK {
+				t.Fatalf("%s openapi status: %d", svc.name, resp.StatusCode)
+			}
+
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatalf("read openapi body: %v", err)
+			}
+			if len(body) == 0 {
+				t.Fatalf("%s openapi body is empty", svc.name)
+			}
+			if ct := resp.Header.Get("Content-Type"); ct != "" && !strings.Contains(ct, "json") {
+				t.Fatalf("%s openapi content-type unexpected: %s", svc.name, ct)
 			}
 		})
 	}
@@ -71,7 +96,7 @@ func TestSmokeEndpoints(t *testing.T) {
 		if err != nil {
 			t.Fatalf("upload request: %v", err)
 		}
-		t.Cleanup(func() { resp.Body.Close() })
+		t.Cleanup(func() { _ = resp.Body.Close() })
 
 		if resp.StatusCode != http.StatusCreated {
 			body, _ := io.ReadAll(resp.Body)

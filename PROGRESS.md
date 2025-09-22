@@ -38,3 +38,8 @@
 - Result: все пакеты проходят тесты, MinIO принимает загрузку.
 - Next steps: при необходимости расширить unit-тесты CRM/WMS.
 
+### 2025-09-23 00:04:44
+- Action: добавлен скрипт scripts/minio-reset.sh и расширены smoke-тесты (проверка OpenAPI + upload).
+- Result: make smoke теперь читает /openapi.json; скрипт пересоздает MinIO bucket через minio/mc.
+- Next steps: при необходимости интегрировать smoke в CI и автоматизировать вызов minio-reset перед тестами.
+
