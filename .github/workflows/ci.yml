@@ -20,6 +20,10 @@ jobs:
         with:
           go-version: '1.22'
 
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: v1.59.0
       - name: Verify gofmt
         run: |
           set -e
