@@ -13,3 +13,8 @@
 - Result: все контейнеры собраны и стартовали (redis, postgres, tarantool, clickhouse, ceph, gateway, crm, wms, analytics, nginx).
 - Next steps: проверить health-checkи сервисов и убедиться, что Ceph RGW отвечает по демо-портам.
 
+### 2025-09-22 21:59:11
+- Action: инициализация git-репозитория, commit и push.
+- Result: ветка main опубликована в https://github.com/AleksandrSaltykov/ASFP-Pro-Ru.
+- Next steps: после проверки стенда добавить health-checkи и тесты.
+
