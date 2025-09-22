@@ -43,3 +43,8 @@
 - Result: make smoke теперь читает /openapi.json; скрипт пересоздает MinIO bucket через minio/mc.
 - Next steps: при необходимости интегрировать smoke в CI и автоматизировать вызов minio-reset перед тестами.
 
+### 2025-09-23 00:10:54
+- Action: интегрировал make smoke в CI (docker compose up -> smoke -> down).
+- Result: GitHub Actions теперь поднимает весь стек, сбрасывает MinIO и гоняет smoke-тесты автоматически.
+- Next steps: контролировать длительность job и при необходимости кэшировать docker build.
+
