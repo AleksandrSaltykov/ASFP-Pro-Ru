@@ -28,3 +28,8 @@
 - Result: MinIO запущен на :7480/:9001, gateway/crm/wms отдают 200 на /health.
 - Next steps: уточнить в документации, что для продакшена требуется Ceph RGW, и при необходимости добавить healthcheck MinIO.
 
+### 2025-09-22 23:43:10
+- Action: добавлен GitHub Actions workflow (gofmt + go test).
+- Result: любой push/PR на main гоняет базовую статическую и тестовую проверку (GOTOOLCHAIN=auto).
+- Next steps: при появлении smoke/интеграционных тестов можно расширить job.
+

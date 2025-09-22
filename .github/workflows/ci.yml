@@ -1,0 +1,33 @@
+﻿name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+env:
+  GOTOOLCHAIN: auto
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Verify gofmt
+        run: |
+          set -e
+          CHANGED=$(gofmt -l $(find . -name '*.go' -not -path './.tools/*' -not -path './vendor/*'))
+          if [ -n "$CHANGED" ]; then
+            echo "Go files need formatting:" && echo "$CHANGED"
+            exit 1
+          fi
+
+      - name: Run unit tests
+        run: go test ./...
