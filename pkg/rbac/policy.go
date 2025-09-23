@@ -1,3 +1,4 @@
+// Package rbac defines simple role-based policies.
 package rbac
 
 import "strings"

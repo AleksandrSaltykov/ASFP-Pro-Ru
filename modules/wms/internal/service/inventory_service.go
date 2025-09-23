@@ -1,3 +1,4 @@
+// Package service implements WMS inventory logic.
 package service
 
 import (

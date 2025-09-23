@@ -12,6 +12,7 @@ require (
 	github.com/minio/minio-go/v7 v7.0.94
 	github.com/rs/zerolog v1.33.0
 	github.com/tarantool/go-tarantool/v2 v2.4.0
+	golang.org/x/crypto v0.40.0
 )
 
 require (
@@ -49,7 +50,6 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
-	golang.org/x/crypto v0.40.0 // indirect
 	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect

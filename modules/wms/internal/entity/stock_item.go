@@ -1,3 +1,4 @@
+// Package entity contains WMS domain models.
 package entity
 
 import "time"

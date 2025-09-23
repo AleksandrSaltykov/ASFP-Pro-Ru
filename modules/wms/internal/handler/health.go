@@ -1,3 +1,4 @@
+// Package handler contains WMS HTTP handlers.
 package handler
 
 import "github.com/gofiber/fiber/v2"

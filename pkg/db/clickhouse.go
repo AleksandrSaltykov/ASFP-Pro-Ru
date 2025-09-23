@@ -1,3 +1,4 @@
+// Package db holds shared database helpers.
 package db
 
 import (

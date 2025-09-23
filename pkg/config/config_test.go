@@ -1,7 +1,6 @@
 package config
 
 import (
-	"os"
 	"testing"
 )
 
@@ -22,7 +21,7 @@ func TestLoadDefaults(t *testing.T) {
 }
 
 func TestLoadMissingDatabase(t *testing.T) {
-	os.Unsetenv("BROKEN_DATABASE_URL")
+	t.Setenv("BROKEN_DATABASE_URL", "")
 	if _, err := Load("BROKEN"); err == nil {
 		t.Fatal("want error for missing database url")
 	}

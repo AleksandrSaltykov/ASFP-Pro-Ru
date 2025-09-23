@@ -1,7 +1,9 @@
+// Package service orchestrates CRM deal use cases.
 package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -42,11 +44,16 @@ func (s *DealService) Create(ctx context.Context, input DealCreateInput) (entity
 		return entity.Deal{}, fmt.Errorf("title must not be empty")
 	}
 
+	stage := strings.TrimSpace(input.Stage)
+	if stage == "" {
+		stage = "new"
+	}
+
 	deal := entity.Deal{
 		ID:         uuid.NewString(),
 		Title:      input.Title,
 		CustomerID: input.CustomerID,
-		Stage:      input.Stage,
+		Stage:      stage,
 		Amount:     input.Amount,
 		Currency:   strings.ToUpper(input.Currency),
 		CreatedBy:  input.CreatedBy,
@@ -57,29 +64,45 @@ func (s *DealService) Create(ctx context.Context, input DealCreateInput) (entity
 		return entity.Deal{}, err
 	}
 
-	event := struct {
+	payload := struct {
 		ID         string  `json:"id"`
+		Stage      string  `json:"stage"`
 		Title      string  `json:"title"`
 		Amount     float64 `json:"amount"`
 		Currency   string  `json:"currency"`
 		CustomerID string  `json:"customerId"`
+		CreatedBy  string  `json:"createdBy"`
 		CreatedAt  string  `json:"createdAt"`
 	}{
 		ID:         stored.ID,
+		Stage:      stored.Stage,
 		Title:      stored.Title,
 		Amount:     stored.Amount,
 		Currency:   stored.Currency,
 		CustomerID: stored.CustomerID,
+		CreatedBy:  stored.CreatedBy,
 		CreatedAt:  stored.CreatedAt.UTC().Format(time.RFC3339),
 	}
 
-	if err := s.publisher.Publish(ctx, "DealCreated", event); err != nil {
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("marshal deal payload")
+	} else {
+		if err := s.repo.AppendEvent(ctx, entity.DealEvent{
+			DealID:    stored.ID,
+			EventType: "deal.created",
+			Payload:   payloadBytes,
+		}); err != nil {
+			s.logger.Error().Err(err).Msg("store deal event")
+		}
+	}
+
+	if err := s.publisher.Publish(ctx, "DealCreated", payload); err != nil {
 		s.logger.Error().Err(err).Msg("publish deal created")
 	}
 
 	return stored, nil
 }
-
 // List returns latest deals.
 func (s *DealService) List(ctx context.Context, limit int) ([]entity.Deal, error) {
 	if limit <= 0 {
@@ -87,3 +110,17 @@ func (s *DealService) List(ctx context.Context, limit int) ([]entity.Deal, error
 	}
 	return s.repo.List(ctx, limit)
 }
+
+// History returns deal events with optional limit.
+func (s *DealService) History(ctx context.Context, dealID string, limit int) ([]entity.DealEvent, error) {
+	if _, err := uuid.Parse(dealID); err != nil {
+		return nil, fmt.Errorf("invalid deal id")
+	}
+	if limit <= 0 {
+		limit = 50
+	}
+	return s.repo.History(ctx, dealID, limit)
+}
+
+
+

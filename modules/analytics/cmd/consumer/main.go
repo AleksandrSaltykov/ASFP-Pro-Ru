@@ -1,3 +1,4 @@
+// Package main runs the analytics queue consumer.
 package main
 
 import (
@@ -27,13 +28,13 @@ func main() {
 	if err != nil {
 		logger.Fatal().Err(err).Msg("tarantool connect")
 	}
-	defer queueConsumer.Close()
+	defer func() { queueConsumer.Close() }()
 
 	click, err := db.NewClickHouse(context.Background(), cfg.ClickHouseDSN)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("clickhouse connect")
 	}
-	defer click.Close()
+	defer func() { _ = click.Close() }()
 
 	repo := repository.NewEventRepository(click)
 	worker := handler.NewConsumer(queueConsumer, repo, logger)
@@ -49,3 +50,4 @@ func main() {
 	logger.Info().Msg("shutting down analytics consumer")
 	cancel()
 }
+

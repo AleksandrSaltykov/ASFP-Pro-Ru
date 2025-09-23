@@ -1,5 +1,7 @@
 run:
   timeout: 5m
+  modules-download-mode: mod
+  gotest: true
 
 linters:
   enable:

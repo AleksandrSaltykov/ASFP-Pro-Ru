@@ -1,3 +1,4 @@
+// Package config centralizes service configuration loading.
 package config
 
 import (

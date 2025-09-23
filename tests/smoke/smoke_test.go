@@ -2,6 +2,7 @@ package smoke
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"mime/multipart"
@@ -24,6 +25,7 @@ func TestSmokeEndpoints(t *testing.T) {
 		{name: "wms", url: getenv("SMOKE_WMS_URL", "http://localhost:8082")},
 	}
 
+	authHeader := smokeAuthHeader()
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	for _, svc := range services {
@@ -91,6 +93,7 @@ func TestSmokeEndpoints(t *testing.T) {
 			t.Fatalf("prepare request: %v", err)
 		}
 		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set("Authorization", authHeader)
 
 		resp, err := client.Do(req)
 		if err != nil {
@@ -122,4 +125,17 @@ func getenv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func smokeAuthHeader() string {
+	if v := os.Getenv("SMOKE_GATEWAY_BASIC_AUTH"); v != "" {
+		v = strings.TrimSpace(v)
+		if strings.HasPrefix(strings.ToLower(v), "basic ") {
+			return v
+		}
+		return "Basic " + base64.StdEncoding.EncodeToString([]byte(v))
+	}
+	user := getenv("SMOKE_GATEWAY_USER", "admin@example.com")
+	pass := getenv("SMOKE_GATEWAY_PASSWORD", "admin123")
+	return "Basic " + base64.StdEncoding.EncodeToString([]byte(user+":"+pass))
 }

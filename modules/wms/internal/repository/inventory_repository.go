@@ -1,3 +1,4 @@
+// Package repository persists WMS inventory data.
 package repository
 
 import (

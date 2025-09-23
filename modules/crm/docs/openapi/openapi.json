@@ -1,4 +1,4 @@
-﻿{
+{
   "openapi": "3.0.3",
   "info": {
     "title": "ASFP CRM API",
@@ -16,7 +16,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": {"type": "string"}
+                    "status": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -32,7 +34,11 @@
           {
             "name": "limit",
             "in": "query",
-            "schema": {"type": "integer", "minimum": 1, "maximum": 200},
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
             "required": false
           }
         ],
@@ -82,6 +88,51 @@
           }
         }
       }
+    },
+    "/api/v1/deals/{id}/history": {
+      "get": {
+        "summary": "Deal history log",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deal events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/DealEvent"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -89,26 +140,82 @@
       "Deal": {
         "type": "object",
         "properties": {
-          "id": {"type": "string"},
-          "title": {"type": "string"},
-          "customerId": {"type": "string"},
-          "stage": {"type": "string"},
-          "amount": {"type": "number"},
-          "currency": {"type": "string"},
-          "createdBy": {"type": "string"},
-          "createdAt": {"type": "string", "format": "date-time"}
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "CreateDeal": {
         "type": "object",
-        "required": ["title", "customerId", "stage", "amount"],
+        "required": [
+          "title",
+          "customerId",
+          "stage",
+          "amount"
+        ],
         "properties": {
-          "title": {"type": "string"},
-          "customerId": {"type": "string"},
-          "stage": {"type": "string"},
-          "amount": {"type": "number"},
-          "currency": {"type": "string", "default": "RUB"},
-          "createdBy": {"type": "string"}
+          "title": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "default": "RUB"
+          },
+          "createdBy": {
+            "type": "string"
+          }
+        }
+      },
+      "DealEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "dealId": {
+            "type": "string"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       }
     }

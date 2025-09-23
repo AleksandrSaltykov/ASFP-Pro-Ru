@@ -1,3 +1,4 @@
+// Package main runs the CRM API service.
 package main
 
 import (

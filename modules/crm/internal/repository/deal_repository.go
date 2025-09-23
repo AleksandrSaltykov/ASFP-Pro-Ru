@@ -1,3 +1,4 @@
+// Package repository persists CRM deal data.
 package repository
 
 import (
@@ -57,4 +58,47 @@ func (r *DealRepository) List(ctx context.Context, limit int) ([]entity.Deal, er
 	}
 
 	return deals, rows.Err()
+}
+
+// History returns chronological events for specific deal.
+func (r *DealRepository) History(ctx context.Context, dealID string, limit int) ([]entity.DealEvent, error) {
+	query := `
+	SELECT id, deal_id, event_type, payload, created_at
+	FROM crm.deal_events
+	WHERE deal_id = $1
+	ORDER BY created_at DESC
+	LIMIT $2
+	`
+	rows, err := r.pool.Query(ctx, query, dealID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("select deal events: %w", err)
+	}
+	defer rows.Close()
+
+	var events []entity.DealEvent
+	for rows.Next() {
+		var (
+			e entity.DealEvent
+			payload []byte
+		)
+		if err := rows.Scan(&e.ID, &e.DealID, &e.EventType, &payload, &e.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan deal event: %w", err)
+		}
+		e.Payload = payload
+		events = append(events, e)
+	}
+
+	return events, rows.Err()
+}
+
+// AppendEvent writes deal event row.
+func (r *DealRepository) AppendEvent(ctx context.Context, event entity.DealEvent) error {
+	query := `
+	INSERT INTO crm.deal_events (deal_id, event_type, payload)
+	VALUES ($1, $2, $3)
+	`
+	if _, err := r.pool.Exec(ctx, query, event.DealID, event.EventType, event.Payload); err != nil {
+		return fmt.Errorf("insert deal event: %w", err)
+	}
+	return nil
 }

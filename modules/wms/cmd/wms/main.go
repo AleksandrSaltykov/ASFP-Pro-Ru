@@ -1,3 +1,4 @@
+// Package main starts the WMS HTTP API service.
 package main
 
 import (

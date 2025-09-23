@@ -1,3 +1,4 @@
+// Package queue integrates Tarantool-based messaging.
 package queue
 
 import (
@@ -42,11 +43,13 @@ func (p *Publisher) Publish(ctx context.Context, eventType string, payload any) 
 		return fmt.Errorf("marshal payload: %w", err)
 	}
 
-	procedure := fmt.Sprintf("queue.tube.%s:put", p.tube)
-	req := tar.NewCallRequest(procedure).Args([]any{map[string]any{
-		"event_type": eventType,
-		"payload":    string(body),
-	}}).Context(ctx)
+	expr := fmt.Sprintf("return queue.tube.%s:put(...)", p.tube)
+	req := tar.NewEvalRequest(expr).
+		Args([]any{map[string]any{
+			"event_type": eventType,
+			"payload":    string(body),
+		}}).
+		Context(ctx)
 
 	if _, err := p.conn.Do(req).Get(); err != nil {
 		return fmt.Errorf("publish event: %w", err)
@@ -85,8 +88,10 @@ func (c *Consumer) Next(ctx context.Context, out any) (string, error) {
 		return "", errors.New("consumer connection is nil")
 	}
 
-	procedure := fmt.Sprintf("queue.tube.%s:take", c.tube)
-	takeReq := tar.NewCallRequest(procedure).Args(int(c.timeout.Seconds())).Context(ctx)
+	expr := fmt.Sprintf("return queue.tube.%s:take(...)", c.tube)
+	takeReq := tar.NewEvalRequest(expr).
+		Args([]any{c.timeout.Seconds()}).
+		Context(ctx)
 
 	resp, err := c.conn.Do(takeReq).Get()
 	if err != nil {
@@ -113,8 +118,10 @@ func (c *Consumer) Next(ctx context.Context, out any) (string, error) {
 		}
 	}
 
-	ackProcedure := fmt.Sprintf("queue.tube.%s:ack", c.tube)
-	ackReq := tar.NewCallRequest(ackProcedure).Args([]any{job[0]}).Context(ctx)
+	ackExpr := fmt.Sprintf("return queue.tube.%s:ack(...)", c.tube)
+	ackReq := tar.NewEvalRequest(ackExpr).
+		Args([]any{job[0]}).
+		Context(ctx)
 	if _, err := c.conn.Do(ackReq).Get(); err != nil {
 		return "", fmt.Errorf("ack job: %w", err)
 	}

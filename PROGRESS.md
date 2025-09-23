@@ -1,50 +1,50 @@
 ### 2025-09-22 21:17:38
-- Action: попытка docker compose ... up --build -d
-- Result: build failed. go.mod требует go >= 1.23.0, а базовые образы используют golang:1.22-alpine > сборка gateway/crm/wms/analytics остановилась.
-- Next steps: обновить Dockerfile сервисов на golang:1.24-alpine (или задать GOTOOLCHAIN=auto) и повторить сборку.
+- Action: РїРѕРїС‹С‚РєР° docker compose ... up --build -d
+- Result: build failed. go.mod С‚СЂРµР±СѓРµС‚ go >= 1.23.0, Р° Р±Р°Р·РѕРІС‹Рµ РѕР±СЂР°Р·С‹ РёСЃРїРѕР»СЊР·СѓСЋС‚ golang:1.22-alpine > СЃР±РѕСЂРєР° gateway/crm/wms/analytics РѕСЃС‚Р°РЅРѕРІРёР»Р°СЃСЊ.
+- Next steps: РѕР±РЅРѕРІРёС‚СЊ Dockerfile СЃРµСЂРІРёСЃРѕРІ РЅР° golang:1.24-alpine (РёР»Рё Р·Р°РґР°С‚СЊ GOTOOLCHAIN=auto) Рё РїРѕРІС‚РѕСЂРёС‚СЊ СЃР±РѕСЂРєСѓ.
 
 ### 2025-09-22 21:22:10
 - Action: docker compose up --build -d (after switching to golang:1.24-alpine)
-- Result: сервисы собраны, но контейнер ceph упал — в образе quay.io/ceph/ceph:v18 нет бинаря demo, указанный entrypoint demo --rgw не найден.
-- Next steps: заменить образ на quay.io/ceph/ceph:v18 с корректным entrypoint либо использовать quay.io/ceph/demo:latest (исторический демо-образ) и обновить команду/окружение.
+- Result: СЃРµСЂРІРёСЃС‹ СЃРѕР±СЂР°РЅС‹, РЅРѕ РєРѕРЅС‚РµР№РЅРµСЂ ceph СѓРїР°Р» вЂ” РІ РѕР±СЂР°Р·Рµ quay.io/ceph/ceph:v18 РЅРµС‚ Р±РёРЅР°СЂСЏ demo, СѓРєР°Р·Р°РЅРЅС‹Р№ entrypoint demo --rgw РЅРµ РЅР°Р№РґРµРЅ.
+- Next steps: Р·Р°РјРµРЅРёС‚СЊ РѕР±СЂР°Р· РЅР° quay.io/ceph/ceph:v18 СЃ РєРѕСЂСЂРµРєС‚РЅС‹Рј entrypoint Р»РёР±Рѕ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ quay.io/ceph/demo:latest (РёСЃС‚РѕСЂРёС‡РµСЃРєРёР№ РґРµРјРѕ-РѕР±СЂР°Р·) Рё РѕР±РЅРѕРІРёС‚СЊ РєРѕРјР°РЅРґСѓ/РѕРєСЂСѓР¶РµРЅРёРµ.
 
 ### 2025-09-22 21:40:40
-- Action: docker compose up --build -d после замены Ceph на quay.io/ceph/demo:latest
-- Result: все контейнеры собраны и стартовали (redis, postgres, tarantool, clickhouse, ceph, gateway, crm, wms, analytics, nginx).
-- Next steps: проверить health-checkи сервисов и убедиться, что Ceph RGW отвечает по демо-портам.
+- Action: docker compose up --build -d РїРѕСЃР»Рµ Р·Р°РјРµРЅС‹ Ceph РЅР° quay.io/ceph/demo:latest
+- Result: РІСЃРµ РєРѕРЅС‚РµР№РЅРµСЂС‹ СЃРѕР±СЂР°РЅС‹ Рё СЃС‚Р°СЂС‚РѕРІР°Р»Рё (redis, postgres, tarantool, clickhouse, ceph, gateway, crm, wms, analytics, nginx).
+- Next steps: РїСЂРѕРІРµСЂРёС‚СЊ health-checkРё СЃРµСЂРІРёСЃРѕРІ Рё СѓР±РµРґРёС‚СЊСЃСЏ, С‡С‚Рѕ Ceph RGW РѕС‚РІРµС‡Р°РµС‚ РїРѕ РґРµРјРѕ-РїРѕСЂС‚Р°Рј.
 
 ### 2025-09-22 21:59:11
-- Action: инициализация git-репозитория, commit и push.
-- Result: ветка main опубликована в https://github.com/AleksandrSaltykov/ASFP-Pro-Ru.
-- Next steps: после проверки стенда добавить health-checkи и тесты.
+- Action: РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ git-СЂРµРїРѕР·РёС‚РѕСЂРёСЏ, commit Рё push.
+- Result: РІРµС‚РєР° main РѕРїСѓР±Р»РёРєРѕРІР°РЅР° РІ https://github.com/AleksandrSaltykov/ASFP-Pro-Ru.
+- Next steps: РїРѕСЃР»Рµ РїСЂРѕРІРµСЂРєРё СЃС‚РµРЅРґР° РґРѕР±Р°РІРёС‚СЊ health-checkРё Рё С‚РµСЃС‚С‹.
 
 ### 2025-09-22 22:29:19
-- Action: проверка сервисов /health.
-- Result: gateway/crm/wms не стартуют из-за ошибки S3 — Ceph demo контейнер падает (требует корректной MON_IP/NETWORK конфигурации). Tarantool фиксирован, Ceph всё ещё в статусе Exited.
-- Next steps: настроить ceph-demo (указать CEPH_DEMO_BUCKET, CEPH_PUBLIC_NETWORK, CEPH_CLUSTER_NETWORK, корректный MON_IP/NETWORK_AUTO_DETECT) либо временно заменить на MinIO для dev, затем повторить health-check.
+- Action: РїСЂРѕРІРµСЂРєР° СЃРµСЂРІРёСЃРѕРІ /health.
+- Result: gateway/crm/wms РЅРµ СЃС‚Р°СЂС‚СѓСЋС‚ РёР·-Р·Р° РѕС€РёР±РєРё S3 вЂ” Ceph demo РєРѕРЅС‚РµР№РЅРµСЂ РїР°РґР°РµС‚ (С‚СЂРµР±СѓРµС‚ РєРѕСЂСЂРµРєС‚РЅРѕР№ MON_IP/NETWORK РєРѕРЅС„РёРіСѓСЂР°С†РёРё). Tarantool С„РёРєСЃРёСЂРѕРІР°РЅ, Ceph РІСЃС‘ РµС‰С‘ РІ СЃС‚Р°С‚СѓСЃРµ Exited.
+- Next steps: РЅР°СЃС‚СЂРѕРёС‚СЊ ceph-demo (СѓРєР°Р·Р°С‚СЊ CEPH_DEMO_BUCKET, CEPH_PUBLIC_NETWORK, CEPH_CLUSTER_NETWORK, РєРѕСЂСЂРµРєС‚РЅС‹Р№ MON_IP/NETWORK_AUTO_DETECT) Р»РёР±Рѕ РІСЂРµРјРµРЅРЅРѕ Р·Р°РјРµРЅРёС‚СЊ РЅР° MinIO РґР»СЏ dev, Р·Р°С‚РµРј РїРѕРІС‚РѕСЂРёС‚СЊ health-check.
 
 ### 2025-09-22 23:16:53
-- Action: заменили demo Ceph на MinIO (S3-совместимый стенд), добавили fallback для OpenAPI и пересобрали сервисы.
-- Result: MinIO запущен на :7480/:9001, gateway/crm/wms отдают 200 на /health.
-- Next steps: уточнить в документации, что для продакшена требуется Ceph RGW, и при необходимости добавить healthcheck MinIO.
+- Action: Р·Р°РјРµРЅРёР»Рё demo Ceph РЅР° MinIO (S3-СЃРѕРІРјРµСЃС‚РёРјС‹Р№ СЃС‚РµРЅРґ), РґРѕР±Р°РІРёР»Рё fallback РґР»СЏ OpenAPI Рё РїРµСЂРµСЃРѕР±СЂР°Р»Рё СЃРµСЂРІРёСЃС‹.
+- Result: MinIO Р·Р°РїСѓС‰РµРЅ РЅР° :7480/:9001, gateway/crm/wms РѕС‚РґР°СЋС‚ 200 РЅР° /health.
+- Next steps: СѓС‚РѕС‡РЅРёС‚СЊ РІ РґРѕРєСѓРјРµРЅС‚Р°С†РёРё, С‡С‚Рѕ РґР»СЏ РїСЂРѕРґР°РєС€РµРЅР° С‚СЂРµР±СѓРµС‚СЃСЏ Ceph RGW, Рё РїСЂРё РЅРµРѕР±С…РѕРґРёРјРѕСЃС‚Рё РґРѕР±Р°РІРёС‚СЊ healthcheck MinIO.
 
 ### 2025-09-22 23:43:10
-- Action: добавлен GitHub Actions workflow (gofmt + go test).
-- Result: любой push/PR на main гоняет базовую статическую и тестовую проверку (GOTOOLCHAIN=auto).
-- Next steps: при появлении smoke/интеграционных тестов можно расширить job.
+- Action: РґРѕР±Р°РІР»РµРЅ GitHub Actions workflow (gofmt + go test).
+- Result: Р»СЋР±РѕР№ push/PR РЅР° main РіРѕРЅСЏРµС‚ Р±Р°Р·РѕРІСѓСЋ СЃС‚Р°С‚РёС‡РµСЃРєСѓСЋ Рё С‚РµСЃС‚РѕРІСѓСЋ РїСЂРѕРІРµСЂРєСѓ (GOTOOLCHAIN=auto).
+- Next steps: РїСЂРё РїРѕСЏРІР»РµРЅРёРё smoke/РёРЅС‚РµРіСЂР°С†РёРѕРЅРЅС‹С… С‚РµСЃС‚РѕРІ РјРѕР¶РЅРѕ СЂР°СЃС€РёСЂРёС‚СЊ job.
 
 ### 2025-09-22 23:47:18
-- Action: go test ./... и smoke-тесты (ручная выгрузка) выполнены локально.
-- Result: все пакеты проходят тесты, MinIO принимает загрузку.
-- Next steps: при необходимости расширить unit-тесты CRM/WMS.
+- Action: go test ./... Рё smoke-С‚РµСЃС‚С‹ (СЂСѓС‡РЅР°СЏ РІС‹РіСЂСѓР·РєР°) РІС‹РїРѕР»РЅРµРЅС‹ Р»РѕРєР°Р»СЊРЅРѕ.
+- Result: РІСЃРµ РїР°РєРµС‚С‹ РїСЂРѕС…РѕРґСЏС‚ С‚РµСЃС‚С‹, MinIO РїСЂРёРЅРёРјР°РµС‚ Р·Р°РіСЂСѓР·РєСѓ.
+- Next steps: РїСЂРё РЅРµРѕР±С…РѕРґРёРјРѕСЃС‚Рё СЂР°СЃС€РёСЂРёС‚СЊ unit-С‚РµСЃС‚С‹ CRM/WMS.
 
 ### 2025-09-23 00:04:44
-- Action: добавлен скрипт scripts/minio-reset.sh и расширены smoke-тесты (проверка OpenAPI + upload).
-- Result: make smoke теперь читает /openapi.json; скрипт пересоздает MinIO bucket через minio/mc.
-- Next steps: при необходимости интегрировать smoke в CI и автоматизировать вызов minio-reset перед тестами.
+- Action: РґРѕР±Р°РІР»РµРЅ СЃРєСЂРёРїС‚ scripts/minio-reset.sh Рё СЂР°СЃС€РёСЂРµРЅС‹ smoke-С‚РµСЃС‚С‹ (РїСЂРѕРІРµСЂРєР° OpenAPI + upload).
+- Result: make smoke С‚РµРїРµСЂСЊ С‡РёС‚Р°РµС‚ /openapi.json; СЃРєСЂРёРїС‚ РїРµСЂРµСЃРѕР·РґР°РµС‚ MinIO bucket С‡РµСЂРµР· minio/mc.
+- Next steps: РїСЂРё РЅРµРѕР±С…РѕРґРёРјРѕСЃС‚Рё РёРЅС‚РµРіСЂРёСЂРѕРІР°С‚СЊ smoke РІ CI Рё Р°РІС‚РѕРјР°С‚РёР·РёСЂРѕРІР°С‚СЊ РІС‹Р·РѕРІ minio-reset РїРµСЂРµРґ С‚РµСЃС‚Р°РјРё.
 
 ### 2025-09-23 00:10:54
-- Action: интегрировал make smoke в CI (docker compose up -> smoke -> down).
-- Result: GitHub Actions теперь поднимает весь стек, сбрасывает MinIO и гоняет smoke-тесты автоматически.
-- Next steps: контролировать длительность job и при необходимости кэшировать docker build.
+- Action: РёРЅС‚РµРіСЂРёСЂРѕРІР°Р» make smoke РІ CI (docker compose up -> smoke -> down).
+- Result: GitHub Actions С‚РµРїРµСЂСЊ РїРѕРґРЅРёРјР°РµС‚ РІРµСЃСЊ СЃС‚РµРє, СЃР±СЂР°СЃС‹РІР°РµС‚ MinIO Рё РіРѕРЅСЏРµС‚ smoke-С‚РµСЃС‚С‹ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё.
+- Next steps: РєРѕРЅС‚СЂРѕР»РёСЂРѕРІР°С‚СЊ РґР»РёС‚РµР»СЊРЅРѕСЃС‚СЊ job Рё РїСЂРё РЅРµРѕР±С…РѕРґРёРјРѕСЃС‚Рё РєСЌС€РёСЂРѕРІР°С‚СЊ docker build.
 

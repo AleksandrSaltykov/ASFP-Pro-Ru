@@ -1,3 +1,4 @@
+// Package log provides zerolog helpers.
 package log
 
 import (

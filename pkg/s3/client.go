@@ -1,3 +1,4 @@
+// Package s3 wraps object storage operations.
 package s3
 
 import (

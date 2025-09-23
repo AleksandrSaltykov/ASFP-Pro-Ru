@@ -20,7 +20,7 @@ test:
 	go test ./... -coverprofile=coverage.out -covermode=atomic
 
 lint:
-	golangci-lint run ./...
+	docker run --rm -e GOTOOLCHAIN=go1.23.3 -v "$(CURDIR):/app" -v golangci-lint-mod:/go/pkg/mod -v golangci-lint-cache:/root/.cache -w /app golang:1.23 sh -c "go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0 && golangci-lint run ./..."
 
 migrate-core:
 	$(GOOSE) -dir pkg/db/migrations/core postgres "$(DATABASE_URL)" up

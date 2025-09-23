@@ -1,3 +1,4 @@
+// Package handler processes analytics queue events.
 package handler
 
 import (
@@ -82,3 +83,4 @@ func (c *Consumer) Run(ctx context.Context) {
 		}
 	}
 }
+

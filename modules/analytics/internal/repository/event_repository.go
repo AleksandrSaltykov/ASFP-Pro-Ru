@@ -1,3 +1,4 @@
+// Package repository persists analytics events.
 package repository
 
 import (
@@ -25,7 +26,7 @@ func (r *EventRepository) InsertDealCreated(ctx context.Context, payload DealCre
 		return fmt.Errorf("prepare batch: %w", err)
 	}
 
-	if err := batch.Append(time.Now(), payload.ID, payload.Amount, payload.Currency, payload.CustomerID, payload.CreatedAt); err != nil {
+	if err := batch.Append(time.Now(), "deal.created", payload.ID, payload.Stage, payload.Amount, payload.Currency, payload.CustomerID, payload.CreatedBy, payload.CreatedAt); err != nil {
 		return fmt.Errorf("append batch: %w", err)
 	}
 
@@ -35,8 +36,10 @@ func (r *EventRepository) InsertDealCreated(ctx context.Context, payload DealCre
 // DealCreatedEvent mirrors payload from CRM event.
 type DealCreatedEvent struct {
 	ID         string
+	Stage      string
 	Amount     float64
 	Currency   string
 	CustomerID string
+	CreatedBy  string
 	CreatedAt  time.Time
 }

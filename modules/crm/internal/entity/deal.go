@@ -1,6 +1,10 @@
+// Package entity exposes CRM aggregates.
 package entity
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // Deal describes CRM deal entity.
 type Deal struct {
@@ -12,4 +16,13 @@ type Deal struct {
 	Currency   string
 	CreatedBy  string
 	CreatedAt  time.Time
+}
+
+// DealEvent represents change log entry for a deal.
+type DealEvent struct {
+	ID        int64           `json:"id"`
+	DealID    string          `json:"dealId"`
+	EventType string          `json:"eventType"`
+	Payload   json.RawMessage `json:"payload"`
+	CreatedAt time.Time       `json:"createdAt"`
 }

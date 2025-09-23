@@ -1,7 +1,6 @@
-version: "3.9"
 services:
   postgres:
-    image: postgres:16-alpine
+    image: ${POSTGRES_IMAGE}
     container_name: asfp-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -17,9 +16,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   clickhouse:
-    image: clickhouse/clickhouse-server:24.8
+    image: ${CLICKHOUSE_IMAGE}
     container_name: asfp-clickhouse
     environment:
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
@@ -32,33 +32,47 @@ services:
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./init/clickhouse:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "clickhouse-client --user ${CLICKHOUSE_USER} --password ${CLICKHOUSE_PASSWORD} --query 'SELECT 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
 
   tarantool:
-    image: tarantool/tarantool:2.11
+    image: ${TARANTOOL_IMAGE}
     container_name: asfp-tarantool
     environment:
-      TARANTOOL_USER_NAME: queue
-      TARANTOOL_USER_PASSWORD: queue-pass
+      TARANTOOL_USER_NAME: ${TARANTOOL_USER_NAME}
+      TARANTOOL_USER_PASSWORD: ${TARANTOOL_USER_PASSWORD}
     command: tarantool /opt/tarantool/init/init.lua
     volumes:
       - tarantool_data:/var/lib/tarantool
       - ./init/tarantool:/opt/tarantool/init
     ports:
       - "3301:3301"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 3301"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
 
   redis:
-    image: redis:7-alpine
+    image: ${REDIS_IMAGE}
     container_name: asfp-redis
     ports:
       - "6379:6379"
+    restart: unless-stopped
 
   ceph:
-    image: minio/minio:latest
+    image: ${MINIO_IMAGE}
     container_name: asfp-ceph
     environment:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
-      MINIO_REGION_NAME: ru-central
+      MINIO_REGION_NAME: ${S3_REGION}
     command: server /data --address :7480 --console-address :9001
     ports:
       - "7480:7480"
@@ -71,39 +85,33 @@ services:
       start_period: 15s
     volumes:
       - ceph_data:/data
-    image: minio/minio:latest
-    container_name: asfp-ceph
-    environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
-      MINIO_REGION_NAME: ru-central
-    command: server /data --address :7480 --console-address :9001
-    ports:
-      - "7480:7480"
-      - "9001:9001"
-    volumes:
-      - ceph_data:/data
+    restart: unless-stopped
+
   gateway:
     build:
       context: ..
       dockerfile: gateway/Dockerfile
     container_name: asfp-gateway
     depends_on:
-      - postgres
-      - tarantool
-      - ceph
+      postgres:
+        condition: service_healthy
+      tarantool:
+        condition: service_healthy
+      ceph:
+        condition: service_healthy
     env_file: .env
     environment:
       GATEWAY_DATABASE_URL: ${DATABASE_URL}
-      GATEWAY_TARANTOOL_ADDR: tarantool:3301
-      GATEWAY_TARANTOOL_QUEUE: events_queue
-      GATEWAY_S3_ENDPOINT: http://ceph:7480
+      GATEWAY_TARANTOOL_ADDR: ${GATEWAY_TARANTOOL_ADDR}
+      GATEWAY_TARANTOOL_QUEUE: ${GATEWAY_TARANTOOL_QUEUE}
+      GATEWAY_S3_ENDPOINT: ${GATEWAY_S3_ENDPOINT}
       GATEWAY_S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       GATEWAY_S3_SECRET_KEY: ${S3_SECRET_KEY}
-      GATEWAY_S3_REGION: ru-central
-      GATEWAY_S3_USE_SSL: "false"
+      GATEWAY_S3_REGION: ${GATEWAY_S3_REGION}
+      GATEWAY_S3_USE_SSL: ${GATEWAY_S3_USE_SSL}
     ports:
       - "8080:8080"
+    restart: unless-stopped
 
   crm:
     build:
@@ -111,15 +119,18 @@ services:
       dockerfile: modules/crm/Dockerfile
     container_name: asfp-crm
     depends_on:
-      - postgres
-      - tarantool
+      postgres:
+        condition: service_healthy
+      tarantool:
+        condition: service_healthy
     env_file: .env
     environment:
       CRM_DATABASE_URL: ${DATABASE_URL}
-      CRM_TARANTOOL_ADDR: tarantool:3301
-      CRM_TARANTOOL_QUEUE: events_queue
+      CRM_TARANTOOL_ADDR: ${CRM_TARANTOOL_ADDR}
+      CRM_TARANTOOL_QUEUE: ${CRM_TARANTOOL_QUEUE}
     ports:
       - "8081:8081"
+    restart: unless-stopped
 
   wms:
     build:
@@ -127,12 +138,14 @@ services:
       dockerfile: modules/wms/Dockerfile
     container_name: asfp-wms
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     env_file: .env
     environment:
       WMS_DATABASE_URL: ${DATABASE_URL}
     ports:
       - "8082:8082"
+    restart: unless-stopped
 
   analytics:
     build:
@@ -140,26 +153,53 @@ services:
       dockerfile: modules/analytics/Dockerfile
     container_name: asfp-analytics
     depends_on:
-      - tarantool
-      - clickhouse
+      postgres:
+        condition: service_healthy
+      tarantool:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
     env_file: .env
     environment:
       ANALYTICS_DATABASE_URL: ${DATABASE_URL}
-      ANALYTICS_TARANTOOL_ADDR: tarantool:3301
-      ANALYTICS_TARANTOOL_QUEUE: events_queue
+      ANALYTICS_TARANTOOL_ADDR: ${ANALYTICS_TARANTOOL_ADDR}
+      ANALYTICS_TARANTOOL_QUEUE: ${ANALYTICS_TARANTOOL_QUEUE}
       ANALYTICS_CLICKHOUSE_DSN: ${CLICKHOUSE_DSN}
+    restart: unless-stopped
+
+  analytics-api:
+    build:
+      context: ..
+      dockerfile: modules/analytics/Dockerfile
+    container_name: asfp-analytics-api
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      ANALYTICS_DATABASE_URL: ${DATABASE_URL}
+      ANALYTICS_CLICKHOUSE_DSN: ${CLICKHOUSE_DSN}
+      ANALYTICS_HTTP_PORT: ${ANALYTICS_HTTP_PORT}
+    entrypoint: ["./analytics-api"]
+    ports:
+      - "${ANALYTICS_HTTP_PORT:-8090}:${ANALYTICS_HTTP_PORT:-8090}"
+    restart: unless-stopped
 
   nginx:
-    image: nginx:1.27-alpine
+    image: ${NGINX_IMAGE}
     container_name: asfp-nginx
     depends_on:
       - gateway
       - crm
       - wms
+      - analytics-api
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
     ports:
       - "8000:80"
+      - "8443:443"
+    restart: unless-stopped
 
 volumes:
   postgres_data:

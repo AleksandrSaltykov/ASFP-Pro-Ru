@@ -1,3 +1,4 @@
+// Package handlers exposes REST handlers for the gateway.
 package handlers
 
 import (
@@ -22,7 +23,7 @@ func FileUploadHandler(client *s3.Client) fiber.Handler {
 		if err != nil {
 			return fiber.NewError(fiber.StatusInternalServerError, "cannot open file")
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
