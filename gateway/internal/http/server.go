@@ -1,4 +1,4 @@
-﻿package http
+package http
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 
 	"asfppro/gateway/internal/auth"
@@ -28,7 +29,7 @@ type Server struct {
 }
 
 // NewServer constructs HTTP server with base middlewares.
-func NewServer(cfg config.AppConfig, logger zerolog.Logger, storage *s3.Client, authSvc *auth.Service) (*Server, error) {
+func NewServer(cfg config.AppConfig, logger zerolog.Logger, pool *pgxpool.Pool, storage *s3.Client, authSvc *auth.Service) (*Server, error) {
 	openapi, err := readOpenAPI("gateway/docs/openapi/openapi.json", "GATEWAY_OPENAPI_PATH")
 	if err != nil {
 		return nil, fmt.Errorf("load openapi: %w", err)
@@ -45,6 +46,7 @@ func NewServer(cfg config.AppConfig, logger zerolog.Logger, storage *s3.Client, 
 	app.Use(requestIDMiddleware)
 
 	app.Get("/health", handlers.Health())
+	app.Get("/ready", handlers.Ready(pool, storage))
 	app.Get("/openapi.json", handlers.OpenAPI(openapi))
 
 	protected := app.Group("", authMiddleware(authSvc, logger))

@@ -1,4 +1,4 @@
-.PHONY: up down stop build lint test migrate-core migrate-crm migrate-wms seed clean
+.PHONY: up down stop build lint test smoke migrate-core migrate-crm migrate-wms seed clean
 
 COMPOSE_FILE=deploy/docker-compose.yml
 ENV_FILE?=deploy/.env
@@ -18,6 +18,10 @@ build:
 
 test:
 	go test ./... -coverprofile=coverage.out -covermode=atomic
+
+smoke:
+	go test ./tests/smoke -count=1
+	bash tests/smoke/smoke.sh
 
 lint:
 	docker run --rm -e GOTOOLCHAIN=go1.23.3 -v "$(CURDIR):/app" -v golangci-lint-mod:/go/pkg/mod -v golangci-lint-cache:/root/.cache -w /app golang:1.23 sh -c "go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0 && golangci-lint run ./..."

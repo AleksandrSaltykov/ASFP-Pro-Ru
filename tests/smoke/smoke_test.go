@@ -42,6 +42,37 @@ func TestSmokeEndpoints(t *testing.T) {
 			}
 		})
 
+		t.Run(svc.name+"_ready", func(t *testing.T) {
+			resp, err := client.Get(svc.url + "/ready")
+			if err != nil {
+				t.Fatalf("%s ready request failed: %v", svc.name, err)
+			}
+			t.Cleanup(func() { _ = resp.Body.Close() })
+
+			if resp.StatusCode != http.StatusOK {
+				body, _ := io.ReadAll(resp.Body)
+				t.Fatalf("%s ready status: %d body %s", svc.name, resp.StatusCode, string(body))
+			}
+
+			var payload struct {
+				Status string            `json:"status"`
+				Checks map[string]string `json:"checks"`
+			}
+			if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+				t.Fatalf("decode ready payload: %v", err)
+			}
+
+			if payload.Status != "ok" {
+				t.Fatalf("%s ready status payload: %s", svc.name, payload.Status)
+			}
+
+			for name, status := range payload.Checks {
+				if status != "ok" {
+					t.Fatalf("%s dependency %s status %s", svc.name, name, status)
+				}
+			}
+		})
+
 		t.Run(svc.name+"_openapi", func(t *testing.T) {
 			resp, err := client.Get(svc.url + "/openapi.json")
 			if err != nil {

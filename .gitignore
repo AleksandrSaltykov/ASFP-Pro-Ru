@@ -1,5 +1,13 @@
 # Build artifacts
 coverage.out
+dist/
+apps/web/dist/
+apps/web/.turbo/
+
+# JS dependencies
+node_modules/
+pnpm-logs/
+pnpm-debug.log
 
 # IDE
 .vscode/

@@ -1,0 +1,15 @@
+{
+  "name": "asfp-pro",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ASFP-Pro ERP monorepo (backend + frontend)",
+  "license": "MIT",
+  "packageManager": "pnpm@9.12.1",
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "preview": "pnpm --filter web preview",
+    "test": "pnpm --filter web test",
+    "lint": "pnpm --filter web lint"
+  }
+}

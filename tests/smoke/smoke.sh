@@ -13,6 +13,12 @@ if [ "$STATUS" != "200" ]; then
   exit 1
 fi
 
+READY_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HOST/ready")
+if [ "$READY_STATUS" != "200" ]; then
+  echo "Gateway readiness check failed: status $READY_STATUS"
+  exit 1
+fi
+
 UPLOAD=$(curl -s -F file=@"$TMP_FILE" -F folder=smoke "$HOST/api/v1/files")
 URL=$(echo "$UPLOAD" | sed -n 's/.*"url":"\([^"]*\)".*/\1/p')
 if [ -z "$URL" ]; then

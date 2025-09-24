@@ -48,6 +48,7 @@ func main() {
 	app := fiber.New(fiber.Config{AppName: cfg.AppName})
 	app.Use(recover.New())
 	app.Get("/health", handler.Health())
+	app.Get("/ready", handler.Ready(pool))
 	app.Get("/openapi.json", handler.OpenAPI(openapi))
 	h.Register(app)
 

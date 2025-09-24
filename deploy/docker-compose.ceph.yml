@@ -1,0 +1,33 @@
+services:
+  ceph:
+    image: ${CEPH_IMAGE}
+    container_name: asfp-ceph
+    environment:
+      MON_IP: ${CEPH_MON_IP}
+      CEPH_PUBLIC_NETWORK: ${CEPH_PUBLIC_NETWORK}
+      CEPH_CLUSTER_NETWORK: ${CEPH_CLUSTER_NETWORK:-${CEPH_PUBLIC_NETWORK}}
+      RGW_NAME: ${CEPH_RGW_NAME:-asfp-rgw}
+      RGW_FRONTENDS: ${CEPH_RGW_FRONTENDS:-beast endpoint=0.0.0.0:7480}
+      CEPH_DEMO_UID: ${CEPH_DEMO_UID:-asfp}
+      CEPH_DEMO_ACCESS_KEY: ${S3_ACCESS_KEY}
+      CEPH_DEMO_SECRET_KEY: ${S3_SECRET_KEY}
+      CEPH_DEMO_BUCKET: ${S3_BUCKET}
+      NETWORK_AUTO_DETECT: ${CEPH_NETWORK_AUTO_DETECT:-4}
+      DEBUG: ${CEPH_DEBUG:-false}
+    ports:
+      - "7480:7480"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:7480 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
+    volumes:
+      - ceph_data:/var/lib/ceph
+    restart: unless-stopped
+    command:
+      - demo
+      - --rgw
+volumes:
+  ceph_data:

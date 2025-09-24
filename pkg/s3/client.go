@@ -72,3 +72,22 @@ func (c *Client) UploadBytes(ctx context.Context, folder, filename string, data 
 	reader := bytes.NewReader(data)
 	return c.Upload(ctx, folder, filename, reader, int64(len(data)), contentType)
 }
+
+// Ping verifies that the bucket is reachable and exists.
+func (c *Client) Ping(ctx context.Context) error {
+	if c == nil || c.client == nil {
+		return fmt.Errorf("s3 client is not initialized")
+	}
+
+	probeCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	exists, err := c.client.BucketExists(probeCtx, c.bucket)
+	if err != nil {
+		return fmt.Errorf("bucket exists check: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("bucket %s missing", c.bucket)
+	}
+	return nil
+}

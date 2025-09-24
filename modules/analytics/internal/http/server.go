@@ -9,12 +9,14 @@ import (
 	"syscall"
 	"time"
 
+	ch "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/rs/zerolog"
 
 	"asfppro/modules/analytics/internal/repository"
 	"asfppro/pkg/config"
+	"asfppro/pkg/health"
 )
 
 // Server wraps Fiber application for analytics API.
@@ -26,7 +28,7 @@ type Server struct {
 }
 
 // NewServer creates configured HTTP server instance.
-func NewServer(cfg config.AppConfig, logger zerolog.Logger, repo *repository.EventRepository) (*Server, error) {
+func NewServer(cfg config.AppConfig, logger zerolog.Logger, repo *repository.EventRepository, conn ch.Conn) (*Server, error) {
 	app := fiber.New(fiber.Config{
 		AppName:      cfg.AppName,
 		ReadTimeout:  cfg.RequestTimeout,
@@ -37,7 +39,8 @@ func NewServer(cfg config.AppConfig, logger zerolog.Logger, repo *repository.Eve
 
 	app.Use(recover.New())
 	app.Use(loggerMiddleware(logger))
-	app.Get("/health", healthHandler)
+	app.Get("/health", health.LiveHandler())
+	app.Get("/ready", readyHandler(conn))
 	reportHandler.Register(app)
 
 	return &Server{
@@ -70,8 +73,27 @@ func (s *Server) Run() error {
 	return nil
 }
 
-func healthHandler(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{"status": "ok"})
+func readyHandler(conn ch.Conn) fiber.Handler {
+	if conn == nil {
+		return func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+				"status": "degraded",
+				"error":  "clickhouse connection not initialised",
+			})
+		}
+	}
+
+	checks := []health.Check{
+		{
+			Name:    "clickhouse",
+			Timeout: 4 * time.Second,
+			Probe: func(ctx context.Context) error {
+				return conn.Ping(ctx)
+			},
+		},
+	}
+
+	return health.FiberHandler(checks)
 }
 
 func loggerMiddleware(logger zerolog.Logger) fiber.Handler {

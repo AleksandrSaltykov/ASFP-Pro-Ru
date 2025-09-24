@@ -6,7 +6,7 @@ ALIAS=${MINIO_ALIAS:-asfp}
 ENDPOINT=${MINIO_ENDPOINT:-http://ceph:7480}
 ACCESS_KEY=${S3_ACCESS_KEY:-asfpminio}
 SECRET_KEY=${S3_SECRET_KEY:-asfpminio123}
-BUCKET=${MINIO_BUCKET:-asfp-files}
+BUCKET=${MINIO_BUCKET:-${S3_BUCKET:-asfp-files}}
 
 if ! docker network ls --format '{{.Name}}' | grep -q "^${NETWORK}$"; then
   echo "Docker network ${NETWORK} not found"

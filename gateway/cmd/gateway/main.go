@@ -34,7 +34,7 @@ func main() {
 
 	authService := auth.NewService(pool)
 
-	server, err := http.NewServer(cfg, logger, storage, authService)
+	server, err := http.NewServer(cfg, logger, pool, storage, authService)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("init server")
 	}

@@ -1,11 +1,41 @@
 // Package handler contains WMS HTTP handlers.
 package handler
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"context"
+	"time"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"asfppro/pkg/health"
+)
 
 // Health returns simple service status.
 func Health() fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "ok"})
+	return health.LiveHandler()
+}
+
+// Ready checks database availability.
+func Ready(pool *pgxpool.Pool) fiber.Handler {
+	if pool == nil {
+		return func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+				"status": "degraded",
+				"error":  "dependencies not initialised",
+			})
+		}
 	}
+
+	checks := []health.Check{
+		{
+			Name:    "postgres",
+			Timeout: 3 * time.Second,
+			Probe: func(ctx context.Context) error {
+				return pool.Ping(ctx)
+			},
+		},
+	}
+
+	return health.FiberHandler(checks)
 }

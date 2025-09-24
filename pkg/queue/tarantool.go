@@ -65,6 +65,20 @@ func (p *Publisher) Close() {
 	}
 }
 
+// Ping executes a lightweight eval request to ensure Tarantool is reachable.
+func (p *Publisher) Ping(ctx context.Context) error {
+	if p.conn == nil {
+		return errors.New("publisher connection is nil")
+	}
+
+	req := tar.NewEvalRequest("return true").Context(ctx)
+	_, err := p.conn.Do(req).Get()
+	if err != nil {
+		return fmt.Errorf("ping tarantool: %w", err)
+	}
+	return nil
+}
+
 // Consumer pulls messages and converts them to strongly typed events.
 type Consumer struct {
 	conn    *tar.Connection

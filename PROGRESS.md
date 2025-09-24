@@ -42,9 +42,12 @@
 - Action: добавлен скрипт scripts/minio-reset.sh и расширены smoke-тесты (проверка OpenAPI + upload).
 - Result: make smoke теперь читает /openapi.json; скрипт пересоздает MinIO bucket через minio/mc.
 - Next steps: при необходимости интегрировать smoke в CI и автоматизировать вызов minio-reset перед тестами.
+### 2025-09-24 13:22:30
+- Action: инициализировали фронтенд-монорепозиторий (pnpm workspace) и scaffold SPA на React/Vite.
+- Result: добавлены скрипты, базовые провайдеры (Redux Toolkit, React Query), роутинг, макеты страниц и MSW; тесты Vitest проходят.
+- Next steps: подключить дизайн-систему (Ant Design fork или свой UI-kit), сгенерировать API-клиенты из OpenAPI и реализовать авторизацию/канбан CRM.
 
 ### 2025-09-23 00:10:54
 - Action: интегрировал make smoke в CI (docker compose up -> smoke -> down).
 - Result: GitHub Actions теперь поднимает весь стек, сбрасывает MinIO и гоняет smoke-тесты автоматически.
 - Next steps: контролировать длительность job и при необходимости кэшировать docker build.
-

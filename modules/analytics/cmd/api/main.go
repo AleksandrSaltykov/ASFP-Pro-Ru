@@ -5,7 +5,6 @@ import (
 	"context"
 	stdlog "log"
 
-
 	analyticshttp "asfppro/modules/analytics/internal/http"
 	"asfppro/modules/analytics/internal/repository"
 	"asfppro/pkg/config"
@@ -27,7 +26,7 @@ func main() {
 	defer func() { _ = conn.Close() }()
 
 	repo := repository.NewEventRepository(conn)
-	server, err := analyticshttp.NewServer(cfg, logger, repo)
+	server, err := analyticshttp.NewServer(cfg, logger, repo, conn)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("init analytics api")
 	}
@@ -36,4 +35,3 @@ func main() {
 		logger.Fatal().Err(err).Msg("analytics api stopped")
 	}
 }
-

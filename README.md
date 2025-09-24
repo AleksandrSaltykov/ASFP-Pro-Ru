@@ -12,8 +12,11 @@ make up
 Команда `make up` поднимет инфраструктуру (PostgreSQL 16 (community edition), ClickHouse, Tarantool, Redis, nginx, Ceph RGW) и сервисы (`gateway`, `crm`, `wms`). После успешного запуска доступны:
 
 - http://localhost:8080/health — состояние gateway
+- http://localhost:8080/ready — проверка зависимостей gateway
 - http://localhost:8081/health — состояние CRM
+- http://localhost:8081/ready — проверка зависимостей CRM
 - http://localhost:8082/health — состояние WMS
+- http://localhost:8082/ready — проверка зависимостей WMS
 - http://localhost:8080/openapi.json — OpenAPI gateway
 - http://localhost:8081/openapi.json — OpenAPI CRM
 - http://localhost:8082/openapi.json — OpenAPI WMS
@@ -57,8 +60,10 @@ make up
 - Любые исключения фиксируются отдельно и согласуются с архитектором.
 
 
-### S3 в режиме разработки
+### S3 в режимах разработки и продакшена
 
-- Для локального запуска используется `minio/minio` (совместим по API), чтобы облегчить стенд.
-- В промышленной установке планируется Ceph RGW; инструкции и параметры будут доработаны в отдельной задаче.
-
+- Для локального стенда используется `minio/minio` (API-совместимый режим). Переменные окружения по умолчанию находятся в `deploy/.env.example`.
+- Для продакшена подготовлен override-файл `deploy/docker-compose.ceph.yml`, переключающий сервис `ceph` на образ `quay.io/ceph/demo`. Пример переменных — в `deploy/.env.ceph.example`.
+- Перед запуском Ceph RGW необходимо задать корректные `CEPH_MON_IP`, `CEPH_PUBLIC_NETWORK` и `CEPH_CLUSTER_NETWORK`, соответствующие адресу хоста/подсети, где развёрнут compose.
+- Ceph demo-контейнер автоматически создаёт bucket `S3_BUCKET` и пользователя `CEPH_DEMO_UID`, поэтому приложения будут работать с теми же `S3_ACCESS_KEY`/`S3_SECRET_KEY`, что указаны в `.env`.
+- Для запуска prod-стека: `docker compose --env-file deploy/.env.ceph.example -f deploy/docker-compose.yml -f deploy/docker-compose.ceph.yml up -d`.
