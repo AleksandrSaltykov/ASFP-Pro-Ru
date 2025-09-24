@@ -1,0 +1,174 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <title>ASFP-Pro Control Center</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        :root {
+            color-scheme: light dark;
+            --bg: #0f172a;
+            --card-bg: rgba(15, 23, 42, 0.78);
+            --card-border: rgba(148, 163, 184, 0.2);
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --muted: #cbd5f5;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+            background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.25), transparent 55%),
+                        radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.25), transparent 50%),
+                        var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 16px 64px;
+        }
+        main {
+            width: min(1120px, 100%);
+        }
+        header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        header h1 {
+            font-size: clamp(2.2rem, 4vw, 3rem);
+            margin: 0 0 12px;
+            letter-spacing: 0.04em;
+        }
+        header p {
+            margin: 0 auto;
+            max-width: 720px;
+            color: var(--muted);
+            font-size: 1.05rem;
+        }
+        .grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        }
+        .card {
+            position: relative;
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid var(--card-border);
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            transition: transform 160ms ease, border-color 160ms ease;
+        }
+        .card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(56, 189, 248, 0.45);
+        }
+        .card h2 {
+            margin: 0 0 14px;
+            font-size: 1.3rem;
+        }
+        .card p {
+            margin: 0 0 18px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+        .card a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 28px;
+            background: rgba(56, 189, 248, 0.14);
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 160ms ease;
+        }
+        .card a:hover {
+            background: rgba(56, 189, 248, 0.35);
+        }
+        .meta {
+            margin-top: 48px;
+            padding: 20px 24px;
+            border-radius: 16px;
+            border: 1px dashed rgba(148, 163, 184, 0.35);
+            background: rgba(15, 23, 42, 0.54);
+        }
+        .meta h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+        .meta ul {
+            margin: 0;
+            padding-left: 20px;
+            color: var(--muted);
+        }
+        @media (max-width: 640px) {
+            body { padding: 32px 16px; }
+            header h1 { font-size: 2rem; }
+            .card { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+<main>
+    <header>
+        <h1>ASFP-Pro Control Center</h1>
+        <p>
+            Центральный портал стенда: здесь можно проверить доступность сервисов, открыть документацию
+            и перейти к ключевым инструментам (CRM, WMS, analytics, MinIO). Используйте HTTPS-коннект через nginx — сертификаты
+            генерируются автоматически командой <code>make up</code>.
+        </p>
+    </header>
+
+    <section class="grid">
+        <article class="card">
+            <h2>API Gateway</h2>
+            <p>
+                Точка входа для клиентов и интеграций: health-check, загрузка файлов, проксирование CRM/WMS.
+                Доступно описание контрактов и smoke-сценарии.
+            </p>
+            <a href="/openapi.json" target="_blank" rel="noopener">Схема OpenAPI</a>
+        </article>
+
+        <article class="card">
+            <h2>CRM Модуль</h2>
+            <p>
+                Работа со сделками и контрагентами. Используйте публичные ручки `/api/v1/deals` напрямую или через gateway.
+            </p>
+            <a href="/api/v1/deals/" target="_blank" rel="noopener">Список сделок</a>
+        </article>
+
+        <article class="card">
+            <h2>WMS Модуль</h2>
+            <p>
+                Управление остатками и резервами. Проверочные эндпоинты доступны по `/api/v1/stock`.
+            </p>
+            <a href="/api/v1/stock/" target="_blank" rel="noopener">Сток по складам</a>
+        </article>
+
+        <article class="card">
+            <h2>Мини-инструменты</h2>
+            <p>Вспомогательные панели и сервисы разработки.</p>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                <a href="https://localhost:8443/api/v1/files" target="_blank" rel="noopener">Загрузка файлов</a>
+                <a href="http://localhost:9001" target="_blank" rel="noopener">MinIO Console</a>
+                <a href="https://github.com/AleksandrSaltykov/ASFP-Pro-Ru" target="_blank" rel="noopener">GitHub</a>
+            </div>
+        </article>
+    </section>
+
+    <section class="meta">
+        <h3>Быстрые действия</h3>
+        <ul>
+            <li><strong>Проверка стенда:</strong> <code>make up</code> ➝ <code>make smoke</code> ➝ <code>make down</code>.</li>
+            <li><strong>Smoke с HTTPS:</strong> <code>mkcert -install</code>, затем <code>SMOKE_GATEWAY_HTTPS_URL=https://localhost:8443 make smoke</code>.</li>
+            <li><strong>Документация:</strong> полный README и архитектурные описания находятся в репозитории <code>repo/README.md</code>.</li>
+        </ul>
+    </section>
+</main>
+</body>
+</html>

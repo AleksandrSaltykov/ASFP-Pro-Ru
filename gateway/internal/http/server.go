@@ -45,6 +45,7 @@ func NewServer(cfg config.AppConfig, logger zerolog.Logger, pool *pgxpool.Pool, 
 	app.Use(loggerMiddleware(logger))
 	app.Use(requestIDMiddleware)
 
+	app.Get("/", handlers.Home())
 	app.Get("/health", handlers.Health())
 	app.Get("/ready", handlers.Ready(pool, storage))
 	app.Get("/openapi.json", handlers.OpenAPI(openapi))

@@ -1,4 +1,4 @@
-### 2025-09-22 21:17:38
+﻿### 2025-09-22 21:17:38
 - Action: попытка docker compose ... up --build -d
 - Result: build failed. go.mod требует go >= 1.23.0, а базовые образы используют golang:1.22-alpine > сборка gateway/crm/wms/analytics остановилась.
 - Next steps: обновить Dockerfile сервисов на golang:1.24-alpine (или задать GOTOOLCHAIN=auto) и повторить сборку.
@@ -42,12 +42,23 @@
 - Action: добавлен скрипт scripts/minio-reset.sh и расширены smoke-тесты (проверка OpenAPI + upload).
 - Result: make smoke теперь читает /openapi.json; скрипт пересоздает MinIO bucket через minio/mc.
 - Next steps: при необходимости интегрировать smoke в CI и автоматизировать вызов minio-reset перед тестами.
-### 2025-09-24 13:22:30
-- Action: инициализировали фронтенд-монорепозиторий (pnpm workspace) и scaffold SPA на React/Vite.
-- Result: добавлены скрипты, базовые провайдеры (Redux Toolkit, React Query), роутинг, макеты страниц и MSW; тесты Vitest проходят.
-- Next steps: подключить дизайн-систему (Ant Design fork или свой UI-kit), сгенерировать API-клиенты из OpenAPI и реализовать авторизацию/канбан CRM.
 
 ### 2025-09-23 00:10:54
 - Action: интегрировал make smoke в CI (docker compose up -> smoke -> down).
 - Result: GitHub Actions теперь поднимает весь стек, сбрасывает MinIO и гоняет smoke-тесты автоматически.
 - Next steps: контролировать длительность job и при необходимости кэшировать docker build.
+
+### 2025-09-24 00:30:00
+- Action: ограничены ресурсы docker-compose (mem_limit/cpus), автоматизирован вызов mkcert в Makefile и расширены smoke-тесты (артефакты, HTTPS-ветка). README дополнен инструкциями по сертификатам и лимитам.
+- Result: `make up` генерирует локальные сертификаты до старта стенда (поддержан `SKIP_MKCERT`), smoke складывает логи в `tests/smoke/artifacts` и умеет ходить по HTTPS через nginx, документация и конфигурация синхронизированы; gateway отдаёт стартовую страницу Control Center.
+- Next steps: прогнать `mkcert -install` и `make up` на чистой машине с `SMOKE_GATEWAY_HTTPS_URL=https://localhost:8443 make smoke`; в CI замерить длительность smoke job и добавить кеширование сборок (Go модули и docker build), если это даст выигрыш.
+
+### 2025-09-24 00:55:00
+- Action: добавлен кеш Go модулей/артефактов в CI и прогрев docker buildx через bake + локальный кэш перед docker compose up.
+- Result: workflow сохраняет `~/go/pkg/mod`, `~/.cache/go-build` и buildx слои (`cache-to/cache-from`), что сокращает время lint/test и сборки образов в smoke job; compose больше не делает `--build`, используя предварительно собранные образы.
+- Next steps: проверить, насколько сократилось время GitHub Actions; при необходимости перенести build-этап на `docker/build-push-action` с `scope` per-service и/или добавить `cache-to=type=gha` для более агрессивного шеринга.
+
+### 2025-09-24 13:22:30
+- Action: инициализировали фронтенд-монорепозиторий (pnpm workspace) и scaffold SPA на React/Vite.
+- Result: добавлены скрипты, базовые провайдеры (Redux Toolkit, React Query), роутинг, макеты страниц и MSW; тесты Vitest проходят.
+- Next steps: подключить дизайн-систему (Ant Design fork или свой UI-kit), сгенерировать API-клиенты из OpenAPI и реализовать авторизацию/канбан CRM.

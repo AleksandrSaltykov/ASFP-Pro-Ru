@@ -17,6 +17,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    mem_limit: 1536m
+    cpus: "1.5"
 
   clickhouse:
     image: ${CLICKHOUSE_IMAGE}
@@ -39,6 +41,8 @@ services:
       retries: 5
       start_period: 15s
     restart: unless-stopped
+    mem_limit: 2048m
+    cpus: "2.0"
 
   tarantool:
     image: ${TARANTOOL_IMAGE}
@@ -58,6 +62,8 @@ services:
       timeout: 3s
       retries: 20
     restart: unless-stopped
+    mem_limit: 512m
+    cpus: "1.0"
 
   redis:
     image: ${REDIS_IMAGE}
@@ -65,6 +71,8 @@ services:
     ports:
       - "6379:6379"
     restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.5"
 
   ceph:
     image: ${MINIO_IMAGE}
@@ -86,6 +94,8 @@ services:
     volumes:
       - ceph_data:/data
     restart: unless-stopped
+    mem_limit: 1024m
+    cpus: "1.0"
 
   gateway:
     build:
@@ -119,6 +129,8 @@ services:
       retries: 5
       start_period: 20s
     restart: unless-stopped
+    mem_limit: 512m
+    cpus: "0.75"
 
   crm:
     build:
@@ -144,6 +156,8 @@ services:
       retries: 5
       start_period: 20s
     restart: unless-stopped
+    mem_limit: 512m
+    cpus: "0.75"
 
   wms:
     build:
@@ -165,6 +179,8 @@ services:
       retries: 5
       start_period: 20s
     restart: unless-stopped
+    mem_limit: 512m
+    cpus: "0.75"
 
   analytics:
     build:
@@ -185,6 +201,8 @@ services:
       ANALYTICS_TARANTOOL_QUEUE: ${ANALYTICS_TARANTOOL_QUEUE}
       ANALYTICS_CLICKHOUSE_DSN: ${CLICKHOUSE_DSN}
     restart: unless-stopped
+    mem_limit: 512m
+    cpus: "0.75"
 
   analytics-api:
     build:
@@ -209,6 +227,8 @@ services:
       retries: 5
       start_period: 25s
     restart: unless-stopped
+    mem_limit: 512m
+    cpus: "0.5"
 
   nginx:
     image: ${NGINX_IMAGE}
@@ -225,6 +245,8 @@ services:
       - "8000:80"
       - "8443:443"
     restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.5"
 
 volumes:
   postgres_data:

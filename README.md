@@ -1,4 +1,4 @@
-# ASFP-Pro ERP Skeleton
+﻿# ASFP-Pro ERP Skeleton
 
 Этот репозиторий содержит каркас on-prem ERP/CRM/BPM/WMS системы для компании, занимающейся наружной рекламой. Проект ориентирован на эксплуатацию в российской юрисдикции и соответствует требованиям по использованию российских или open-source компонентов.
 
@@ -8,6 +8,12 @@
 cp deploy/.env.example deploy/.env
 make up
 ```
+
+Перед запуском убедитесь, что установлен [mkcert](https://github.com/FiloSottile/mkcert). `make up` автоматически вызовет генерацию сертификатов (файлы попадут в `deploy/nginx/certs`).
+
+После первой установки выполните `mkcert -install`, чтобы корневой сертификат попал в системное хранилище (без этого HTTPS smoke-тесты не пройдут).
+
+Если `mkcert` временно недоступен, установите переменную `SKIP_MKCERT=1` и выполните `make up` повторно (HTTPS в nginx при этом использоваться не будет).
 
 Команда `make up` поднимет инфраструктуру (PostgreSQL 16 (community edition), ClickHouse, Tarantool, Redis, nginx, Ceph RGW) и сервисы (`gateway`, `crm`, `wms`). После успешного запуска доступны:
 
@@ -20,6 +26,12 @@ make up
 - http://localhost:8080/openapi.json — OpenAPI gateway
 - http://localhost:8081/openapi.json — OpenAPI CRM
 - http://localhost:8082/openapi.json — OpenAPI WMS
+
+### Ограничения ресурсов контейнеров
+
+- compose-файл задаёт базовые лимиты по CPU/памяти (см. `mem_limit` и `cpus` в `deploy/docker-compose.yml`), чтобы окружение не выжирало всю машину.
+- Значения подобраны для локальной разработки (Postgres/ClickHouse ≈ 1.5–2 CPU, 1.5–2 ГБ, сервисы — 0.5–0.75 CPU, 512 МБ); при необходимости скорректируйте и перезапустите `make up`.
+- Для временного изменения можно создать `docker-compose.override.yml` и переопределить нужные поля.
 
 ## Архитектура
 
