@@ -5,6 +5,7 @@ import { useAppSelector } from '@app/hooks';
 import { NavigationLink } from '@shared/ui/NavigationLink';
 import { iconMap } from '@shared/ui/icons';
 import { gradients, layout, palette, typography } from '@shared/ui/theme';
+import { useThemeMode } from '@shared/ui/ThemeProvider';
 
 type NavItem = {
   to: string;
@@ -32,7 +33,7 @@ const glassPanelBase: CSSProperties = {
   border: `1px solid ${palette.glassBorder}`,
   backdropFilter: 'blur(18px)',
   WebkitBackdropFilter: 'blur(18px)',
-  boxShadow: '0 28px 52px rgba(2, 6, 23, 0.45)'
+  boxShadow: palette.shadowElevated
 };
 
 const headerStyle: CSSProperties = {
@@ -88,17 +89,17 @@ const contentInnerStyle: CSSProperties = {
   padding: 24,
   minHeight: `calc(100vh - ${layout.headerHeight + 44}px)`,
   border: `1px solid ${palette.glassBorder}`,
-  background: 'rgba(255, 255, 255, 0.03)',
+  background: palette.surfaceMuted,
   backdropFilter: 'blur(24px)',
   WebkitBackdropFilter: 'blur(24px)',
-  boxShadow: '0 32px 62px rgba(15, 23, 42, 0.5)'
+  boxShadow: palette.shadowElevated
 };
 
 const sectionLabelStyle: CSSProperties = {
   textTransform: 'uppercase',
   fontSize: 10,
   letterSpacing: '0.1em',
-  color: 'rgba(226, 232, 240, 0.65)',
+  color: palette.textSoft,
   fontWeight: 600,
   paddingLeft: 10,
   marginBottom: 6,
@@ -117,24 +118,11 @@ const headerSearchStyle: CSSProperties = {
   boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.04)'
 };
 
-const quickActionButtonStyle: CSSProperties = {
-  background: gradients.button,
-  color: palette.textPrimary,
-  border: 'none',
-  borderRadius: 16,
-  padding: '10px 18px',
-  fontSize: 13,
-  fontWeight: 600,
-  cursor: 'pointer',
-  boxShadow: '0 24px 48px rgba(56, 189, 248, 0.4)',
-  fontFamily: typography.accentFamily
-};
-
 const userSectionStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: 10,
-  color: 'rgba(226, 232, 240, 0.8)'
+  color: palette.textSecondary
 };
 
 const userAvatarStyle: CSSProperties = {
@@ -167,7 +155,37 @@ const userNameStyle: CSSProperties = {
 
 const userMetaStyle: CSSProperties = {
   fontSize: 11,
-  color: 'rgba(226, 232, 240, 0.6)'
+  color: palette.textSubtle
+};
+
+const themeToggleStyle: CSSProperties = {
+  position: 'relative',
+  width: 52,
+  height: 24,
+  borderRadius: 999,
+  border: `1px solid ${palette.glassBorder}`,
+  backgroundColor: palette.glass,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '0 7px',
+  color: palette.textSoft,
+  fontSize: 11,
+  fontFamily: typography.accentFamily,
+  cursor: 'pointer',
+  transition: 'background-color 0.2s ease, border-color 0.2s ease'
+};
+
+const themeToggleThumbBase: CSSProperties = {
+  position: 'absolute',
+  top: 3,
+  left: 3,
+  width: 18,
+  height: 18,
+  borderRadius: '50%',
+  background: gradients.glassHighlight,
+  boxShadow: '0 12px 26px rgba(37, 99, 235, 0.25)',
+  transition: 'transform 0.2s ease, background 0.2s ease'
 };
 
 const glowPrimaryStyle: CSSProperties = {
@@ -230,6 +248,8 @@ const systemNav: NavItem[] = [
 
 export const MainLayout = () => {
   const user = useAppSelector((state) => state.auth.user);
+  const { theme, toggleTheme } = useThemeMode();
+  const isDark = theme === 'dark';
 
   const userInitials = (() => {
     if (user?.name) {
@@ -242,6 +262,13 @@ export const MainLayout = () => {
     }
     return 'UG';
   })();
+
+  const toggleThumbStyle: CSSProperties = {
+    ...themeToggleThumbBase,
+    transform: isDark ? 'translateX(26px)' : 'translateX(0)',
+    background: isDark ? gradients.glassHighlight : palette.accentSoft,
+    boxShadow: isDark ? '0 12px 26px rgba(56, 189, 248, 0.35)' : '0 10px 20px rgba(37, 99, 235, 0.18)'
+  };
 
   return (
     <div style={wrapperStyle}>
@@ -274,7 +301,7 @@ export const MainLayout = () => {
             <span
               style={{
                 fontSize: 11,
-                color: 'rgba(226, 232, 240, 0.65)',
+                color: palette.textSoft,
                 fontFamily: typography.accentFamily,
                 letterSpacing: '0.05em'
               }}
@@ -283,14 +310,21 @@ export const MainLayout = () => {
             </span>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <input
             style={headerSearchStyle}
             placeholder="Поиск по клиентам, проектам и складу"
             aria-label="Поиск по системе"
           />
-          <button type="button" style={quickActionButtonStyle}>
-            + Документ
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
+            style={themeToggleStyle}
+          >
+            <span style={{ opacity: isDark ? 0.35 : 1 }}>☀</span>
+            <span style={{ opacity: isDark ? 1 : 0.35 }}>☾</span>
+            <span style={toggleThumbStyle} />
           </button>
         </div>
         <div style={userSectionStyle}>

@@ -1,19 +1,25 @@
-﻿export const palette = {
-  primary: '#0A84FF',
-  primaryDark: '#001F3F',
-  background: '#030712',
-  surface: 'rgba(15, 23, 42, 0.55)',
-  border: 'rgba(255, 255, 255, 0.16)',
-  accentSoft: 'rgba(56, 189, 248, 0.18)',
-  accentMuted: 'rgba(125, 211, 252, 0.35)',
-  textPrimary: '#F8FAFC',
-  textSecondary: '#E2E8F0',
-  textMuted: '#94A3B8',
-  glass: 'rgba(255, 255, 255, 0.08)',
-  glassHover: 'rgba(255, 255, 255, 0.16)',
-  glassBorder: 'rgba(148, 163, 184, 0.22)',
-  glowPrimary: '#38BDF8',
-  glowSecondary: '#818CF8'
+﻿﻿export const palette = {
+  primary: 'var(--color-primary)',
+  primaryDark: 'var(--color-primary-dark)',
+  background: 'var(--color-background)',
+  surface: 'var(--color-surface)',
+  surfaceMuted: 'var(--color-surface-muted)',
+  layer: 'var(--color-layer)',
+  layerStrong: 'var(--color-layer-strong)',
+  border: 'var(--color-border)',
+  accentSoft: 'var(--color-accent-soft)',
+  accentMuted: 'var(--color-accent-muted)',
+  textPrimary: 'var(--color-text-primary)',
+  textSecondary: 'var(--color-text-secondary)',
+  textMuted: 'var(--color-text-muted)',
+  textSoft: 'var(--color-text-soft)',
+  textSubtle: 'var(--color-text-subtle)',
+  glass: 'var(--color-glass)',
+  glassHover: 'var(--color-glass-hover)',
+  glassBorder: 'var(--color-glass-border)',
+  glowPrimary: 'var(--color-glow-primary)',
+  glowSecondary: 'var(--color-glow-secondary)',
+  shadowElevated: 'var(--shadow-elevated)'
 } as const;
 
 export const typography = {
@@ -32,7 +38,7 @@ export const layout = {
 } as const;
 
 export const gradients = {
-  app: 'linear-gradient(135deg, #030712 0%, #0F172A 40%, #1E3A8A 70%, #6D28D9 100%)',
-  glassHighlight: 'linear-gradient(135deg, rgba(56, 189, 248, 0.35) 0%, rgba(99, 102, 241, 0.55) 100%)',
-  button: 'linear-gradient(135deg, #38BDF8 0%, #6366F1 100%)'
+  app: 'var(--gradient-app)',
+  glassHighlight: 'var(--gradient-glass-highlight)',
+  button: 'var(--gradient-button)'
 } as const;
