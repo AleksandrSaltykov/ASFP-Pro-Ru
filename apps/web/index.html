@@ -1,9 +1,55 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ASFP-Pro ERP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Onest:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --asfp-color-primary: #2962ff;
+        --asfp-color-primary-dark: #131a2d;
+        --asfp-color-background: #f5f7ff;
+        --asfp-color-surface: #ffffff;
+        --asfp-color-border: #e3e9ff;
+        --asfp-color-accent-soft: #e6edff;
+        --asfp-color-accent-muted: #d2dcff;
+        --asfp-color-text-primary: #131a2d;
+        --asfp-color-text-secondary: #475569;
+        --asfp-color-text-muted: #94a3b8;
+        --asfp-font-family: 'Onest', 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+        --asfp-font-accent: 'Inter', 'Onest', 'Segoe UI', 'Roboto', sans-serif;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: var(--asfp-font-family);
+        background: var(--asfp-color-background);
+        color: var(--asfp-color-text-primary);
+        min-height: 100vh;
+      }
+
+      button,
+      input,
+      textarea {
+        font-family: inherit;
+      }
+
+      #root {
+        min-height: 100vh;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
