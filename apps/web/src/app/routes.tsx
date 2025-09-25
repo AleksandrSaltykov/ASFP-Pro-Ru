@@ -8,6 +8,14 @@ const LoginPage = lazy(() => import('@pages/login/LoginPage'));
 const DealsPage = lazy(() => import('@pages/crm/DealsPage'));
 const InventoryPage = lazy(() => import('@pages/wms/InventoryPage'));
 const FilesPage = lazy(() => import('@pages/files/FilesPage'));
+const TasksProjectsPage = lazy(() => import('@pages/tasks/TasksProjectsPage'));
+const HrOrgStructurePage = lazy(() => import('@pages/hr/HrOrgStructurePage'));
+const MessengerPage = lazy(() => import('@pages/messenger/MessengerPage'));
+const ServicesPage = lazy(() => import('@pages/services/ServicesPage'));
+const ProductionPage = lazy(() => import('@pages/production/ProductionPage'));
+const LogisticsPage = lazy(() => import('@pages/logistics/LogisticsPage'));
+const SettingsPage = lazy(() => import('@pages/settings/SettingsPage'));
+const DirectoriesPage = lazy(() => import('@pages/directories/DirectoriesPage'));
 
 export const router = createBrowserRouter([
   {
@@ -17,7 +25,15 @@ export const router = createBrowserRouter([
       { index: true, element: <DashboardPage /> },
       { path: 'crm/deals', element: <DealsPage /> },
       { path: 'wms/inventory', element: <InventoryPage /> },
-      { path: 'files', element: <FilesPage /> }
+      { path: 'files', element: <FilesPage /> },
+      { path: 'tasks-projects', element: <TasksProjectsPage /> },
+      { path: 'hr/org-structure', element: <HrOrgStructurePage /> },
+      { path: 'messenger', element: <MessengerPage /> },
+      { path: 'services', element: <ServicesPage /> },
+      { path: 'production', element: <ProductionPage /> },
+      { path: 'logistics', element: <LogisticsPage /> },
+      { path: 'settings', element: <SettingsPage /> },
+      { path: 'directories', element: <DirectoriesPage /> }
     ]
   },
   {
