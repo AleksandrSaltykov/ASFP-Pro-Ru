@@ -10,12 +10,12 @@ type ThemeContextValue = {
 
 const STORAGE_KEY = 'asfp-theme-mode';
 
+const noop = () => {};
+
 const ThemeContext = createContext<ThemeContextValue>({
   theme: 'dark',
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  setTheme: () => {},
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  toggleTheme: () => {}
+  setTheme: noop,
+  toggleTheme: noop
 });
 
 const applyTheme = (mode: ThemeMode) => {

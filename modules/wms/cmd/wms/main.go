@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 
 	"asfppro/modules/wms/internal/handler"
@@ -36,9 +37,13 @@ func main() {
 	}
 	defer pool.Close()
 
-	repo := repository.NewInventoryRepository(pool)
-	service := service.NewInventoryService(repo, logger)
-	h := handler.NewInventoryHandler(service)
+	stockRepo := repository.NewInventoryRepository(pool)
+	stockService := service.NewInventoryService(stockRepo, logger)
+	stockHandler := handler.NewInventoryHandler(stockService)
+
+	masterRepo := repository.NewMasterDataRepository(pool)
+	masterService := service.NewMasterDataService(masterRepo, logger)
+	masterHandler := handler.NewMasterDataHandler(masterService)
 
 	openapi, err := readOpenAPI("modules/wms/docs/openapi/openapi.json", "WMS_OPENAPI_PATH")
 	if err != nil {
@@ -46,11 +51,17 @@ func main() {
 	}
 
 	app := fiber.New(fiber.Config{AppName: cfg.AppName})
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+		AllowMethods: "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+	}))
 	app.Use(recover.New())
 	app.Get("/health", handler.Health())
 	app.Get("/ready", handler.Ready(pool))
 	app.Get("/openapi.json", handler.OpenAPI(openapi))
-	h.Register(app)
+	stockHandler.Register(app)
+	masterHandler.Register(app)
 
 	addr := ":" + cfg.HTTPPort
 	logger.Info().Str("addr", addr).Msg("wms listening")

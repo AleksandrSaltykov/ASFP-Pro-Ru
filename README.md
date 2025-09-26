@@ -13,6 +13,8 @@ make up
 
 После первой установки выполните `mkcert -install`, чтобы корневой сертификат попал в системное хранилище (без этого HTTPS smoke-тесты не пройдут).
 
+Дополнительные инструкции для Windows находятся в [docs/setup/windows.md](docs/setup/windows.md).
+
 Если `mkcert` временно недоступен, установите переменную `SKIP_MKCERT=1` и выполните `make up` повторно (HTTPS в nginx при этом использоваться не будет).
 
 Команда `make up` поднимет инфраструктуру (PostgreSQL 16 (community edition), ClickHouse, Tarantool, Redis, nginx, Ceph RGW) и сервисы (`gateway`, `crm`, `wms`). После успешного запуска доступны:

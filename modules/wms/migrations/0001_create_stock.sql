@@ -1,4 +1,4 @@
-﻿-- +goose Up
+-- +goose Up
 CREATE SCHEMA IF NOT EXISTS wms;
 
 CREATE TABLE IF NOT EXISTS wms.stock (

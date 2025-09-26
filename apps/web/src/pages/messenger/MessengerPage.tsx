@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
 
-import { gradients, palette, typography } from '@shared/ui/theme';
+import { palette, typography } from '@shared/ui/theme';
 
 type MessengerBlock = {
   title: string;

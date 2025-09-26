@@ -13,7 +13,7 @@ export const AppProviders = ({ children }: PropsWithChildren) => (
       <QueryClientProvider client={queryClient}>
         {children}
         {import.meta.env.DEV ? (
-          <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
+          <ReactQueryDevtools initialIsOpen={false} />
         ) : null}
       </QueryClientProvider>
     </ThemeProvider>
