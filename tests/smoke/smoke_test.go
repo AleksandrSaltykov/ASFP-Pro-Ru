@@ -233,6 +233,192 @@ func TestSmokeEndpoints(t *testing.T) {
 		}
 	})
 
+	t.Run("wms_master_data_catalog_crud", func(t *testing.T) {
+		baseURL := getenv("SMOKE_WMS_URL", "http://localhost:8082")
+		code := fmt.Sprintf("SMOKE-CAT-%d", time.Now().UnixNano())
+		const artifact = "wms_catalog.log"
+
+		status, body := jsonRequest(t, client, http.MethodPost, fmt.Sprintf("%s/api/v1/master-data/catalog/custom", baseURL), map[string]any{
+			"code":        code,
+			"name":        "Smoke Catalog",
+			"description": "smoke category",
+		}, artifactsDir, artifact)
+		if status != http.StatusCreated {
+			t.Fatalf("create catalog status: %d body %s", status, string(body))
+		}
+		var created catalogNode
+		if err := json.Unmarshal(body, &created); err != nil {
+			t.Fatalf("decode catalog create: %v", err)
+		}
+		if created.ID == "" {
+			t.Fatalf("catalog id is empty")
+		}
+
+		nodes := listCatalogNodes(t, client, baseURL, "custom", artifactsDir, artifact)
+		if !containsCatalogCode(nodes, code) {
+			t.Fatalf("catalog code %s not found in list", code)
+		}
+
+		status, _ = jsonRequest(t, client, http.MethodPut, fmt.Sprintf("%s/api/v1/master-data/catalog/custom/%s", baseURL, created.ID), map[string]any{
+			"code":        code,
+			"name":        "Smoke Catalog Updated",
+			"description": "updated by smoke",
+		}, artifactsDir, artifact)
+		if status != http.StatusOK {
+			t.Fatalf("update catalog status: %d", status)
+		}
+
+		status, _ = jsonRequest(t, client, http.MethodDelete, fmt.Sprintf("%s/api/v1/master-data/catalog/custom/%s", baseURL, created.ID), nil, artifactsDir, artifact)
+		if status != http.StatusNoContent {
+			t.Fatalf("delete catalog status: %d", status)
+		}
+	})
+
+	t.Run("wms_master_data_item_crud", func(t *testing.T) {
+		baseURL := getenv("SMOKE_WMS_URL", "http://localhost:8082")
+		const artifact = "wms_items.log"
+
+		unitCode := fmt.Sprintf("SMOKE-UNIT-%d", time.Now().UnixNano())
+		unitStatus, unitBody := jsonRequest(t, client, http.MethodPost, fmt.Sprintf("%s/api/v1/master-data/catalog/unit", baseURL), map[string]any{
+			"code": unitCode,
+			"name": "Smoke Unit",
+		}, artifactsDir, artifact)
+		if unitStatus != http.StatusCreated {
+			t.Fatalf("create unit status: %d body %s", unitStatus, string(unitBody))
+		}
+		var unit catalogNode
+		if err := json.Unmarshal(unitBody, &unit); err != nil {
+			t.Fatalf("decode unit create: %v", err)
+		}
+		if unit.ID == "" {
+			t.Fatalf("unit id is empty")
+		}
+		defer func(id string) {
+			status, body := jsonRequest(t, client, http.MethodDelete, fmt.Sprintf("%s/api/v1/master-data/catalog/unit/%s", baseURL, id), nil, artifactsDir, artifact)
+			if status != http.StatusNoContent && status != http.StatusNotFound {
+				t.Errorf("cleanup unit status: %d body %s", status, string(body))
+			}
+		}(unit.ID)
+
+		categoryCode := fmt.Sprintf("SMOKE-CATEGORY-%d", time.Now().UnixNano())
+		categoryStatus, categoryBody := jsonRequest(t, client, http.MethodPost, fmt.Sprintf("%s/api/v1/master-data/catalog/category", baseURL), map[string]any{
+			"code": categoryCode,
+			"name": "Smoke Category",
+		}, artifactsDir, artifact)
+		if categoryStatus != http.StatusCreated {
+			t.Fatalf("create category status: %d body %s", categoryStatus, string(categoryBody))
+		}
+		var category catalogNode
+		if err := json.Unmarshal(categoryBody, &category); err != nil {
+			t.Fatalf("decode category create: %v", err)
+		}
+		if category.ID == "" {
+			t.Fatalf("category id is empty")
+		}
+		defer func(id string) {
+			status, body := jsonRequest(t, client, http.MethodDelete, fmt.Sprintf("%s/api/v1/master-data/catalog/category/%s", baseURL, id), nil, artifactsDir, artifact)
+			if status != http.StatusNoContent && status != http.StatusNotFound {
+				t.Errorf("cleanup category status: %d body %s", status, string(body))
+			}
+		}(category.ID)
+
+		templates := listAttributeTemplates(t, client, baseURL, artifactsDir, artifact)
+		colorID, colorOK := templates["color"]
+		widthID, widthOK := templates["width_mm"]
+
+		attributes := make([]map[string]any, 0, 2)
+		if colorOK {
+			attributes = append(attributes, map[string]any{
+				"templateId":  colorID,
+				"stringValue": "Blue",
+			})
+		}
+		if widthOK {
+			attributes = append(attributes, map[string]any{
+				"templateId":  widthID,
+				"numberValue": 2400,
+			})
+		}
+
+		sku := fmt.Sprintf("SMOKE-ITEM-%d", time.Now().UnixNano())
+
+		createPayload := map[string]any{
+			"sku":        sku,
+			"name":       "Smoke Item",
+			"categoryId": category.ID,
+			"unitId":     unit.ID,
+			"metadata":   map[string]any{"smoke": true},
+		}
+		if len(attributes) > 0 {
+			createPayload["attributes"] = attributes
+		}
+
+		status, body := jsonRequest(t, client, http.MethodPost, fmt.Sprintf("%s/api/v1/master-data/items", baseURL), createPayload, artifactsDir, artifact)
+		if status != http.StatusCreated {
+			t.Fatalf("create item status: %d body %s", status, string(body))
+		}
+		var created struct {
+			ID string `json:"id"`
+		}
+		if err := json.Unmarshal(body, &created); err != nil {
+			t.Fatalf("decode item create: %v", err)
+		}
+		if created.ID == "" {
+			t.Fatalf("item id is empty")
+		}
+
+		items := listItems(t, client, baseURL, artifactsDir, artifact)
+		if !containsItemSKU(items, sku) {
+			t.Fatalf("item %s not found in list", sku)
+		}
+
+		updatePayload := map[string]any{
+			"sku":      sku,
+			"name":     "Smoke Item Updated",
+			"unitId":   unit.ID,
+			"metadata": map[string]any{"smoke": true, "updated": true},
+		}
+		if colorOK {
+			updatePayload["attributes"] = []map[string]any{
+				{"templateId": colorID, "stringValue": "Red"},
+			}
+		}
+
+		status, body = jsonRequest(t, client, http.MethodPut, fmt.Sprintf("%s/api/v1/master-data/items/%s", baseURL, created.ID), updatePayload, artifactsDir, artifact)
+		if status != http.StatusOK {
+			t.Fatalf("update item status: %d body %s", status, string(body))
+		}
+
+		status, body = jsonRequest(t, client, http.MethodGet, fmt.Sprintf("%s/api/v1/master-data/items/%s", baseURL, created.ID), nil, artifactsDir, artifact)
+		if status != http.StatusOK {
+			t.Fatalf("get item status: %d body %s", status, string(body))
+		}
+		var fetched struct {
+			ID         string           `json:"id"`
+			Name       string           `json:"name"`
+			Attributes []map[string]any `json:"attributes"`
+		}
+		if err := json.Unmarshal(body, &fetched); err != nil {
+			t.Fatalf("decode item get: %v", err)
+		}
+		if fetched.Name != "Smoke Item Updated" {
+			t.Fatalf("unexpected item name: %s", fetched.Name)
+		}
+		if colorOK && len(fetched.Attributes) == 0 {
+			t.Fatalf("expected attributes in response")
+		}
+
+		status, body = jsonRequest(t, client, http.MethodDelete, fmt.Sprintf("%s/api/v1/master-data/items/%s", baseURL, created.ID), nil, artifactsDir, artifact)
+		if status != http.StatusNoContent {
+			t.Fatalf("delete item status: %d body %s", status, string(body))
+		}
+
+		status, body = jsonRequest(t, client, http.MethodGet, fmt.Sprintf("%s/api/v1/master-data/items/%s", baseURL, created.ID), nil, artifactsDir, artifact)
+		if status != http.StatusNotFound {
+			t.Fatalf("expected 404 after delete, got %d body %s", status, string(body))
+		}
+	})
+
 	t.Run("wms_stock_upsert_and_list", func(t *testing.T) {
 		baseURL := getenv("SMOKE_WMS_URL", "http://localhost:8082")
 		sku := fmt.Sprintf("SMOKE-%d", time.Now().UnixNano())
@@ -307,6 +493,149 @@ func TestSmokeEndpoints(t *testing.T) {
 			t.Fatalf("wms list is empty for %s", warehouse)
 		}
 	})
+}
+
+type catalogNode struct {
+	ID   string `json:"id"`
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
+type catalogListResponse struct {
+	Items []catalogNode `json:"items"`
+}
+
+type attributeTemplate struct {
+	ID   string `json:"id"`
+	Code string `json:"code"`
+}
+
+type attributeTemplateList struct {
+	Items []attributeTemplate `json:"items"`
+}
+
+type itemSnapshot struct {
+	ID   string `json:"id"`
+	SKU  string `json:"sku"`
+	Name string `json:"name"`
+}
+
+type itemListResponse struct {
+	Items []itemSnapshot `json:"items"`
+}
+
+func listCatalogNodes(t *testing.T, client *http.Client, baseURL, catalogType, artifactsDir, artifact string) []catalogNode {
+	status, body := jsonRequest(t, client, http.MethodGet, fmt.Sprintf("%s/api/v1/master-data/catalog/%s", baseURL, catalogType), nil, artifactsDir, artifact)
+	if status != http.StatusOK {
+		t.Fatalf("list catalog %s status: %d body %s", catalogType, status, string(body))
+	}
+	var payload catalogListResponse
+	if err := json.Unmarshal(body, &payload); err != nil {
+		t.Fatalf("decode catalog list: %v", err)
+	}
+	return payload.Items
+}
+
+func containsCatalogCode(nodes []catalogNode, code string) bool {
+	for _, node := range nodes {
+		if node.Code == code {
+			return true
+		}
+	}
+	return false
+}
+
+func getCatalogNodeByCode(t *testing.T, client *http.Client, baseURL, catalogType, code, artifactsDir, artifact string) catalogNode {
+	nodes := listCatalogNodes(t, client, baseURL, catalogType, artifactsDir, artifact)
+	for _, node := range nodes {
+		if node.Code == code {
+			return node
+		}
+	}
+	return catalogNode{}
+}
+
+func listAttributeTemplates(t *testing.T, client *http.Client, baseURL, artifactsDir, artifact string) map[string]string {
+	status, body := jsonRequest(t, client, http.MethodGet, fmt.Sprintf("%s/api/v1/master-data/attribute-templates", baseURL), nil, artifactsDir, artifact)
+	if status != http.StatusOK {
+		t.Fatalf("list attribute templates status: %d body %s", status, string(body))
+	}
+	var payload attributeTemplateList
+	if err := json.Unmarshal(body, &payload); err != nil {
+		t.Fatalf("decode attribute templates: %v", err)
+	}
+	result := make(map[string]string, len(payload.Items))
+	for _, tpl := range payload.Items {
+		result[tpl.Code] = tpl.ID
+	}
+	return result
+}
+
+func listItems(t *testing.T, client *http.Client, baseURL, artifactsDir, artifact string) []itemSnapshot {
+	status, body := jsonRequest(t, client, http.MethodGet, fmt.Sprintf("%s/api/v1/master-data/items", baseURL), nil, artifactsDir, artifact)
+	if status != http.StatusOK {
+		t.Fatalf("list items status: %d body %s", status, string(body))
+	}
+	var payload itemListResponse
+	if err := json.Unmarshal(body, &payload); err != nil {
+		t.Fatalf("decode items list: %v", err)
+	}
+	return payload.Items
+}
+
+func containsItemSKU(items []itemSnapshot, sku string) bool {
+	for _, item := range items {
+		if item.SKU == sku {
+			return true
+		}
+	}
+	return false
+}
+
+func jsonRequest(t *testing.T, client *http.Client, method, url string, payload any, artifactsDir, artifact string) (int, []byte) {
+	t.Helper()
+	var bodyBytes []byte
+	if payload != nil {
+		var err error
+		bodyBytes, err = json.Marshal(payload)
+		if err != nil {
+			t.Fatalf("marshal payload: %v", err)
+		}
+		recordArtifact(t, artifactsDir, artifact, "request=%s %s body=%s", method, url, string(bodyBytes))
+	} else {
+		recordArtifact(t, artifactsDir, artifact, "request=%s %s", method, url)
+	}
+
+	var reader io.Reader
+	if len(bodyBytes) > 0 {
+		reader = bytes.NewReader(bodyBytes)
+	}
+
+	req, err := http.NewRequest(method, url, reader)
+	if err != nil {
+		t.Fatalf("prepare request: %v", err)
+	}
+	if payload != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("do request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("read response: %v", err)
+	}
+
+	recordArtifact(t, artifactsDir, artifact, "status=%d", resp.StatusCode)
+	if len(respBody) > 0 {
+		recordArtifact(t, artifactsDir, artifact, "response=%s", string(respBody))
+	}
+
+	return resp.StatusCode, respBody
 }
 
 func uploadFile(t *testing.T, client *http.Client, baseURL, authHeader, folder, filename string, content []byte, artifactsDir, artifactFile string) uploadResponse {

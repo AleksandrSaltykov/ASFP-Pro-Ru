@@ -1,3 +1,8 @@
+### 2025-09-28 20:55:48
+- Action: Доработал динамические мастер-данные WMS (обработка NULL category_path, обновлённые smoke-сценарии, документация).
+- Result: `go test ./...` зелёный, контейнер wms пересобран через docker compose, CRUD сценарии master data завершаются без 500.
+- Next steps: Зафиксировать изменения в feature/dynamic-masterdata и вернуться к переносу динамических атрибутов в CRM.
+
 ﻿### 2025-09-22 21:17:38
 - Action: попытка docker compose ... up --build -d
 - Result: build failed. go.mod требует go >= 1.23.0, а базовые образы используют golang:1.22-alpine > сборка gateway/crm/wms/analytics остановилась.

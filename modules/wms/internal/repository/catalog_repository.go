@@ -433,7 +433,7 @@ func (r *MasterDataRepository) ReplaceCatalogLinks(ctx context.Context, leftType
 
 func (r *MasterDataRepository) loadItems(ctx context.Context, where string, args []any) ([]entity.Item, error) {
 	query := `
-        SELECT id, sku, name, description, category_id, category_path, unit_id,
+        SELECT id, sku, name, description, category_id, COALESCE(category_path, '') AS category_path, unit_id,
                barcode, weight_kg, volume_m3, metadata, created_by, updated_by,
                created_at, updated_at
         FROM wms.item`
@@ -454,15 +454,16 @@ func (r *MasterDataRepository) loadItems(ctx context.Context, where string, args
 
 	for rows.Next() {
 		var (
-			item        entity.Item
-			description sql.NullString
-			categoryID  pgtype.UUID
-			barcode     sql.NullString
-			weight      sql.NullFloat64
-			volume      sql.NullFloat64
-			metadata    []byte
-			createdBy   pgtype.UUID
-			updatedBy   pgtype.UUID
+			item         entity.Item
+			description  sql.NullString
+			categoryID   pgtype.UUID
+			categoryPath pgtype.Text
+			barcode      sql.NullString
+			weight       sql.NullFloat64
+			volume       sql.NullFloat64
+			metadata     []byte
+			createdBy    pgtype.UUID
+			updatedBy    pgtype.UUID
 		)
 
 		if err := rows.Scan(
@@ -471,7 +472,7 @@ func (r *MasterDataRepository) loadItems(ctx context.Context, where string, args
 			&item.Name,
 			&description,
 			&categoryID,
-			&item.CategoryPath,
+			&categoryPath,
 			&item.UnitID,
 			&barcode,
 			&weight,
@@ -485,6 +486,9 @@ func (r *MasterDataRepository) loadItems(ctx context.Context, where string, args
 			return nil, err
 		}
 
+		if categoryPath.Valid {
+			item.CategoryPath = categoryPath.String
+		}
 		if description.Valid {
 			item.Description = description.String
 		}
