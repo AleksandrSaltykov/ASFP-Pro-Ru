@@ -1,4 +1,4 @@
-﻿{
+{
   "openapi": "3.0.3",
   "info": {
     "title": "ASFP WMS API",
@@ -16,7 +16,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": {"type": "string"}
+                    "status": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -32,12 +34,18 @@
           {
             "name": "warehouse",
             "in": "query",
-            "schema": {"type": "string"}
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "limit",
             "in": "query",
-            "schema": {"type": "integer", "minimum": 1, "maximum": 500}
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
           }
         ],
         "responses": {
@@ -50,7 +58,9 @@
                   "properties": {
                     "items": {
                       "type": "array",
-                      "items": {"$ref": "#/components/schemas/StockItem"}
+                      "items": {
+                        "$ref": "#/components/schemas/StockItem"
+                      }
                     }
                   }
                 }
@@ -65,7 +75,9 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/StockItem"}
+              "schema": {
+                "$ref": "#/components/schemas/StockItem"
+              }
             }
           }
         },
@@ -74,9 +86,411 @@
             "description": "Created",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/StockItem"}
+                "schema": {
+                  "$ref": "#/components/schemas/StockItem"
+                }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/master-data/catalog/{type}": {
+      "get": {
+        "summary": "List catalog nodes",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catalog nodes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CatalogNode"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create catalog node",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogNodeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogNode"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master-data/catalog/{type}/{id}": {
+      "put": {
+        "summary": "Update catalog node",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogNodeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogNode"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete catalog node",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/api/v1/master-data/attribute-templates": {
+      "get": {
+        "summary": "List attribute templates",
+        "parameters": [
+          {
+            "name": "target",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Templates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AttributeTemplate"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master-data/items": {
+      "get": {
+        "summary": "List items",
+        "responses": {
+          "200": {
+            "description": "Items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Item"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create item",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master-data/items/{itemId}": {
+      "get": {
+        "summary": "Get item",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update item",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete item",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/api/v1/master-data/catalog-links/{leftType}/{leftId}": {
+      "get": {
+        "summary": "List catalog links",
+        "parameters": [
+          {
+            "name": "leftType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "leftId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Links",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CatalogLink"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Replace catalog links",
+        "parameters": [
+          {
+            "name": "leftType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "leftId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CatalogLinkInput"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Updated"
           }
         }
       }
@@ -86,14 +500,374 @@
     "schemas": {
       "StockItem": {
         "type": "object",
-        "required": ["sku", "warehouse", "quantity"],
+        "required": [
+          "sku",
+          "warehouse",
+          "quantity"
+        ],
         "properties": {
-          "sku": {"type": "string"},
-          "warehouse": {"type": "string"},
-          "quantity": {"type": "number"},
-          "uom": {"type": "string"},
-          "updatedAt": {"type": "string", "format": "date-time"}
+          "sku": {
+            "type": "string"
+          },
+          "warehouse": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "uom": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
+      },
+      "CatalogNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "level": {
+            "type": "integer"
+          },
+          "path": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "sortOrder": {
+            "type": "integer"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CatalogNodeInput": {
+        "type": "object",
+        "properties": {
+          "parentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ]
+      },
+      "AttributeTemplate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "targetType": {
+            "type": "string"
+          },
+          "dataType": {
+            "type": "string"
+          },
+          "isRequired": {
+            "type": "boolean"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "uiSchema": {
+            "type": "object"
+          },
+          "position": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AttributeValue": {
+        "type": "object",
+        "properties": {
+          "template": {
+            "$ref": "#/components/schemas/AttributeTemplate"
+          },
+          "ownerType": {
+            "type": "string"
+          },
+          "ownerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stringValue": {
+            "type": "string"
+          },
+          "numberValue": {
+            "type": "number"
+          },
+          "booleanValue": {
+            "type": "boolean"
+          },
+          "jsonValue": {
+            "type": "object"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AttributeValueInput": {
+        "type": "object",
+        "properties": {
+          "templateId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stringValue": {
+            "type": "string"
+          },
+          "numberValue": {
+            "type": "number"
+          },
+          "booleanValue": {
+            "type": "boolean"
+          },
+          "jsonValue": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "templateId"
+        ]
+      },
+      "Item": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "unitId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "barcode": {
+            "type": "string"
+          },
+          "weightKg": {
+            "type": "number"
+          },
+          "volumeM3": {
+            "type": "number"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "warehouseIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "attributes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttributeValue"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ItemInput": {
+        "type": "object",
+        "properties": {
+          "sku": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "unitId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "barcode": {
+            "type": "string"
+          },
+          "weightKg": {
+            "type": "number"
+          },
+          "volumeM3": {
+            "type": "number"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "warehouseIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "attributes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttributeValueInput"
+            }
+          },
+          "actorId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "sku",
+          "name",
+          "unitId"
+        ]
+      },
+      "CatalogLink": {
+        "type": "object",
+        "properties": {
+          "leftId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "leftType": {
+            "type": "string"
+          },
+          "rightId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rightType": {
+            "type": "string"
+          },
+          "relationCode": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CatalogLinkInput": {
+        "type": "object",
+        "properties": {
+          "rightId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rightType": {
+            "type": "string"
+          },
+          "relationCode": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "rightId",
+          "rightType",
+          "relationCode"
+        ]
       }
     }
   }

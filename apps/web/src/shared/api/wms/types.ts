@@ -1,5 +1,92 @@
 export type UUID = string;
 
+export type PaginatedResponse<TItem> = {
+  items: TItem[];
+};
+
+export type CatalogType = 'category' | 'unit' | string;
+
+export type CatalogNode = {
+  id: UUID;
+  type: CatalogType;
+  parentId?: UUID | null;
+  code: string;
+  name: string;
+  description?: string;
+  level?: number;
+  path?: string;
+  metadata?: Record<string, unknown>;
+  sortOrder?: number;
+  isActive: boolean;
+  createdBy?: UUID;
+  updatedBy?: UUID;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CatalogNodePayload = {
+  parentId?: UUID | null;
+  code: string;
+  name: string;
+  description?: string;
+  sortOrder?: number | null;
+  isActive?: boolean;
+  metadata?: Record<string, unknown>;
+};
+
+export type AttributeDataType = 'string' | 'number' | 'boolean' | 'json';
+
+export type AttributeTemplate = {
+  id: UUID;
+  code: string;
+  name: string;
+  description?: string;
+  targetType: string;
+  dataType: AttributeDataType;
+  isRequired: boolean;
+  metadata?: Record<string, unknown>;
+  uiSchema?: Record<string, unknown>;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AttributeValue = {
+  template: AttributeTemplate;
+  ownerType?: string;
+  ownerId?: UUID;
+  stringValue?: string;
+  numberValue?: number;
+  booleanValue?: boolean;
+  jsonValue?: unknown;
+  updatedAt: string;
+};
+
+export type AttributeValueInput = {
+  templateId: UUID;
+  stringValue?: string;
+  numberValue?: number;
+  booleanValue?: boolean;
+  jsonValue?: unknown;
+};
+
+export type CatalogLink = {
+  leftId: UUID;
+  leftType: string;
+  rightId: UUID;
+  rightType: string;
+  relationCode: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+};
+
+export type CatalogLinkPayload = {
+  rightId: UUID;
+  rightType: string;
+  relationCode: string;
+  metadata?: Record<string, unknown>;
+};
+
 export type WarehouseAddress = {
   country?: string;
   region?: string;
@@ -109,6 +196,43 @@ export type WarehouseDetails = {
   equipment: WarehouseEquipment[];
 };
 
+export type Item = {
+  id: UUID;
+  sku: string;
+  name: string;
+  description?: string;
+  categoryId?: UUID;
+  categoryPath?: string;
+  category?: CatalogNode;
+  unitId: UUID;
+  unit?: CatalogNode;
+  barcode?: string;
+  weightKg?: number;
+  volumeM3?: number;
+  metadata?: Record<string, unknown>;
+  warehouseIds?: UUID[];
+  attributes?: AttributeValue[];
+  createdBy?: UUID;
+  updatedBy?: UUID;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ItemPayload = {
+  sku: string;
+  name: string;
+  description?: string;
+  categoryId?: UUID | null;
+  unitId: UUID;
+  barcode?: string;
+  weightKg?: number | null;
+  volumeM3?: number | null;
+  metadata?: Record<string, unknown>;
+  warehouseIds?: UUID[];
+  attributes?: AttributeValueInput[];
+  actorId?: UUID;
+};
+
 export type CellHistoryItem = {
   id: number;
   cellId: UUID;
@@ -116,10 +240,6 @@ export type CellHistoryItem = {
   changedBy?: UUID;
   changeType: string;
   payload?: unknown;
-};
-
-export type PaginatedResponse<TItem> = {
-  items: TItem[];
 };
 
 export type WarehousePayload = {

@@ -20,6 +20,7 @@ var (
 	errWarehouseNotFound = errors.New("warehouse not found")
 	errZoneNotFound      = errors.New("zone not found")
 	errCellNotFound      = errors.New("cell not found")
+	errItemNotFound      = errors.New("item not found")
 )
 
 // MasterDataService contains business logic for warehouses/zones/cells.
@@ -254,10 +255,10 @@ func (s *MasterDataService) UpdateCell(ctx context.Context, warehouseID, zoneID,
 	})
 	s.repo.AddCellHistory(ctx, entity.WarehouseCellHistory{
 		CellID:     cell.ID,
-		ChangedAt: time.Now().UTC(),
-		ChangedBy: payload.UpdatedBy,
+		ChangedAt:  time.Now().UTC(),
+		ChangedBy:  payload.UpdatedBy,
 		ChangeType: "update",
-		Payload:   diffPayload,
+		Payload:    diffPayload,
 	})
 
 	return cell, nil
@@ -280,10 +281,10 @@ func (s *MasterDataService) DeleteCell(ctx context.Context, warehouseID, zoneID,
 	diffPayload, _ := json.Marshal(map[string]any{"before": before})
 	s.repo.AddCellHistory(ctx, entity.WarehouseCellHistory{
 		CellID:     cellID,
-		ChangedAt: time.Now().UTC(),
-		ChangedBy: actor,
+		ChangedAt:  time.Now().UTC(),
+		ChangedBy:  actor,
 		ChangeType: "delete",
-		Payload:   diffPayload,
+		Payload:    diffPayload,
 	})
 
 	return nil
@@ -365,13 +366,304 @@ func (s *MasterDataService) logCellHistory(ctx context.Context, cellID uuid.UUID
 	bytes, _ := json.Marshal(payload)
 	_ = s.repo.AddCellHistory(ctx, entity.WarehouseCellHistory{
 		CellID:     cellID,
-		ChangedAt: time.Now().UTC(),
-		ChangedBy: actor,
+		ChangedAt:  time.Now().UTC(),
+		ChangedBy:  actor,
 		ChangeType: changeType,
-		Payload:   bytes,
+		Payload:    bytes,
 	})
 }
 
+// ListCatalogNodes returns catalog entries for provided type ordered by sort order.
+func (s *MasterDataService) ListCatalogNodes(ctx context.Context, catalogType string) ([]entity.CatalogNode, error) {
+	typ, err := normalizeCatalogType(catalogType)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.ListCatalogNodes(ctx, typ)
+}
+
+// GetCatalogNode returns catalog entry by id.
+func (s *MasterDataService) GetCatalogNode(ctx context.Context, catalogType string, id uuid.UUID) (entity.CatalogNode, error) {
+	typ, err := normalizeCatalogType(catalogType)
+	if err != nil {
+		return entity.CatalogNode{}, err
+	}
+	node, err := s.repo.GetCatalogNode(ctx, typ, id)
+	if err != nil {
+		return entity.CatalogNode{}, err
+	}
+	return node, nil
+}
+
+// CreateCatalogNode creates catalog node with provided metadata.
+func (s *MasterDataService) CreateCatalogNode(ctx context.Context, catalogType string, payload entity.CatalogNode) (entity.CatalogNode, error) {
+	typ, err := normalizeCatalogType(catalogType)
+	if err != nil {
+		return entity.CatalogNode{}, err
+	}
+	payload.Type = typ
+	if payload.Metadata == nil {
+		payload.Metadata = map[string]any{}
+	}
+	return s.repo.CreateCatalogNode(ctx, payload)
+}
+
+// UpdateCatalogNode updates mutable catalog node attributes.
+func (s *MasterDataService) UpdateCatalogNode(ctx context.Context, catalogType string, id uuid.UUID, payload entity.CatalogNode) (entity.CatalogNode, error) {
+	typ, err := normalizeCatalogType(catalogType)
+	if err != nil {
+		return entity.CatalogNode{}, err
+	}
+	payload.ID = id
+	payload.Type = typ
+	if payload.Metadata == nil {
+		payload.Metadata = map[string]any{}
+	}
+	return s.repo.UpdateCatalogNode(ctx, payload)
+}
+
+// DeleteCatalogNode removes catalog node by id.
+func (s *MasterDataService) DeleteCatalogNode(ctx context.Context, catalogType string, id uuid.UUID) error {
+	typ, err := normalizeCatalogType(catalogType)
+	if err != nil {
+		return err
+	}
+	return s.repo.DeleteCatalogNode(ctx, typ, id)
+}
+
+// ListAttributeTemplates returns dynamic attribute templates for target type.
+func (s *MasterDataService) ListAttributeTemplates(ctx context.Context, targetType string) ([]entity.AttributeTemplate, error) {
+	target := strings.TrimSpace(targetType)
+	if target == "" {
+		target = "item"
+	}
+	return s.repo.ListAttributeTemplates(ctx, target)
+}
+
+// ListItems returns item master data with attributes.
+func (s *MasterDataService) ListItems(ctx context.Context) ([]entity.Item, error) {
+	return s.repo.ListItems(ctx)
+}
+
+// GetItem returns item by id with attributes.
+func (s *MasterDataService) GetItem(ctx context.Context, id uuid.UUID) (entity.Item, error) {
+	item, err := s.repo.GetItem(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return entity.Item{}, errItemNotFound
+		}
+		return entity.Item{}, err
+	}
+	return item, nil
+}
+
+// CreateItem validates payload and creates new item entry.
+func (s *MasterDataService) CreateItem(ctx context.Context, payload entity.Item, attributes []entity.AttributeValueUpsert) (entity.Item, error) {
+	payload.SKU = strings.TrimSpace(payload.SKU)
+	payload.Name = strings.TrimSpace(payload.Name)
+	if payload.SKU == "" || payload.Name == "" {
+		return entity.Item{}, fmt.Errorf("sku and name are required")
+	}
+	if payload.UnitID == uuid.Nil {
+		return entity.Item{}, fmt.Errorf("unitId is required")
+	}
+	if payload.Metadata == nil {
+		payload.Metadata = map[string]any{}
+	}
+
+	unit, err := s.repo.GetCatalogNode(ctx, entity.CatalogTypeUnit, payload.UnitID)
+	if err != nil {
+		return entity.Item{}, err
+	}
+	payload.Unit = unit
+
+	if payload.CategoryID != nil && *payload.CategoryID != uuid.Nil {
+		category, err := s.repo.GetCatalogNode(ctx, entity.CatalogTypeCategory, *payload.CategoryID)
+		if err != nil {
+			return entity.Item{}, err
+		}
+		payload.Category = category
+		payload.CategoryPath = category.Path
+	} else {
+		payload.CategoryID = nil
+		payload.CategoryPath = ""
+	}
+
+	payload.Warehouses = uniqueUUIDs(payload.Warehouses)
+
+	normalizedAttrs, err := s.validateItemAttributes(ctx, attributes)
+	if err != nil {
+		return entity.Item{}, err
+	}
+
+	return s.repo.CreateItem(ctx, payload, normalizedAttrs)
+}
+
+// UpdateItem updates item metadata and attributes.
+func (s *MasterDataService) UpdateItem(ctx context.Context, id uuid.UUID, payload entity.Item, attributes []entity.AttributeValueUpsert) (entity.Item, error) {
+	payload.ID = id
+	payload.SKU = strings.TrimSpace(payload.SKU)
+	payload.Name = strings.TrimSpace(payload.Name)
+	if payload.SKU == "" || payload.Name == "" {
+		return entity.Item{}, fmt.Errorf("sku and name are required")
+	}
+	if payload.UnitID == uuid.Nil {
+		return entity.Item{}, fmt.Errorf("unitId is required")
+	}
+	if payload.Metadata == nil {
+		payload.Metadata = map[string]any{}
+	}
+
+	unit, err := s.repo.GetCatalogNode(ctx, entity.CatalogTypeUnit, payload.UnitID)
+	if err != nil {
+		return entity.Item{}, err
+	}
+	payload.Unit = unit
+
+	if payload.CategoryID != nil && *payload.CategoryID != uuid.Nil {
+		category, err := s.repo.GetCatalogNode(ctx, entity.CatalogTypeCategory, *payload.CategoryID)
+		if err != nil {
+			return entity.Item{}, err
+		}
+		payload.Category = category
+		payload.CategoryPath = category.Path
+	} else {
+		payload.CategoryID = nil
+		payload.CategoryPath = ""
+	}
+
+	payload.Warehouses = uniqueUUIDs(payload.Warehouses)
+
+	normalizedAttrs, err := s.validateItemAttributes(ctx, attributes)
+	if err != nil {
+		return entity.Item{}, err
+	}
+
+	item, err := s.repo.UpdateItem(ctx, payload, normalizedAttrs)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return entity.Item{}, errItemNotFound
+		}
+		return entity.Item{}, err
+	}
+	return item, nil
+}
+
+// DeleteItem removes item by id.
+func (s *MasterDataService) DeleteItem(ctx context.Context, id uuid.UUID) error {
+	return s.repo.DeleteItem(ctx, id)
+}
+
+// ListCatalogLinks returns relations for provided entity.
+func (s *MasterDataService) ListCatalogLinks(ctx context.Context, leftType string, leftID uuid.UUID) ([]entity.CatalogLink, error) {
+	return s.repo.ListCatalogLinks(ctx, strings.TrimSpace(leftType), leftID)
+}
+
+// ReplaceCatalogLinks rewrites relations for provided entity.
+func (s *MasterDataService) ReplaceCatalogLinks(ctx context.Context, leftType string, leftID uuid.UUID, links []entity.CatalogLink) error {
+	for i := range links {
+		if links[i].Metadata == nil {
+			links[i].Metadata = map[string]any{}
+		}
+	}
+	return s.repo.ReplaceCatalogLinks(ctx, strings.TrimSpace(leftType), leftID, links)
+}
+
+func (s *MasterDataService) validateItemAttributes(ctx context.Context, attrs []entity.AttributeValueUpsert) ([]entity.AttributeValueUpsert, error) {
+	if len(attrs) == 0 {
+		return nil, nil
+	}
+
+	templates, err := s.repo.ListAttributeTemplates(ctx, "item")
+	if err != nil {
+		return nil, err
+	}
+
+	lookup := make(map[uuid.UUID]entity.AttributeTemplate, len(templates))
+	for _, tpl := range templates {
+		lookup[tpl.ID] = tpl
+	}
+
+	seen := make(map[uuid.UUID]struct{}, len(attrs))
+	normalized := make([]entity.AttributeValueUpsert, 0, len(attrs))
+
+	for _, attr := range attrs {
+		if attr.TemplateID == uuid.Nil {
+			return nil, fmt.Errorf("attribute templateId is required")
+		}
+
+		tpl, ok := lookup[attr.TemplateID]
+		if !ok {
+			return nil, fmt.Errorf("attribute template %s not found", attr.TemplateID)
+		}
+		if _, dup := seen[attr.TemplateID]; dup {
+			return nil, fmt.Errorf("duplicate attribute template %s", tpl.Code)
+		}
+		seen[attr.TemplateID] = struct{}{}
+
+		switch tpl.DataType {
+		case entity.AttributeDataTypeString:
+			if attr.String == nil {
+				if tpl.IsRequired {
+					return nil, fmt.Errorf("attribute %s requires stringValue", tpl.Code)
+				}
+				value := ""
+				attr.String = &value
+			}
+		case entity.AttributeDataTypeNumber:
+			if attr.Number == nil && tpl.IsRequired {
+				return nil, fmt.Errorf("attribute %s requires numberValue", tpl.Code)
+			}
+		case entity.AttributeDataTypeBoolean:
+			if attr.Boolean == nil {
+				value := false
+				if tpl.IsRequired {
+					return nil, fmt.Errorf("attribute %s requires booleanValue", tpl.Code)
+				}
+				attr.Boolean = &value
+			}
+		case entity.AttributeDataTypeJSON:
+			if attr.JSON == nil {
+				attr.JSON = map[string]any{}
+			}
+		}
+
+		normalized = append(normalized, attr)
+	}
+
+	return normalized, nil
+}
+
+func normalizeCatalogType(raw string) (entity.CatalogType, error) {
+	value := strings.TrimSpace(strings.ToLower(raw))
+	if value == "" {
+		return "", fmt.Errorf("catalog type is required")
+	}
+	switch value {
+	case string(entity.CatalogTypeCategory):
+		return entity.CatalogTypeCategory, nil
+	case string(entity.CatalogTypeUnit):
+		return entity.CatalogTypeUnit, nil
+	default:
+		return entity.CatalogType(value), nil
+	}
+}
+
+func uniqueUUIDs(values []uuid.UUID) []uuid.UUID {
+	seen := make(map[uuid.UUID]struct{}, len(values))
+	result := make([]uuid.UUID, 0, len(values))
+	for _, id := range values {
+		if id == uuid.Nil {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		result = append(result, id)
+	}
+	return result
+}
 func normalizeCellCode(code string) string {
 	code = strings.TrimSpace(code)
 	code = strings.ToUpper(code)
@@ -387,3 +679,6 @@ func ErrZoneNotFound() error { return errZoneNotFound }
 
 // ErrCellNotFound exposes service error.
 func ErrCellNotFound() error { return errCellNotFound }
+
+// ErrItemNotFound exposes service error.
+func ErrItemNotFound() error { return errItemNotFound }

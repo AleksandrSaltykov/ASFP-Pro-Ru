@@ -2,6 +2,8 @@ package handler
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -26,6 +28,22 @@ func NewMasterDataHandler(service *service.MasterDataService) *MasterDataHandler
 func (h *MasterDataHandler) Register(app *fiber.App) {
 	group := app.Group("/api/v1/master-data")
 
+	group.Get("/catalog/:type", h.listCatalogNodes)
+	group.Post("/catalog/:type", h.createCatalogNode)
+	group.Put("/catalog/:type/:nodeID", h.updateCatalogNode)
+	group.Delete("/catalog/:type/:nodeID", h.deleteCatalogNode)
+
+	group.Get("/catalog-links/:leftType/:leftID", h.listCatalogLinks)
+	group.Put("/catalog-links/:leftType/:leftID", h.replaceCatalogLinks)
+
+	group.Get("/attribute-templates", h.listAttributeTemplates)
+
+	group.Get("/items", h.listItems)
+	group.Post("/items", h.createItem)
+	group.Get("/items/:itemID", h.getItem)
+	group.Put("/items/:itemID", h.updateItem)
+	group.Delete("/items/:itemID", h.deleteItem)
+
 	group.Get("/warehouses", h.listWarehouses)
 	group.Post("/warehouses", h.createWarehouse)
 	group.Get("/warehouses/:warehouseID", h.getWarehouse)
@@ -49,6 +67,243 @@ func (h *MasterDataHandler) Register(app *fiber.App) {
 	group.Post("/cells/:cellID/equipment/:equipmentID", h.assignEquipment)
 	group.Delete("/cells/:cellID/equipment/:equipmentID", h.unassignEquipment)
 	group.Get("/cells/:cellID/history", h.cellHistory)
+}
+
+// listCatalogNodes returns catalog nodes of provided type.
+func (h *MasterDataHandler) listCatalogNodes(c *fiber.Ctx) error {
+	typ := c.Params("type")
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	nodes, err := h.service.ListCatalogNodes(ctx, typ)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	return c.JSON(fiber.Map{"items": nodes})
+}
+
+// createCatalogNode adds catalog node.
+func (h *MasterDataHandler) createCatalogNode(c *fiber.Ctx) error {
+	typ := c.Params("type")
+	var req catalogNodeRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid payload")
+	}
+	node, err := req.toEntity()
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	created, err := h.service.CreateCatalogNode(ctx, typ, node)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	return c.Status(fiber.StatusCreated).JSON(created)
+}
+
+// updateCatalogNode updates catalog node.
+func (h *MasterDataHandler) updateCatalogNode(c *fiber.Ctx) error {
+	typ := c.Params("type")
+	nodeID, err := parseUUIDParam(c, "nodeID")
+	if err != nil {
+		return err
+	}
+	var req catalogNodeRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid payload")
+	}
+	node, err := req.toEntity()
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	updated, err := h.service.UpdateCatalogNode(ctx, typ, nodeID, node)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	return c.JSON(updated)
+}
+
+// deleteCatalogNode removes catalog node.
+func (h *MasterDataHandler) deleteCatalogNode(c *fiber.Ctx) error {
+	typ := c.Params("type")
+	nodeID, err := parseUUIDParam(c, "nodeID")
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	if err := h.service.DeleteCatalogNode(ctx, typ, nodeID); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// listAttributeTemplates returns dynamic attribute templates.
+func (h *MasterDataHandler) listAttributeTemplates(c *fiber.Ctx) error {
+	target := c.Query("target", "item")
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	templates, err := h.service.ListAttributeTemplates(ctx, target)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(fiber.Map{"items": templates})
+}
+
+// listItems returns item master data.
+func (h *MasterDataHandler) listItems(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	items, err := h.service.ListItems(ctx)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(fiber.Map{"items": items})
+}
+
+// getItem returns item by id.
+func (h *MasterDataHandler) getItem(c *fiber.Ctx) error {
+	itemID, err := parseUUIDParam(c, "itemID")
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	item, err := h.service.GetItem(ctx, itemID)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrItemNotFound()):
+			return fiber.NewError(fiber.StatusNotFound, "item not found")
+		default:
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	}
+	return c.JSON(item)
+}
+
+// createItem creates item with dynamic attributes.
+func (h *MasterDataHandler) createItem(c *fiber.Ctx) error {
+	var req itemRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid payload")
+	}
+
+	item, attrs, err := req.toEntity()
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	created, err := h.service.CreateItem(ctx, item, attrs)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(created)
+}
+
+// updateItem updates item and its attributes.
+func (h *MasterDataHandler) updateItem(c *fiber.Ctx) error {
+	itemID, err := parseUUIDParam(c, "itemID")
+	if err != nil {
+		return err
+	}
+
+	var req itemRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid payload")
+	}
+
+	item, attrs, err := req.toEntity()
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	updated, err := h.service.UpdateItem(ctx, itemID, item, attrs)
+	if err != nil {
+		if errors.Is(err, service.ErrItemNotFound()) {
+			return fiber.NewError(fiber.StatusNotFound, "item not found")
+		}
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(updated)
+}
+
+// deleteItem removes item.
+func (h *MasterDataHandler) deleteItem(c *fiber.Ctx) error {
+	itemID, err := parseUUIDParam(c, "itemID")
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	if err := h.service.DeleteItem(ctx, itemID); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// listCatalogLinks returns relations for provided entity.
+func (h *MasterDataHandler) listCatalogLinks(c *fiber.Ctx) error {
+	leftType := c.Params("leftType")
+	leftID, err := parseUUIDParam(c, "leftID")
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	links, err := h.service.ListCatalogLinks(ctx, leftType, leftID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(fiber.Map{"items": links})
+}
+
+// replaceCatalogLinks updates relations for provided entity.
+func (h *MasterDataHandler) replaceCatalogLinks(c *fiber.Ctx) error {
+	leftType := c.Params("leftType")
+	leftID, err := parseUUIDParam(c, "leftID")
+	if err != nil {
+		return err
+	}
+	var req []catalogLinkRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid payload")
+	}
+
+	links := make([]entity.CatalogLink, 0, len(req))
+	for _, r := range req {
+		link, err := r.toEntity(leftType, leftID)
+		if err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+		links = append(links, link)
+	}
+
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	if err := h.service.ReplaceCatalogLinks(ctx, leftType, leftID, links); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 // listWarehouses returns warehouses.
@@ -498,6 +753,180 @@ func (h *MasterDataHandler) cellHistory(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"items": history})
 }
 
+// catalogNodeRequest describes catalog node payload.
+type catalogNodeRequest struct {
+	ParentID    string         `json:"parentId"`
+	Code        string         `json:"code"`
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	SortOrder   *int           `json:"sortOrder"`
+	IsActive    *bool          `json:"isActive"`
+	Metadata    map[string]any `json:"metadata"`
+}
+
+func (r catalogNodeRequest) toEntity() (entity.CatalogNode, error) {
+	node := entity.CatalogNode{
+		Code:     strings.TrimSpace(r.Code),
+		Name:     strings.TrimSpace(r.Name),
+		Metadata: r.Metadata,
+	}
+	if node.Metadata == nil {
+		node.Metadata = map[string]any{}
+	}
+	if r.SortOrder != nil {
+		node.SortOrder = *r.SortOrder
+	}
+	if r.IsActive != nil {
+		node.IsActive = *r.IsActive
+	} else {
+		node.IsActive = true
+	}
+	node.Description = strings.TrimSpace(r.Description)
+	if parent := strings.TrimSpace(r.ParentID); parent != "" {
+		id, err := uuid.Parse(parent)
+		if err != nil {
+			return entity.CatalogNode{}, fmt.Errorf("invalid parentId")
+		}
+		node.ParentID = &id
+	}
+	return node, nil
+}
+
+// attributeValueRequest describes dynamic attribute input.
+type attributeValueRequest struct {
+	TemplateID string         `json:"templateId"`
+	String     *string        `json:"stringValue"`
+	Number     *float64       `json:"numberValue"`
+	Boolean    *bool          `json:"booleanValue"`
+	JSON       map[string]any `json:"jsonValue"`
+}
+
+func (r attributeValueRequest) toUpsert() (entity.AttributeValueUpsert, error) {
+	id, err := uuid.Parse(strings.TrimSpace(r.TemplateID))
+	if err != nil {
+		return entity.AttributeValueUpsert{}, fmt.Errorf("invalid attribute templateId")
+	}
+	return entity.AttributeValueUpsert{
+		TemplateID: id,
+		String:     r.String,
+		Number:     r.Number,
+		Boolean:    r.Boolean,
+		JSON:       r.JSON,
+	}, nil
+}
+
+// catalogLinkRequest describes catalog relation payload.
+type catalogLinkRequest struct {
+	RightID      string         `json:"rightId"`
+	RightType    string         `json:"rightType"`
+	RelationCode string         `json:"relationCode"`
+	Metadata     map[string]any `json:"metadata"`
+}
+
+func (r catalogLinkRequest) toEntity(leftType string, leftID uuid.UUID) (entity.CatalogLink, error) {
+	if strings.TrimSpace(r.RelationCode) == "" {
+		return entity.CatalogLink{}, fmt.Errorf("relationCode is required")
+	}
+	rightID, err := uuid.Parse(strings.TrimSpace(r.RightID))
+	if err != nil {
+		return entity.CatalogLink{}, fmt.Errorf("invalid rightId")
+	}
+	metadata := r.Metadata
+	if metadata == nil {
+		metadata = map[string]any{}
+	}
+	return entity.CatalogLink{
+		LeftID:       leftID,
+		LeftType:     strings.TrimSpace(leftType),
+		RightID:      rightID,
+		RightType:    strings.TrimSpace(r.RightType),
+		RelationCode: strings.TrimSpace(r.RelationCode),
+		Metadata:     metadata,
+	}, nil
+}
+
+// itemRequest describes item payload with dynamic attributes.
+type itemRequest struct {
+	SKU          string                  `json:"sku"`
+	Name         string                  `json:"name"`
+	Description  string                  `json:"description"`
+	CategoryID   string                  `json:"categoryId"`
+	UnitID       string                  `json:"unitId"`
+	Barcode      string                  `json:"barcode"`
+	WeightKg     *float64                `json:"weightKg"`
+	VolumeM3     *float64                `json:"volumeM3"`
+	WarehouseIDs []string                `json:"warehouseIds"`
+	Metadata     map[string]any          `json:"metadata"`
+	Attributes   []attributeValueRequest `json:"attributes"`
+	ActorID      string                  `json:"actorId"`
+}
+
+func (r itemRequest) toEntity() (entity.Item, []entity.AttributeValueUpsert, error) {
+	unitID, err := uuid.Parse(strings.TrimSpace(r.UnitID))
+	if err != nil {
+		return entity.Item{}, nil, fmt.Errorf("invalid unitId")
+	}
+
+	var categoryID *uuid.UUID
+	if raw := strings.TrimSpace(r.CategoryID); raw != "" {
+		id, err := uuid.Parse(raw)
+		if err != nil {
+			return entity.Item{}, nil, fmt.Errorf("invalid categoryId")
+		}
+		categoryID = &id
+	}
+
+	warehouses := make([]uuid.UUID, 0, len(r.WarehouseIDs))
+	for _, raw := range r.WarehouseIDs {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			continue
+		}
+		id, err := uuid.Parse(raw)
+		if err != nil {
+			return entity.Item{}, nil, fmt.Errorf("invalid warehouseId: %s", raw)
+		}
+		warehouses = append(warehouses, id)
+	}
+
+	attrs := make([]entity.AttributeValueUpsert, 0, len(r.Attributes))
+	for _, attrReq := range r.Attributes {
+		upsert, err := attrReq.toUpsert()
+		if err != nil {
+			return entity.Item{}, nil, err
+		}
+		attrs = append(attrs, upsert)
+	}
+
+	metadata := r.Metadata
+	if metadata == nil {
+		metadata = map[string]any{}
+	}
+
+	item := entity.Item{
+		SKU:         strings.TrimSpace(r.SKU),
+		Name:        strings.TrimSpace(r.Name),
+		Description: strings.TrimSpace(r.Description),
+		UnitID:      unitID,
+		Barcode:     strings.TrimSpace(r.Barcode),
+		WeightKG:    r.WeightKg,
+		VolumeM3:    r.VolumeM3,
+		Metadata:    metadata,
+		Warehouses:  warehouses,
+	}
+	if categoryID != nil {
+		item.CategoryID = categoryID
+	}
+	if actorID := strings.TrimSpace(r.ActorID); actorID != "" {
+		if actor, err := uuid.Parse(actorID); err == nil {
+			item.CreatedBy = &actor
+			item.UpdatedBy = &actor
+		}
+	}
+
+	return item, attrs, nil
+}
+
 // warehouseRequest describes payload for warehouse operations.
 type warehouseRequest struct {
 	Code           string                  `json:"code"`
@@ -604,15 +1033,15 @@ func (r cellRequest) toEntity() entity.WarehouseCell {
 
 // equipmentRequest describes equipment payload.
 type equipmentRequest struct {
-	Code           string         `json:"code"`
-	Name           string         `json:"name"`
-	EquipmentType  string         `json:"type"`
-	Status         string         `json:"status"`
-	Manufacturer   string         `json:"manufacturer"`
-	SerialNumber   string         `json:"serialNumber"`
-	Commissioning  *time.Time     `json:"commissioningDate"`
-	Metadata       map[string]any `json:"metadata"`
-	ActorID        string         `json:"actorId"`
+	Code          string         `json:"code"`
+	Name          string         `json:"name"`
+	EquipmentType string         `json:"type"`
+	Status        string         `json:"status"`
+	Manufacturer  string         `json:"manufacturer"`
+	SerialNumber  string         `json:"serialNumber"`
+	Commissioning *time.Time     `json:"commissioningDate"`
+	Metadata      map[string]any `json:"metadata"`
+	ActorID       string         `json:"actorId"`
 }
 
 func (r equipmentRequest) toEntity() entity.WarehouseEquipment {
@@ -638,7 +1067,7 @@ func parseUUIDParam(c *fiber.Ctx, name string) (uuid.UUID, error) {
 	value := c.Params(name)
 	id, err := uuid.Parse(value)
 	if err != nil {
-		return uuid.Nil, fiber.NewError(fiber.StatusBadRequest, "invalid " + name)
+		return uuid.Nil, fiber.NewError(fiber.StatusBadRequest, "invalid "+name)
 	}
 	return id, nil
 }

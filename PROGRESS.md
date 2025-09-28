@@ -87,3 +87,23 @@
 - Result: Навигация теперь передаёт смысловые акценты брендбука через векторные пиктограммы; код лежит в @shared/ui/icons.
 - Next steps: Завершить настройку lint (eslint.config) и отключить временные devserver артефакты перед коммитом.
 ### 2025-09-24 20:25:00\n- Action: Перерисовали иконки под стиль образца (grid, clipboard, куб, папка, gear).\n- Result: Иконки минималистичны, stroke 1.7, подчёркивают смысл пунктов меню.\n- Next steps: Проверить визуально и утвердить набор.\n
+### 2025-09-27 22:45:00
+- Action: git reset --hard origin/main && git clean -fd; сформирован план по универсальным каталогам/атрибутам.
+- Result: рабочее дерево приведено к чистому состоянию; зафиксирован roadmap реализации динамического WMS.
+- Next steps: 1) подготовить миграции для catalog_node, attribute_templates/values и связей с переносом текущих данных; 2) обновить репозитории/сервисы для generic-справочников, динамических атрибутов и catalog_links; 3) расширить HTTP-handlers и тесты, обеспечить выдачу core+attributes; 4) адаптировать фронтенд (API-клиент, формы, UI) под динамические шаблоны и связи.
+
+### 2025-09-27 23:25:00
+- Action: Реализованы сущности, репозитории и сервисы для универсальных каталогов и динамических атрибутов WMS.
+- Result: Добавлены entity/catalog.go, entity/attribute.go, entity/item.go; миграция 0003_dynamic_catalogs.sql и embed.go; repository/catalog_repository.go и расширения masterdata_service.go; сборка go test ./... проходит (smoke падал как раньше).
+- Next steps: Расширить HTTP-слой (handlers, OpenAPI) для работы с generic-справочниками и динамическими атрибутами и обновить тесты.
+
+### 2025-09-27 23:56:00
+- Action: Расширены HTTP-хендлеры WMS, добавлены generic/catalog/item endpoints и тесты конвертации запросов; обновлён OpenAPI.
+- Result: masterdata_handler.go обслуживает справочники, товары, связи; добавлен masterdata_handler_test.go; OpenAPI описывает новые маршруты; go test ./... (кроме исторического smoke) проходит.
+- Next steps: Обновить фронтенд API/формы для работы с динамическими справочниками и атрибутами, связать с новыми endpoint 'ами. 
+
+### 2025-09-28 12:15:00
+- Action: Обновил README под актуальный dev-стек (MinIO по умолчанию, статус smoke/CI), довёл фронтенд lint/tsconfig до рабочего состояния и подключил React Query-клиенты к новым WMS endpoint (каталоги, атрибуты, товары).
+- Result: README отражает MinIO-first сценарий и предупреждает о нестабильном smoke, `pnpm lint`/`pnpm build` проходят без js-артефактов (tsconfig `noEmit`), `CatalogManager`/`ItemManager` используют API (`useCatalogNodesQuery`, `useItemsQuery`, `useReplaceCatalogLinksMutation`).
+- Next steps: интегрировать формы с реальными бэкенд-токенами и правами, покрыть новые хэндлеры e2e-тестами и зафиксировать smoke-фиксы после стабилизации CI.
+

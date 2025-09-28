@@ -17,7 +17,7 @@ make up
 
 Если `mkcert` временно недоступен, установите переменную `SKIP_MKCERT=1` и выполните `make up` повторно (HTTPS в nginx при этом использоваться не будет).
 
-Команда `make up` поднимет инфраструктуру (PostgreSQL 16 (community edition), ClickHouse, Tarantool, Redis, nginx, Ceph RGW) и сервисы (`gateway`, `crm`, `wms`). После успешного запуска доступны:
+Команда `make up` поднимет инфраструктуру (PostgreSQL 16 (community edition), ClickHouse, Tarantool, Redis, nginx, MinIO) и сервисы (`gateway`, `crm`, `wms`). Ceph RGW подключается через отдельный override, см. раздел «S3 в режимах разработки и продакшена». После успешного запуска доступны:
 
 - http://localhost:8080/health — состояние gateway
 - http://localhost:8080/ready — проверка зависимостей gateway
@@ -57,6 +57,13 @@ make up
 - `make lint` — запуск `golangci-lint` (должен быть установлен локально).
 - `tests/` — вспомогательные сценарии, моковые данные.
 
+## CI и smoke
+
+- GitHub Actions выполняет gofmt/go test для каждого push/PR (используется GOTOOLCHAIN=auto, кешируются `~/go/pkg/mod`, `~/.cache/go-build` и слои buildx).
+- job `smoke` разворачивает Docker Compose стенд, сбрасывает MinIO через `scripts/minio-reset.sh`, прогоняет smoke-сценарии и сохраняет артефакты в `tests/smoke/artifacts`.
+- По состоянию на 2025-09-27 smoke остаётся нестабильным из-за доработок WMS (см. PROGRESS.md), поэтому результаты job стоит проверять вручную.
+- Для локальной проверки HTTPS используйте `mkcert -install`, затем `SMOKE_GATEWAY_HTTPS_URL=https://localhost:8443 make smoke`.
+
 ## Следующие шаги
 
 1. Реализовать полноценный RBAC и аудит (история в `core.audit_log`).
@@ -76,8 +83,12 @@ make up
 
 ### S3 в режимах разработки и продакшена
 
-- Для локального стенда используется `minio/minio` (API-совместимый режим). Переменные окружения по умолчанию находятся в `deploy/.env.example`.
+- По умолчанию `make up` запускает `minio/minio` (API-совместимый режим) для локального стенда. Переменные окружения по умолчанию находятся в `deploy/.env.example`.
 - Для продакшена подготовлен override-файл `deploy/docker-compose.ceph.yml`, переключающий сервис `ceph` на образ `quay.io/ceph/demo`. Пример переменных — в `deploy/.env.ceph.example`.
 - Перед запуском Ceph RGW необходимо задать корректные `CEPH_MON_IP`, `CEPH_PUBLIC_NETWORK` и `CEPH_CLUSTER_NETWORK`, соответствующие адресу хоста/подсети, где развёрнут compose.
 - Ceph demo-контейнер автоматически создаёт bucket `S3_BUCKET` и пользователя `CEPH_DEMO_UID`, поэтому приложения будут работать с теми же `S3_ACCESS_KEY`/`S3_SECRET_KEY`, что указаны в `.env`.
 - Для запуска prod-стека: `docker compose --env-file deploy/.env.ceph.example -f deploy/docker-compose.yml -f deploy/docker-compose.ceph.yml up -d`.
+
+
+### Правила фиксации прогресса
+- После каждого завершенного шага обязательно добавляйте запись в файл PROGRESS.md.
