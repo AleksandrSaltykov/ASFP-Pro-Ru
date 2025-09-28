@@ -12,5 +12,5 @@ const kioskTranslations = {
 
 export const useKioskTranslations = createScopedTranslator<KioskLocale, KioskTranslationKey>(
   kioskTranslations,
-  "en"
+  "ru"
 );

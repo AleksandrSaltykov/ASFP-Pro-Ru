@@ -12,5 +12,5 @@ const orderStepperTranslations = {
 
 export const useOrderStepperTranslations = createScopedTranslator<AppLocale, OrderStepperTranslationKey>(
   orderStepperTranslations,
-  "en"
+  "ru"
 );

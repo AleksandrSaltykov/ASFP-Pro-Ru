@@ -12,5 +12,5 @@ const processMapTranslations = {
 
 export const useProcessMapTranslations = createScopedTranslator<AppLocale, ProcessMapTranslationKey>(
   processMapTranslations,
-  "en"
+  "ru"
 );

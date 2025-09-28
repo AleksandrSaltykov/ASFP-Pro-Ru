@@ -3,29 +3,29 @@
 
   --color-primary: #2563eb;
   --color-primary-dark: #1e3a8a;
-  --color-background: #e9f1ff;
-  --color-surface: rgba(255, 255, 255, 0.75);
-  --color-surface-muted: rgba(249, 250, 255, 0.85);
-  --color-layer: rgba(231, 238, 255, 0.8);
-  --color-layer-strong: rgba(217, 227, 255, 0.86);
-  --color-border: rgba(148, 163, 184, 0.18);
-  --color-accent-soft: rgba(37, 99, 235, 0.12);
-  --color-accent-muted: rgba(37, 99, 235, 0.22);
+  --color-background: #e6f0ff;
+  --color-surface: rgba(250, 253, 255, 0.94);
+  --color-surface-muted: rgba(238, 245, 255, 0.9);
+  --color-layer: rgba(226, 237, 255, 0.9);
+  --color-layer-strong: rgba(210, 224, 255, 0.96);
+  --color-border: rgba(99, 102, 241, 0.22);
+  --color-accent-soft: rgba(99, 102, 241, 0.16);
+  --color-accent-muted: rgba(56, 189, 248, 0.24);
   --color-text-primary: #0f172a;
   --color-text-secondary: #1f2937;
   --color-text-muted: #64748b;
-  --color-text-soft: rgba(15, 23, 42, 0.72);
+  --color-text-soft: rgba(30, 41, 59, 0.72);
   --color-text-subtle: rgba(15, 23, 42, 0.6);
-  --color-glass: rgba(255, 255, 255, 0.8);
-  --color-glass-hover: rgba(255, 255, 255, 0.92);
-  --color-glass-border: rgba(148, 163, 184, 0.26);
-  --color-glow-primary: #38bdf8;
-  --color-glow-secondary: #6366f1;
+  --color-glass: rgba(250, 253, 255, 0.92);
+  --color-glass-hover: rgba(255, 255, 255, 0.96);
+  --color-glass-border: rgba(99, 102, 241, 0.28);
+  --color-glow-primary: #60a5fa;
+  --color-glow-secondary: #7c3aed;
 
-  --gradient-app: linear-gradient(135deg, #f5f8ff 0%, #f0f5ff 45%, #f7edff 100%);
-  --gradient-glass-highlight: linear-gradient(135deg, rgba(56, 189, 248, 0.28) 0%, rgba(99, 102, 241, 0.32) 100%);
-  --gradient-button: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-  --shadow-elevated: 0 24px 48px rgba(15, 23, 42, 0.18);
+  --gradient-app: linear-gradient(135deg, #f0f6ff 0%, #e6f0ff 45%, #e0f3ff 100%);
+  --gradient-glass-highlight: linear-gradient(135deg, rgba(56, 189, 248, 0.32) 0%, rgba(99, 102, 241, 0.36) 100%);
+  --gradient-button: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  --shadow-elevated: 0 24px 48px rgba(82, 109, 166, 0.22);
 }
 
 :root[data-theme='dark'] {
@@ -49,7 +49,7 @@
   --color-glass: rgba(255, 255, 255, 0.08);
   --color-glass-hover: rgba(255, 255, 255, 0.16);
   --color-glass-border: rgba(148, 163, 184, 0.22);
-  --color-glow-primary: #38bdf8;
+  --color-glow-primary: #60a5fa;
   --color-glow-secondary: #818cf8;
 
   --gradient-app: linear-gradient(135deg, #030712 0%, #0f172a 40%, #1e3a8a 70%, #6d28d9 100%);

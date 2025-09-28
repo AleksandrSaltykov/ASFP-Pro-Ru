@@ -1,6 +1,7 @@
 import type { CSSProperties, SVGProps } from 'react';
 
 import { useAppSelector } from '@app/hooks';
+import { useThemeMode } from '@shared/ui/ThemeProvider';
 import { palette, typography } from '@shared/ui/theme';
 
 export type AppHeaderProps = {
@@ -15,9 +16,9 @@ const headerStyle: CSSProperties = {
   gap: 16,
   padding: '10px 20px',
   borderRadius: 24,
-  border: `1px solid ${palette.glassBorder}`,
-  background: palette.surface,
-  boxShadow: '0 18px 42px rgba(15, 23, 42, 0.22)',
+  border: '1px solid rgba(99, 102, 241, 0.22)',
+  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(56, 189, 248, 0.16))',
+  boxShadow: '0 22px 46px rgba(82, 109, 166, 0.24)',
   position: 'sticky',
   top: 0,
   zIndex: 20
@@ -99,20 +100,6 @@ const iconButtonStyle: CSSProperties = {
   cursor: 'pointer'
 };
 
-const primaryButtonStyle: CSSProperties = {
-  border: 'none',
-  borderRadius: 16,
-  padding: '10px 18px',
-  fontWeight: 600,
-  fontSize: 13,
-  cursor: 'pointer',
-  background: palette.primary,
-  color: '#ffffff',
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 8
-};
-
 const avatarStyle: CSSProperties = {
   width: 42,
   height: 42,
@@ -148,6 +135,19 @@ const iconProps = {
   fill: 'none'
 };
 
+const IconSun = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox='0 0 24 24' {...iconProps} {...props}>
+    <circle cx='12' cy='12' r='4' />
+    <path d='M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41' />
+  </svg>
+);
+
+const IconMoon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox='0 0 24 24' {...iconProps} {...props}>
+    <path d='M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z' />
+  </svg>
+);
+
 const IconChevronLeft = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox='0 0 24 24' {...iconProps} {...props}>
     <path d='M15 6l-6 6 6 6' />
@@ -182,12 +182,6 @@ const IconQuestion = (props: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const IconPlus = (props: SVGProps<SVGSVGElement>) => (
-  <svg viewBox='0 0 24 24' {...iconProps} {...props}>
-    <path d='M12 5v14M5 12h14' />
-  </svg>
-);
-
 const getInitials = (name?: string) => {
   if (!name) {
     return 'UX';
@@ -199,6 +193,8 @@ const getInitials = (name?: string) => {
 
 export const AppHeader = ({ onToggleSidebar, isSidebarCollapsed }: AppHeaderProps) => {
   const user = useAppSelector((state) => state.auth.user);
+  const { theme, toggleTheme } = useThemeMode();
+  const isDark = theme === 'dark';
   const initials = getInitials(user?.name);
 
   return (
@@ -234,9 +230,13 @@ export const AppHeader = ({ onToggleSidebar, isSidebarCollapsed }: AppHeaderProp
       </div>
 
       <div style={clusterStyle}>
-        <button type='button' style={primaryButtonStyle}>
-          <IconPlus />
-          <span>Создать</span>
+        <button
+          type='button'
+          onClick={toggleTheme}
+          style={iconButtonStyle}
+          aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
+        >
+          {isDark ? <IconSun /> : <IconMoon />}
         </button>
         <button type='button' style={iconButtonStyle} aria-label='Уведомления'>
           <IconBell />

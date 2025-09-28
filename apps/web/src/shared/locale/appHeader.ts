@@ -12,5 +12,5 @@ const appHeaderTranslations = {
 
 export const useAppHeaderTranslations = createScopedTranslator<AppLocale, AppHeaderTranslationKey>(
   appHeaderTranslations,
-  "en"
+  "ru"
 );

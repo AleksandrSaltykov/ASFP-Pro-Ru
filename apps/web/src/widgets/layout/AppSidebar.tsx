@@ -31,9 +31,9 @@ const sidebarStyleBase: CSSProperties = {
   gap: 24,
   padding: '18px 16px',
   borderRadius: 26,
-  border: `1px solid ${palette.glassBorder}`,
-  background: palette.surface,
-  boxShadow: '0 24px 52px rgba(15, 23, 42, 0.28)',
+  border: '1px solid rgba(99, 102, 241, 0.22)',
+  background: 'linear-gradient(155deg, rgba(99, 102, 241, 0.14), rgba(56, 189, 248, 0.12))',
+  boxShadow: '0 26px 56px rgba(82, 109, 166, 0.26)',
   minHeight: '100%'
 };
 
@@ -92,6 +92,10 @@ const favoriteButtonStyle: CSSProperties = {
   cursor: 'pointer'
 };
 
+const collapsedNavLinkStyle: CSSProperties = {
+  justifyContent: 'center'
+};
+
 const StarIcon = ({ active }: { active?: boolean }) => (
   <svg
     aria-hidden
@@ -109,27 +113,27 @@ const StarIcon = ({ active }: { active?: boolean }) => (
 
 const moduleItems: SidebarItem[] = [
   { id: 'crm', label: 'CRM', to: '/sales', icon: 'crm' },
-  { id: 'projects', label: 'Projects', to: '/tasks-projects', icon: 'board' },
-  { id: 'planning', label: 'Planning', to: '/planning', icon: 'calendar' },
-  { id: 'production', label: 'Production', to: '/production', icon: 'factory' },
-  { id: 'warehouse', label: 'Warehouse', to: '/wms/inventory', icon: 'warehouse' },
+  { id: 'projects', label: 'Проекты', to: '/tasks-projects', icon: 'board' },
+  { id: 'planning', label: 'Планирование', to: '/planning', icon: 'calendar' },
+  { id: 'production', label: 'Производство', to: '/production', icon: 'factory' },
+  { id: 'warehouse', label: 'Склад', to: '/wms/inventory', icon: 'warehouse' },
   { id: 'kiosk', label: 'Киоск', to: '/kiosk', icon: 'barcode' },
-  { id: 'procurement', label: 'Procurement', to: '/procurement', icon: 'package' },
-  { id: 'logistics', label: 'Logistics', to: '/logistics', icon: 'truck' },
-  { id: 'installation', label: 'Installation', to: '/installation', icon: 'worker' },
-  { id: 'service', label: 'Service', to: '/service', icon: 'gear' },
-  { id: 'finance', label: 'Finance', to: '/finance', icon: 'analytics' },
-  { id: 'analytics', label: 'Analytics', to: '/analytics', icon: 'analytics' },
-  { id: 'admin', label: 'Admin', to: '/admin', icon: 'gear' }
+  { id: 'procurement', label: 'Закупки', to: '/procurement', icon: 'package' },
+  { id: 'logistics', label: 'Логистика', to: '/logistics', icon: 'truck' },
+  { id: 'installation', label: 'Монтаж', to: '/installation', icon: 'worker' },
+  { id: 'service', label: 'Сервис', to: '/service', icon: 'gear' },
+  { id: 'finance', label: 'Финансы', to: '/finance', icon: 'analytics' },
+  { id: 'analytics', label: 'Аналитика', to: '/analytics', icon: 'analytics' },
+  { id: 'admin', label: 'Администрирование', to: '/admin', icon: 'gear' }
 ];
 
 const routeDictionary: Record<string, RouteDescriptor> = {
-  '/': { label: 'Home', icon: 'overview' },
-  '/home-exec': { label: 'Home', icon: 'overview' },
-  '/sales': { label: 'Sales launchpad', icon: 'crm' },
-  '/directories': { label: 'Directories', icon: 'files' },
-  '/orders/demo': { label: 'Demo order', icon: 'package' },
-  '/wms/inventory': { label: 'Warehouse', icon: 'warehouse' }
+  '/': { label: 'Главная', icon: 'overview' },
+  '/home-exec': { label: 'Главная', icon: 'overview' },
+  '/sales': { label: 'Старт CRM', icon: 'crm' },
+  '/directories': { label: 'Справочники', icon: 'files' },
+  '/orders/demo': { label: 'Демо-заказ', icon: 'package' },
+  '/wms/inventory': { label: 'Склад', icon: 'warehouse' }
 };
 
 export const AppSidebar = ({ collapsed = false }: AppSidebarProps) => {
@@ -139,7 +143,7 @@ export const AppSidebar = ({ collapsed = false }: AppSidebarProps) => {
 
   const primary = useMemo(() => ({
     id: 'home',
-    label: 'Home',
+    label: 'Главная',
     to: '/home-exec',
     icon: 'overview' as const
   }), []);
@@ -155,13 +159,13 @@ export const AppSidebar = ({ collapsed = false }: AppSidebarProps) => {
   const renderNavItem = (item: SidebarItem) => {
     const isFavorite = favorites.includes(item.to);
     return (
-      <div key={item.id} style={{ display: 'flex', alignItems: 'center' }}>
+      <div key={item.id} style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
         <NavigationLink
           to={item.to}
           variant='vertical'
           onClick={() => handleClick(item.to)}
           aria-label={collapsed ? item.label : undefined}
-          style={collapsed ? { justifyContent: 'center' } : undefined}
+          style={collapsed ? collapsedNavLinkStyle : { width: '100%' }}
         >
           <span style={navItemContentStyle}>
             <span style={navLabelWrapperStyle}>
@@ -178,7 +182,7 @@ export const AppSidebar = ({ collapsed = false }: AppSidebarProps) => {
                 }}
                 style={favoriteButtonStyle}
                 aria-pressed={isFavorite}
-                aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                aria-label={isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}
               >
                 <StarIcon active={isFavorite} />
               </button>
@@ -191,7 +195,7 @@ export const AppSidebar = ({ collapsed = false }: AppSidebarProps) => {
 
   const renderAuxiliaryList = (paths: string[]) => {
     if (paths.length === 0) {
-      return collapsed ? null : <span style={{ color: palette.textSecondary, fontSize: 12 }}>Empty</span>;
+      return collapsed ? null : <span style={{ color: palette.textSecondary, fontSize: 12 }}>Пусто</span>;
     }
     return paths.map((path) => {
       const descriptor = routeDictionary[path] ?? { label: path, icon: 'flow' as const };
@@ -202,7 +206,7 @@ export const AppSidebar = ({ collapsed = false }: AppSidebarProps) => {
           variant='vertical'
           onClick={() => handleClick(path)}
           aria-label={collapsed ? descriptor.label : undefined}
-          style={collapsed ? { justifyContent: 'center' } : undefined}
+          style={collapsed ? collapsedNavLinkStyle : { width: '100%' }}
         >
           <span style={navLabelWrapperStyle}>
             <span style={iconWrapperStyle}>{iconMap[descriptor.icon]}</span>
@@ -223,19 +227,19 @@ export const AppSidebar = ({ collapsed = false }: AppSidebarProps) => {
       }}
     >
       <section>
-        <h2 style={sectionTitleStyle}>{collapsed ? 'Home' : 'Home'}</h2>
+        <h2 style={sectionTitleStyle}>{collapsed ? 'Главная' : 'Главная'}</h2>
         {renderAuxiliaryList([primary.to])}
       </section>
       <section>
-        <h2 style={sectionTitleStyle}>{collapsed ? 'Modules' : 'Modules'}</h2>
+        <h2 style={sectionTitleStyle}>{collapsed ? 'Модули' : 'Модули'}</h2>
         <div style={listStyle}>{moduleItems.map(renderNavItem)}</div>
       </section>
       <section>
-        <h2 style={sectionTitleStyle}>{collapsed ? 'Recent' : 'Recent'}</h2>
+        <h2 style={sectionTitleStyle}>{collapsed ? 'Недавние' : 'Недавние'}</h2>
         <div style={listStyle}>{renderAuxiliaryList(recent.slice(0, 6))}</div>
       </section>
       <section>
-        <h2 style={sectionTitleStyle}>{collapsed ? 'Favorites' : 'Favorites'}</h2>
+        <h2 style={sectionTitleStyle}>{collapsed ? 'Избранное' : 'Избранное'}</h2>
         <div style={listStyle}>{renderAuxiliaryList(favorites)}</div>
       </section>
     </aside>

@@ -12,5 +12,5 @@ const appSidebarTranslations = {
 
 export const useAppSidebarTranslations = createScopedTranslator<AppLocale, AppSidebarTranslationKey>(
   appSidebarTranslations,
-  "en"
+  "ru"
 );

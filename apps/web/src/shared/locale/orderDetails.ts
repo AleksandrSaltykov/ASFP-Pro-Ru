@@ -12,5 +12,5 @@ const orderDetailsTranslations = {
 
 export const useOrderDetailsTranslations = createScopedTranslator<AppLocale, OrderDetailsTranslationKey>(
   orderDetailsTranslations,
-  "en"
+  "ru"
 );

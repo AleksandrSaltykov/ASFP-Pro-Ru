@@ -40,9 +40,9 @@ const contentAreaStyle: CSSProperties = {
 
 const contentSurfaceStyle: CSSProperties = {
   borderRadius: 24,
-  border: `1px solid ${palette.glassBorder}`,
-  background: palette.surfaceMuted,
-  boxShadow: palette.shadowElevated,
+  border: '1px solid rgba(99, 102, 241, 0.22)',
+  background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(219, 234, 254, 0.9))',
+  boxShadow: '0 26px 56px rgba(82, 109, 166, 0.24)',
   padding: "24px",
   minHeight: "calc(100vh - 160px)",
   overflow: "hidden"

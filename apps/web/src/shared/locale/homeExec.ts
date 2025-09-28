@@ -12,5 +12,5 @@ const homeExecTranslations = {
 
 export const useHomeExecTranslations = createScopedTranslator<AppLocale, HomeExecTranslationKey>(
   homeExecTranslations,
-  "en"
+  "ru"
 );

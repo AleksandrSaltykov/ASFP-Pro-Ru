@@ -12,7 +12,7 @@ type NavigationLinkProps = NavLinkProps & {
 const baseStyles: Record<NavigationLinkVariant, CSSProperties> = {
   horizontal: {
     textDecoration: "none",
-    color: "rgba(226, 232, 240, 0.75)",
+    color: palette.textMuted,
     fontWeight: 500,
     fontSize: 12,
     padding: "4px 0",
@@ -23,7 +23,7 @@ const baseStyles: Record<NavigationLinkVariant, CSSProperties> = {
   },
   vertical: {
     textDecoration: "none",
-    color: "rgba(226, 232, 240, 0.8)",
+    color: palette.textSecondary,
     fontWeight: 500,
     fontSize: 12,
     padding: "10px 14px",
@@ -32,11 +32,11 @@ const baseStyles: Record<NavigationLinkVariant, CSSProperties> = {
     alignItems: "center",
     gap: "10px",
     transition: "all 0.2s ease",
-    border: `1px solid ${palette.glassBorder}`,
+    border: `1px solid ${palette.glassBorder}` ,
     backgroundColor: palette.glass,
     backdropFilter: "blur(16px)",
     WebkitBackdropFilter: "blur(16px)",
-    boxShadow: "0 10px 24px rgba(2, 6, 23, 0.3)"
+    boxShadow: palette.shadowElevated
   }
 };
 
@@ -52,21 +52,21 @@ export const NavigationLink = ({ children, variant = "horizontal", style, ...pro
         const base: CSSProperties = {
           ...styles,
           background: isActive ? gradients.glassHighlight : palette.glass,
-          color: isActive ? palette.textPrimary : "rgba(226, 232, 240, 0.8)",
+          color: isActive ? palette.textPrimary : palette.textSecondary,
           fontWeight: isActive ? 600 : 500,
-          border: `1px solid ${isActive ? "rgba(255, 255, 255, 0.28)" : palette.glassBorder}`,
+          border: `1px solid ${palette.glassBorder}` ,
           boxShadow: isActive
-            ? "0 18px 42px rgba(99, 102, 241, 0.32)"
-            : "0 10px 24px rgba(2, 6, 23, 0.3)",
+            ? "0 18px 42px rgba(99, 102, 241, 0.24)"
+            : palette.shadowElevated,
           transform: isActive ? "translateY(-1px)" : "translateY(0)",
-          opacity: isPending || isTransitioning ? 0.75 : 1
+          opacity: isPending || isTransitioning ? 0.85 : 1
         };
         return override ? { ...base, ...(override as CSSProperties) } : base;
       }
 
       const base: CSSProperties = {
         ...styles,
-        color: isActive ? palette.textPrimary : "rgba(226, 232, 240, 0.65)",
+        color: isActive ? palette.textPrimary : palette.textMuted,
         fontWeight: isActive ? 600 : 500,
         borderBottom: isActive ? `2px solid ${palette.glowPrimary}` : "2px solid transparent",
         opacity: isPending || isTransitioning ? 0.75 : 1
