@@ -59,9 +59,17 @@ make up
 
 ## Текущий статус WMS
 
-- Применены миграции мастер-данных WMS `0001`–`0003`. Для локального стенда выполните `make migrate-wms` или `go run github.com/pressly/goose/v3/cmd/goose@latest -dir modules/wms/migrations postgres "$DATABASE_URL" up`, если `goose` не установлен.
+- Применены миграции мастер-данных WMS `0001`–`0003`. Для локального стенда выполните `make migrate-wms` — таргет автоматически использует локальный `goose` или `go run github.com/pressly/goose/v3/cmd/goose@latest` при отсутствии бинаря.
 - Backend теперь корректно обрабатывает `NULL` в полях складов, зон, ячеек и техники; `/api/v1/master-data/warehouses/{id}` отвечает 200, а раздел «Склад» во фронтенде отображает данные без ошибок.
-- Сид `0004_seed_dynamic_masterdata.sql` содержит символы вне UTF-8 и требует перекодировки перед запуском; до исправления шаг можно пропустить.
+- Сид `0004_seed_dynamic_masterdata.sql` перекодирован в UTF-8 и добавляет демо-категории, атрибуты и товар `DEMO-SIGN-001`; `make migrate-wms` загрузит эти данные вместе с остальными миграциями.
+- Перед запуском `make migrate-wms` укажите строку подключения, например `DATABASE_URL=postgres://asfp:asfp123@localhost:5432/asfp?sslmode=disable` (для стенда, поднятого через `make up`).
+- Для отката используйте `make migrate-wms-down` (по умолчанию откатывает одну миграцию, задайте `WMS_DOWN_TO=0` для полного сброса).
+
+### Управление миграциями
+
+- `make migrate-core` / `make migrate-core-down` — применяют и откатывают миграции ядра (`CORE_DOWN_TO=0` для полного сброса).
+- `make migrate-crm` / `make migrate-crm-down` — миграции CRM (`CRM_DOWN_TO=0` для сброса).
+- `make migrate-wms` / `make migrate-wms-down` — миграции WMS (`WMS_DOWN_TO=0` для сброса).
 
 ## Тесты и качество
 

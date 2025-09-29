@@ -21,3 +21,7 @@ pnpm-debug.log
 coverage/
 coverage
 deploy/.env
+
+# Local agent artifacts
+.claude_agent_farm_backups/
+apps/web/.env

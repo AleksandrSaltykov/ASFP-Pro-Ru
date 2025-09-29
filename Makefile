@@ -1,9 +1,35 @@
-.PHONY: up up-build restart down stop build lint test migrate-core migrate-crm migrate-wms seed clean smoke certs mkcert clean-certs env frontend frontend-install
+.PHONY: up up-build restart down stop build lint test migrate-core migrate-core-down migrate-crm migrate-crm-down migrate-wms migrate-wms-down seed clean smoke certs mkcert clean-certs env frontend frontend-install
 
 COMPOSE_FILE=deploy/docker-compose.yml
 ENV_FILE?=deploy/.env
 ENV_TEMPLATE?=deploy/.env.example
 GOOSE?=goose
+GOOSE_BIN:=$(shell command -v $(GOOSE) 2>/dev/null)
+ifeq ($(strip $(GOOSE_BIN)),)
+GOOSE_RUN:=go run github.com/pressly/goose/v3/cmd/goose@latest
+else
+GOOSE_RUN:=$(GOOSE_BIN)
+endif
+WMS_DOWN_TO?=
+ifeq ($(strip $(WMS_DOWN_TO)),)
+GOOSE_WMS_DOWN_CMD:=down
+else
+GOOSE_WMS_DOWN_CMD:=down-to $(WMS_DOWN_TO)
+endif
+
+CORE_DOWN_TO?=
+ifeq ($(strip $(CORE_DOWN_TO)),)
+GOOSE_CORE_DOWN_CMD:=down
+else
+GOOSE_CORE_DOWN_CMD:=down-to $(CORE_DOWN_TO)
+endif
+
+CRM_DOWN_TO?=
+ifeq ($(strip $(CRM_DOWN_TO)),)
+GOOSE_CRM_DOWN_CMD:=down
+else
+GOOSE_CRM_DOWN_CMD:=down-to $(CRM_DOWN_TO)
+endif
 
 CERT_DIR?=deploy/nginx/certs
 CERT_CERT?=$(CERT_DIR)/local.pem
@@ -47,13 +73,22 @@ lint:
 	docker run --rm -e GOTOOLCHAIN=go1.23.3 -v "$(CURDIR):/app" -v golangci-lint-mod:/go/pkg/mod -v golangci-lint-cache:/root/.cache -w /app golang:1.23 sh -c "go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0 && golangci-lint run ./..."
 
 migrate-core:
-	$(GOOSE) -dir pkg/db/migrations/core postgres "$(DATABASE_URL)" up
+	$(GOOSE_RUN) -dir pkg/db/migrations/core postgres "$(DATABASE_URL)" up
+
+migrate-core-down:
+	$(GOOSE_RUN) -dir pkg/db/migrations/core postgres "$(DATABASE_URL)" $(GOOSE_CORE_DOWN_CMD)
 
 migrate-crm:
-	$(GOOSE) -dir modules/crm/migrations postgres "$(DATABASE_URL)" up
+	$(GOOSE_RUN) -dir modules/crm/migrations postgres "$(DATABASE_URL)" up
+
+migrate-crm-down:
+	$(GOOSE_RUN) -dir modules/crm/migrations postgres "$(DATABASE_URL)" $(GOOSE_CRM_DOWN_CMD)
 
 migrate-wms:
-	$(GOOSE) -dir modules/wms/migrations postgres "$(DATABASE_URL)" up
+	$(GOOSE_RUN) -dir modules/wms/migrations postgres "$(DATABASE_URL)" up
+
+migrate-wms-down:
+	$(GOOSE_RUN) -dir modules/wms/migrations postgres "$(DATABASE_URL)" $(GOOSE_WMS_DOWN_CMD)
 
 seed:
 	psql "$(DATABASE_URL)" -f deploy/init/postgres/99_seed.sql

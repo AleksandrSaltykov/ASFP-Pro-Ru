@@ -76,6 +76,22 @@ jobs:
       - name: Copy environment file
         run: cp deploy/.env.example deploy/.env
 
+      - name: Start postgres for migration checks
+        run: docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d postgres
+
+      - name: Wait for postgres
+        run: |
+          timeout 120 bash -c 'until docker compose --env-file deploy/.env -f deploy/docker-compose.yml exec -T postgres pg_isready -U asfp >/dev/null 2>&1; do sleep 2; done'
+
+      - name: Verify WMS migrations up/down
+        env:
+          DATABASE_URL: postgres://asfp:asfp123@localhost:5432/asfp?sslmode=disable
+        run: |
+          make migrate-wms
+          make migrate-wms-down
+          WMS_DOWN_TO=0 make migrate-wms-down
+          make migrate-wms
+
       - name: Start dev stack
         run: docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d
 

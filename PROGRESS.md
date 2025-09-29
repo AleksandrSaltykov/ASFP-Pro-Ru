@@ -1,3 +1,23 @@
+### 2025-09-29 19:10:45
+- Action: Добавил down-таргеты для core/crm, задокументировал команды и встроил прогон `make migrate-wms` + откаты в CI (postgres-only этап).
+- Result: Makefile поддерживает `migrate-core-down`/`migrate-crm-down`, README описывает откаты, а workflow CI прогоняет последовательность up/down/up `make migrate-wms`.
+- Next steps: Решить, нужны ли аналогичные проверки для core/crm в CI и автоматизировать восстановление демо-данных после полных откатов.
+
+### 2025-09-29 19:06:25
+- Action: Добавил таргет `migrate-wms-down` с параметром `WMS_DOWN_TO`, проверил откат/повторный запуск через Makefile.
+- Result: `make migrate-wms-down` откатывает последнюю миграцию, `WMS_DOWN_TO=0 make migrate-wms-down` сбрасывает схему, а `make migrate-wms` повторно поднимает версии 0001–0004.
+- Next steps: Убедиться, что после полного отката seed наполняет демо-данные, и продумать аналогичные проверки для других модулей.
+
+### 2025-09-29 19:00:50
+- Action: Добавил fallback на `go run goose` в Makefile, обновил README по миграциям и прогнал `make migrate-wms` на чистой базе.
+- Result: Таргет `make migrate-wms` автоматически подтягивает goose при отсутствии бинаря и успешно применяет миграции 0001–0004; README содержит инструкцию по `DATABASE_URL`.
+- Next steps: Подумать над аналогичным fallback для core/CRM миграций в CI и при необходимости добавить `migrate-wms-down` для отката.
+
+### 2025-09-29 18:54:54
+- Action: Перекодировал миграцию 0004_seed_dynamic_masterdata.sql в UTF-8, поправил SQL (корневой path) и применил сид через goose.
+- Result: В wms.catalog_node появились категории SIGNAGE/PRINT, созданы шаблоны атрибутов и демонстрационный товар DEMO-SIGN-001; команда goose up завершилась успешно.
+- Next steps: Обновить Makefile/README для автоматического запуска goose (включая сид 0004) и прогнать make migrate-wms на чистом стенде для проверки.
+
 ### 2025-09-29 18:36:25
 - Action: Обновил WMS backend, обработчики репозитория и применил миграции 0001–0003 через goose (локально).
 - Result: `/api/v1/master-data/warehouses/{id}` отвечает 200, фронтенд раздел «Склад» загружает данные без ошибки; схема WMS синхронизирована с актуальными таблицами.
