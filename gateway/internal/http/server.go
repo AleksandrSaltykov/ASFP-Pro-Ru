@@ -16,6 +16,7 @@ import (
 
 	"asfppro/gateway/internal/auth"
 	"asfppro/gateway/internal/handlers"
+	"asfppro/pkg/audit"
 	"asfppro/pkg/config"
 	"asfppro/pkg/s3"
 )
@@ -29,7 +30,7 @@ type Server struct {
 }
 
 // NewServer constructs HTTP server with base middlewares.
-func NewServer(cfg config.AppConfig, logger zerolog.Logger, pool *pgxpool.Pool, storage *s3.Client, authSvc *auth.Service) (*Server, error) {
+func NewServer(cfg config.AppConfig, logger zerolog.Logger, pool *pgxpool.Pool, storage *s3.Client, authSvc *auth.Service, auditor *audit.Recorder) (*Server, error) {
 	openapi, err := readOpenAPI("gateway/docs/openapi/openapi.json", "GATEWAY_OPENAPI_PATH")
 	if err != nil {
 		return nil, fmt.Errorf("load openapi: %w", err)
@@ -51,7 +52,8 @@ func NewServer(cfg config.AppConfig, logger zerolog.Logger, pool *pgxpool.Pool, 
 	app.Get("/openapi.json", handlers.OpenAPI(openapi))
 
 	protected := app.Group("", authMiddleware(authSvc, logger))
-	protected.Post("/api/v1/files", handlers.FileUploadHandler(storage))
+	protected.Post("/api/v1/files", handlers.FileUploadHandler(storage, auditor, logger))
+	protected.Get("/api/v1/audit", handlers.AuditListHandler(auditor, logger))
 
 	return &Server{
 		app:      app,

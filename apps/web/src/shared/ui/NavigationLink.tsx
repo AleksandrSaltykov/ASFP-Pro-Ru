@@ -32,7 +32,7 @@ const baseStyles: Record<NavigationLinkVariant, CSSProperties> = {
     alignItems: "center",
     gap: "10px",
     transition: "all 0.2s ease",
-    border: `1px solid ${palette.glassBorder}` ,
+    border: `1px solid ${palette.glassBorder}`,
     backgroundColor: palette.glass,
     backdropFilter: "blur(16px)",
     WebkitBackdropFilter: "blur(16px)",
@@ -54,7 +54,7 @@ export const NavigationLink = ({ children, variant = "horizontal", style, ...pro
           background: isActive ? gradients.glassHighlight : palette.glass,
           color: isActive ? palette.textPrimary : palette.textSecondary,
           fontWeight: isActive ? 600 : 500,
-          border: `1px solid ${palette.glassBorder}` ,
+          border: `1px solid ${palette.glassBorder}`,
           boxShadow: isActive
             ? "0 18px 42px rgba(99, 102, 241, 0.24)"
             : palette.shadowElevated,

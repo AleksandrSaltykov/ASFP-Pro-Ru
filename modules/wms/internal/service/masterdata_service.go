@@ -12,6 +12,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog"
 
+	"asfppro/pkg/audit"
+
 	"asfppro/modules/wms/internal/entity"
 	"asfppro/modules/wms/internal/repository"
 )
@@ -25,13 +27,14 @@ var (
 
 // MasterDataService contains business logic for warehouses/zones/cells.
 type MasterDataService struct {
-	repo   *repository.MasterDataRepository
-	logger zerolog.Logger
+	repo    *repository.MasterDataRepository
+	auditor *audit.Recorder
+	logger  zerolog.Logger
 }
 
 // NewMasterDataService builds service.
-func NewMasterDataService(repo *repository.MasterDataRepository, logger zerolog.Logger) *MasterDataService {
-	return &MasterDataService{repo: repo, logger: logger}
+func NewMasterDataService(repo *repository.MasterDataRepository, auditor *audit.Recorder, logger zerolog.Logger) *MasterDataService {
+	return &MasterDataService{repo: repo, auditor: auditor, logger: logger}
 }
 
 // ListWarehouses returns all warehouses.
@@ -249,17 +252,11 @@ func (s *MasterDataService) UpdateCell(ctx context.Context, warehouseID, zoneID,
 		return entity.WarehouseCell{}, err
 	}
 
-	diffPayload, _ := json.Marshal(map[string]any{
+	diff := map[string]any{
 		"before": before,
 		"after":  cell,
-	})
-	s.repo.AddCellHistory(ctx, entity.WarehouseCellHistory{
-		CellID:     cell.ID,
-		ChangedAt:  time.Now().UTC(),
-		ChangedBy:  payload.UpdatedBy,
-		ChangeType: "update",
-		Payload:    diffPayload,
-	})
+	}
+	s.logCellHistory(ctx, cell.ID, payload.UpdatedBy, "update", diff)
 
 	return cell, nil
 }
@@ -278,14 +275,7 @@ func (s *MasterDataService) DeleteCell(ctx context.Context, warehouseID, zoneID,
 		return err
 	}
 
-	diffPayload, _ := json.Marshal(map[string]any{"before": before})
-	s.repo.AddCellHistory(ctx, entity.WarehouseCellHistory{
-		CellID:     cellID,
-		ChangedAt:  time.Now().UTC(),
-		ChangedBy:  actor,
-		ChangeType: "delete",
-		Payload:    diffPayload,
-	})
+	s.logCellHistory(ctx, cellID, actor, "delete", map[string]any{"before": before})
 
 	return nil
 }
@@ -371,6 +361,26 @@ func (s *MasterDataService) logCellHistory(ctx context.Context, cellID uuid.UUID
 		ChangeType: changeType,
 		Payload:    bytes,
 	})
+
+	if s.auditor == nil {
+		return
+	}
+
+	auditPayload := map[string]any{
+		"changeType": changeType,
+		"cellId":     cellID.String(),
+		"payload":    payload,
+	}
+
+	if err := s.auditor.Record(ctx, audit.Entry{
+		ActorID:  actor,
+		Action:   fmt.Sprintf("wms.cell.%s", changeType),
+		Entity:   "wms.cell",
+		EntityID: cellID.String(),
+		Payload:  auditPayload,
+	}); err != nil {
+		s.logger.Error().Err(err).Msg("audit cell change")
+	}
 }
 
 // ListCatalogNodes returns catalog entries for provided type ordered by sort order.

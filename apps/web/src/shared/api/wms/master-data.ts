@@ -1,14 +1,11 @@
-import { useMemo } from 'react';
 import {
   useMutation,
   UseMutationOptions,
   useQuery,
-  UseQueryOptions,
-  useQueryClient
+  UseQueryOptions
 } from '@tanstack/react-query';
 
-import { API_ENDPOINTS } from '@shared/api/endpoints';
-import { createHttpClient } from '@shared/api/http-client';
+import { useWmsHttpClient, WmsHttpClient } from './client';
 import {
   CellHistoryItem,
   CellPayload,
@@ -44,7 +41,7 @@ const equipmentListKey = (warehouseId: string) => [
 ] as const;
 const cellHistoryKey = (cellId: string) => [...MASTER_DATA_PREFIX, 'cells', cellId, 'history'] as const;
 
-type Http = ReturnType<typeof createHttpClient>;
+type Http = WmsHttpClient;
 
 type QueryOptionsOverride<TQueryFnData, TData> = Omit<
   UseQueryOptions<TQueryFnData, Error, TData>,
@@ -56,11 +53,6 @@ type MutationOptionsOverride<TData, TVariables> = Omit<
   'mutationFn' | 'onSuccess'
 > & {
   onSuccess?: UseMutationOptions<TData, Error, TVariables>['onSuccess'];
-};
-
-const useWmsHttpClient = (): Http => {
-  const queryClient = useQueryClient();
-  return useMemo(() => createHttpClient(API_ENDPOINTS.wms, queryClient), [queryClient]);
 };
 
 export const useWarehousesQuery = (

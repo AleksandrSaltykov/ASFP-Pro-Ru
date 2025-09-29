@@ -28,10 +28,10 @@ type WarehouseOperatingHours struct {
 
 // WarehouseContact stores main contact information.
 type WarehouseContact struct {
-	Phone    string `json:"phone,omitempty"`
-	Email    string `json:"email,omitempty"`
-	Manager  string `json:"manager,omitempty"`
-	Comment  string `json:"comment,omitempty"`
+	Phone   string `json:"phone,omitempty"`
+	Email   string `json:"email,omitempty"`
+	Manager string `json:"manager,omitempty"`
+	Comment string `json:"comment,omitempty"`
 }
 
 // Warehouse is a top-level storage facility.
@@ -74,42 +74,24 @@ type WarehouseZone struct {
 
 // WarehouseCell defines an addressable storage location.
 type WarehouseCell struct {
-	ID               uuid.UUID      `json:"id"`
-	WarehouseID      uuid.UUID      `json:"warehouseId"`
-	ZoneID           uuid.UUID      `json:"zoneId"`
-	Code             string         `json:"code"`
-	Label            string         `json:"label,omitempty"`
-	Address          map[string]any `json:"address"`
-	CellType         string         `json:"cellType"`
-	Status           string         `json:"status"`
-	IsPickFace       bool           `json:"isPickFace"`
-	LengthMM         *int           `json:"lengthMm,omitempty"`
-	WidthMM          *int           `json:"widthMm,omitempty"`
-	HeightMM         *int           `json:"heightMm,omitempty"`
-	MaxWeightKG      *float64       `json:"maxWeightKg,omitempty"`
-	MaxVolumeL       *float64       `json:"maxVolumeL,omitempty"`
-	AllowedHandling  []string       `json:"allowedHandling,omitempty"`
-	TemperatureMin   *float64       `json:"temperatureMin,omitempty"`
-	TemperatureMax   *float64       `json:"temperatureMax,omitempty"`
-	HazardClasses    []string       `json:"hazardClasses,omitempty"`
-	Metadata         map[string]any `json:"metadata,omitempty"`
-	CreatedBy        uuid.UUID      `json:"createdBy,omitempty"`
-	UpdatedBy        uuid.UUID      `json:"updatedBy,omitempty"`
-	CreatedAt        time.Time      `json:"createdAt"`
-	UpdatedAt        time.Time      `json:"updatedAt"`
-}
-
-// WarehouseEquipment describes equipment assigned to zones or cells.
-type WarehouseEquipment struct {
 	ID              uuid.UUID      `json:"id"`
 	WarehouseID     uuid.UUID      `json:"warehouseId"`
+	ZoneID          uuid.UUID      `json:"zoneId"`
 	Code            string         `json:"code"`
-	Name            string         `json:"name"`
-	EquipmentType   string         `json:"type"`
+	Label           string         `json:"label,omitempty"`
+	Address         map[string]any `json:"address"`
+	CellType        string         `json:"cellType"`
 	Status          string         `json:"status"`
-	Manufacturer    string         `json:"manufacturer,omitempty"`
-	SerialNumber    string         `json:"serialNumber,omitempty"`
-	Commissioning   *time.Time     `json:"commissioningDate,omitempty"`
+	IsPickFace      bool           `json:"isPickFace"`
+	LengthMM        *int           `json:"lengthMm,omitempty"`
+	WidthMM         *int           `json:"widthMm,omitempty"`
+	HeightMM        *int           `json:"heightMm,omitempty"`
+	MaxWeightKG     *float64       `json:"maxWeightKg,omitempty"`
+	MaxVolumeL      *float64       `json:"maxVolumeL,omitempty"`
+	AllowedHandling []string       `json:"allowedHandling,omitempty"`
+	TemperatureMin  *float64       `json:"temperatureMin,omitempty"`
+	TemperatureMax  *float64       `json:"temperatureMax,omitempty"`
+	HazardClasses   []string       `json:"hazardClasses,omitempty"`
 	Metadata        map[string]any `json:"metadata,omitempty"`
 	CreatedBy       uuid.UUID      `json:"createdBy,omitempty"`
 	UpdatedBy       uuid.UUID      `json:"updatedBy,omitempty"`
@@ -117,28 +99,46 @@ type WarehouseEquipment struct {
 	UpdatedAt       time.Time      `json:"updatedAt"`
 }
 
+// WarehouseEquipment describes equipment assigned to zones or cells.
+type WarehouseEquipment struct {
+	ID            uuid.UUID      `json:"id"`
+	WarehouseID   uuid.UUID      `json:"warehouseId"`
+	Code          string         `json:"code"`
+	Name          string         `json:"name"`
+	EquipmentType string         `json:"type"`
+	Status        string         `json:"status"`
+	Manufacturer  string         `json:"manufacturer,omitempty"`
+	SerialNumber  string         `json:"serialNumber,omitempty"`
+	Commissioning *time.Time     `json:"commissioningDate,omitempty"`
+	Metadata      map[string]any `json:"metadata,omitempty"`
+	CreatedBy     uuid.UUID      `json:"createdBy,omitempty"`
+	UpdatedBy     uuid.UUID      `json:"updatedBy,omitempty"`
+	CreatedAt     time.Time      `json:"createdAt"`
+	UpdatedAt     time.Time      `json:"updatedAt"`
+}
+
 // CellEquipmentAssignment represents equipment attached to a cell.
 type CellEquipmentAssignment struct {
-	CellID      uuid.UUID  `json:"cellId"`
-	EquipmentID uuid.UUID  `json:"equipmentId"`
-	AssignedAt  time.Time  `json:"assignedAt"`
-	AssignedBy  uuid.UUID  `json:"assignedBy,omitempty"`
+	CellID      uuid.UUID `json:"cellId"`
+	EquipmentID uuid.UUID `json:"equipmentId"`
+	AssignedAt  time.Time `json:"assignedAt"`
+	AssignedBy  uuid.UUID `json:"assignedBy,omitempty"`
 }
 
 // WarehouseCellHistory keeps audit history of changes.
 type WarehouseCellHistory struct {
-	ID        int64          `json:"id"`
-	CellID    uuid.UUID      `json:"cellId"`
-	ChangedAt time.Time      `json:"changedAt"`
-	ChangedBy uuid.UUID      `json:"changedBy,omitempty"`
-	ChangeType string        `json:"changeType"`
-	Payload   json.RawMessage `json:"payload,omitempty"`
+	ID         int64           `json:"id"`
+	CellID     uuid.UUID       `json:"cellId"`
+	ChangedAt  time.Time       `json:"changedAt"`
+	ChangedBy  uuid.UUID       `json:"changedBy,omitempty"`
+	ChangeType string          `json:"changeType"`
+	Payload    json.RawMessage `json:"payload,omitempty"`
 }
 
 // WarehouseDetails aggregates warehouse with zones and cells.
 type WarehouseDetails struct {
-	Warehouse Warehouse               `json:"warehouse"`
-	Zones     []WarehouseZone         `json:"zones"`
-	Cells     []WarehouseCell         `json:"cells"`
-	Equipment []WarehouseEquipment    `json:"equipment"`
+	Warehouse Warehouse            `json:"warehouse"`
+	Zones     []WarehouseZone      `json:"zones"`
+	Cells     []WarehouseCell      `json:"cells"`
+	Equipment []WarehouseEquipment `json:"equipment"`
 }

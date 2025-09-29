@@ -7,6 +7,7 @@ import (
 
 	"asfppro/gateway/internal/auth"
 	"asfppro/gateway/internal/http"
+	"asfppro/pkg/audit"
 	"asfppro/pkg/config"
 	"asfppro/pkg/db"
 	logpkg "asfppro/pkg/log"
@@ -33,8 +34,9 @@ func main() {
 	}
 
 	authService := auth.NewService(pool)
+	auditRecorder := audit.NewRecorder(pool, logger)
 
-	server, err := http.NewServer(cfg, logger, pool, storage, authService)
+	server, err := http.NewServer(cfg, logger, pool, storage, authService, auditRecorder)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("init server")
 	}

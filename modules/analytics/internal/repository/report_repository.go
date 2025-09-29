@@ -80,4 +80,3 @@ ORDER BY total_count DESC`
 
 	return result, rows.Err()
 }
-

@@ -15,6 +15,7 @@ import (
 	"asfppro/modules/wms/internal/handler"
 	"asfppro/modules/wms/internal/repository"
 	"asfppro/modules/wms/internal/service"
+	"asfppro/pkg/audit"
 	"asfppro/pkg/config"
 	"asfppro/pkg/db"
 	logpkg "asfppro/pkg/log"
@@ -37,12 +38,14 @@ func main() {
 	}
 	defer pool.Close()
 
+	auditor := audit.NewRecorder(pool, logger)
+
 	stockRepo := repository.NewInventoryRepository(pool)
-	stockService := service.NewInventoryService(stockRepo, logger)
+	stockService := service.NewInventoryService(stockRepo, auditor, logger)
 	stockHandler := handler.NewInventoryHandler(stockService)
 
 	masterRepo := repository.NewMasterDataRepository(pool)
-	masterService := service.NewMasterDataService(masterRepo, logger)
+	masterService := service.NewMasterDataService(masterRepo, auditor, logger)
 	masterHandler := handler.NewMasterDataHandler(masterService)
 
 	openapi, err := readOpenAPI("modules/wms/docs/openapi/openapi.json", "WMS_OPENAPI_PATH")

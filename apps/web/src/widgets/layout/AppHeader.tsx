@@ -16,12 +16,13 @@ const headerStyle: CSSProperties = {
   gap: 16,
   padding: '10px 20px',
   borderRadius: 24,
-  border: '1px solid rgba(99, 102, 241, 0.22)',
-  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(56, 189, 248, 0.16))',
-  boxShadow: '0 22px 46px rgba(82, 109, 166, 0.24)',
+  border: `1px solid ${palette.border}`,
+  background: palette.surface,
+  boxShadow: palette.shadowElevated,
   position: 'sticky',
   top: 0,
-  zIndex: 20
+  zIndex: 20,
+  transition: 'background-color 0.2s ease, box-shadow 0.2s ease'
 };
 
 const clusterStyle: CSSProperties = {
@@ -68,7 +69,8 @@ const searchInputStyle: CSSProperties = {
   background: palette.surfaceMuted,
   fontSize: 14,
   color: palette.textPrimary,
-  fontFamily: typography.accentFamily
+  fontFamily: typography.accentFamily,
+  transition: 'background-color 0.2s ease, border-color 0.2s ease'
 };
 
 const hotkeyHintStyle: CSSProperties = {
@@ -97,7 +99,8 @@ const iconButtonStyle: CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   color: palette.textPrimary,
-  cursor: 'pointer'
+  cursor: 'pointer',
+  transition: 'background-color 0.2s ease, border-color 0.2s ease'
 };
 
 const avatarStyle: CSSProperties = {
@@ -109,7 +112,8 @@ const avatarStyle: CSSProperties = {
   justifyContent: 'center',
   background: palette.surfaceMuted,
   color: palette.primary,
-  fontWeight: 700
+  fontWeight: 700,
+  transition: 'background-color 0.2s ease'
 };
 
 const orgSwitcherStyle: CSSProperties = {
@@ -122,7 +126,8 @@ const orgSwitcherStyle: CSSProperties = {
   border: `1px solid ${palette.glassBorder}`,
   background: palette.surfaceMuted,
   fontSize: 12,
-  minWidth: 140
+  minWidth: 140,
+  transition: 'background-color 0.2s ease, border-color 0.2s ease'
 };
 
 const iconProps = {

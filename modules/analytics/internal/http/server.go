@@ -15,6 +15,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"asfppro/modules/analytics/internal/repository"
+	"asfppro/pkg/audit"
 	"asfppro/pkg/config"
 	"asfppro/pkg/health"
 )
@@ -28,14 +29,14 @@ type Server struct {
 }
 
 // NewServer creates configured HTTP server instance.
-func NewServer(cfg config.AppConfig, logger zerolog.Logger, repo *repository.EventRepository, conn ch.Conn) (*Server, error) {
+func NewServer(cfg config.AppConfig, logger zerolog.Logger, repo *repository.EventRepository, conn ch.Conn, auditor *audit.Recorder) (*Server, error) {
 	app := fiber.New(fiber.Config{
 		AppName:      cfg.AppName,
 		ReadTimeout:  cfg.RequestTimeout,
 		WriteTimeout: cfg.RequestTimeout,
 	})
 
-	reportHandler := NewReportHandler(repo)
+	reportHandler := NewReportHandler(repo, auditor, logger)
 
 	app.Use(recover.New())
 	app.Use(loggerMiddleware(logger))

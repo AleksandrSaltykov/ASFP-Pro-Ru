@@ -1,7 +1,8 @@
-.PHONY: up down stop build lint test migrate-core migrate-crm migrate-wms seed clean smoke certs mkcert clean-certs
+.PHONY: up up-build restart down stop build lint test migrate-core migrate-crm migrate-wms seed clean smoke certs mkcert clean-certs env frontend frontend-install
 
 COMPOSE_FILE=deploy/docker-compose.yml
 ENV_FILE?=deploy/.env
+ENV_TEMPLATE?=deploy/.env.example
 GOOSE?=goose
 
 CERT_DIR?=deploy/nginx/certs
@@ -9,9 +10,26 @@ CERT_CERT?=$(CERT_DIR)/local.pem
 CERT_KEY?=$(CERT_DIR)/local-key.pem
 MKCERT_HOSTS?=localhost 127.0.0.1 ::1
 MKCERT?=mkcert
+OPENSSL?=openssl
 
-up: certs
+up: env certs
+	docker compose --env-file $(ENV_FILE) -f $(COMPOSE_FILE) up -d
+
+up-build: env certs
 	docker compose --env-file $(ENV_FILE) -f $(COMPOSE_FILE) up --build -d
+
+restart: down up
+
+env:
+	@if [ ! -f "$(ENV_FILE)" ]; then \
+		if [ -f "$(ENV_TEMPLATE)" ]; then \
+			cp "$(ENV_TEMPLATE)" "$(ENV_FILE)" && echo "Created $(ENV_FILE) from $(ENV_TEMPLATE)"; \
+		else \
+			echo "$(ENV_TEMPLATE) not found; create $(ENV_FILE) manually" >&2; exit 1; \
+		fi; \
+	else \
+		echo "$(ENV_FILE) already exists"; \
+	fi
 
 stop:
 	docker compose --env-file $(ENV_FILE) -f $(COMPOSE_FILE) stop
@@ -54,16 +72,27 @@ mkcert:
 		echo "mkcert skipped (SKIP_MKCERT set)"; \
 		exit 0; \
 	fi
-	@if ! command -v $(MKCERT) >/dev/null 2>&1; then \
-		echo "mkcert is required. Install it from https://github.com/FiloSottile/mkcert" >&2; \
-		exit 1; \
-	fi
 	@mkdir -p $(CERT_DIR)
 	@if [ ! -f "$(CERT_CERT)" ] || [ ! -f "$(CERT_KEY)" ]; then \
-		$(MKCERT) -cert-file $(CERT_CERT) -key-file $(CERT_KEY) $(MKCERT_HOSTS); \
+		if command -v $(MKCERT) >/dev/null 2>&1; then \
+			$(MKCERT) -cert-file $(CERT_CERT) -key-file $(CERT_KEY) $(MKCERT_HOSTS); \
+		elif command -v $(OPENSSL) >/dev/null 2>&1; then \
+			echo "mkcert not found, generating self-signed certificate via openssl"; \
+			$(OPENSSL) req -x509 -nodes -days 825 -newkey rsa:2048 \
+				-keyout $(CERT_KEY) -out $(CERT_CERT) \
+				-subj "/C=RU/ST=Moscow/L=Moscow/O=Local Dev/OU=ASFP/CN=localhost"; \
+		else \
+			echo "Neither mkcert nor openssl is available" >&2; exit 1; \
+		fi; \
 	else \
 		echo "Certificates already exist in $(CERT_DIR)"; \
 	fi
 
 clean-certs:
 	rm -f $(CERT_CERT) $(CERT_KEY)
+
+frontend-install:
+	cd apps/web && pnpm install
+
+frontend:
+	cd apps/web && pnpm dev -- --host 0.0.0.0

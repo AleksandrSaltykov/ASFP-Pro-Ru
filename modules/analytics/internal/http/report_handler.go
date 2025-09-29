@@ -1,21 +1,27 @@
 package http
 
 import (
+	"context"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+	"github.com/rs/zerolog"
 
 	"asfppro/modules/analytics/internal/repository"
+	"asfppro/pkg/audit"
 )
 
 // ReportHandler exposes analytics endpoints.
 type ReportHandler struct {
-	repo *repository.EventRepository
+	repo    *repository.EventRepository
+	auditor *audit.Recorder
+	logger  zerolog.Logger
 }
 
 // NewReportHandler constructs handler.
-func NewReportHandler(repo *repository.EventRepository) *ReportHandler {
-	return &ReportHandler{repo: repo}
+func NewReportHandler(repo *repository.EventRepository, auditor *audit.Recorder, logger zerolog.Logger) *ReportHandler {
+	return &ReportHandler{repo: repo, auditor: auditor, logger: logger}
 }
 
 // Register wires endpoints.
@@ -52,6 +58,12 @@ func (h *ReportHandler) conversion(c *fiber.Ctx) error {
 		})
 	}
 
+	h.recordAudit(c, "analytics.report.conversion", map[string]any{
+		"from":  from.Format(time.RFC3339),
+		"to":    to.Format(time.RFC3339),
+		"count": len(items),
+	})
+
 	return c.JSON(fiber.Map{"items": items})
 }
 
@@ -74,6 +86,12 @@ func (h *ReportHandler) managerLoad(c *fiber.Ctx) error {
 			"totalAmount": row.TotalAmount,
 		})
 	}
+
+	h.recordAudit(c, "analytics.report.manager_load", map[string]any{
+		"from":  from.Format(time.RFC3339),
+		"to":    to.Format(time.RFC3339),
+		"count": len(items),
+	})
 
 	return c.JSON(fiber.Map{"items": items})
 }
@@ -99,4 +117,28 @@ func parseRange(c *fiber.Ctx) (time.Time, time.Time, error) {
 	}
 
 	return from, to, nil
+}
+
+func (h *ReportHandler) recordAudit(c *fiber.Ctx, action string, payload map[string]any) {
+	if h.auditor == nil {
+		return
+	}
+
+	ctx := userContext(c)
+	if err := h.auditor.Record(ctx, audit.Entry{
+		ActorID:  uuid.Nil,
+		Action:   action,
+		Entity:   "analytics.report",
+		EntityID: action,
+		Payload:  payload,
+	}); err != nil {
+		h.logger.Error().Err(err).Str("action", action).Msg("audit report request")
+	}
+}
+
+func userContext(c *fiber.Ctx) context.Context {
+	if ctx := c.UserContext(); ctx != nil {
+		return ctx
+	}
+	return context.Background()
 }

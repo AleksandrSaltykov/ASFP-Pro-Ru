@@ -13,6 +13,7 @@ import (
 
 	"asfppro/modules/crm/internal/entity"
 	"asfppro/modules/crm/internal/repository"
+	"asfppro/pkg/audit"
 	"asfppro/pkg/queue"
 )
 
@@ -30,12 +31,13 @@ type DealCreateInput struct {
 type DealService struct {
 	repo      *repository.DealRepository
 	publisher *queue.Publisher
+	auditor   *audit.Recorder
 	logger    zerolog.Logger
 }
 
 // NewDealService instantiates service.
-func NewDealService(repo *repository.DealRepository, publisher *queue.Publisher, logger zerolog.Logger) *DealService {
-	return &DealService{repo: repo, publisher: publisher, logger: logger}
+func NewDealService(repo *repository.DealRepository, publisher *queue.Publisher, auditor *audit.Recorder, logger zerolog.Logger) *DealService {
+	return &DealService{repo: repo, publisher: publisher, auditor: auditor, logger: logger}
 }
 
 // Create validates and persists deal data.
@@ -101,8 +103,11 @@ func (s *DealService) Create(ctx context.Context, input DealCreateInput) (entity
 		s.logger.Error().Err(err).Msg("publish deal created")
 	}
 
+	s.recordAudit(ctx, stored, input)
+
 	return stored, nil
 }
+
 // List returns latest deals.
 func (s *DealService) List(ctx context.Context, limit int) ([]entity.Deal, error) {
 	if limit <= 0 {
@@ -122,5 +127,34 @@ func (s *DealService) History(ctx context.Context, dealID string, limit int) ([]
 	return s.repo.History(ctx, dealID, limit)
 }
 
+func (s *DealService) recordAudit(ctx context.Context, deal entity.Deal, input DealCreateInput) {
+	if s.auditor == nil {
+		return
+	}
 
+	actorID := uuid.Nil
+	if id, err := uuid.Parse(strings.TrimSpace(input.CreatedBy)); err == nil {
+		actorID = id
+	} else if strings.TrimSpace(input.CreatedBy) != "" {
+		s.logger.Warn().Str("createdBy", input.CreatedBy).Msg("deal audit actor parse failed")
+	}
 
+	payload := map[string]any{
+		"dealId":     deal.ID,
+		"title":      deal.Title,
+		"customerId": deal.CustomerID,
+		"amount":     deal.Amount,
+		"currency":   deal.Currency,
+		"stage":      deal.Stage,
+	}
+
+	if err := s.auditor.Record(ctx, audit.Entry{
+		ActorID:  actorID,
+		Action:   "crm.deal.create",
+		Entity:   "crm.deal",
+		EntityID: deal.ID,
+		Payload:  payload,
+	}); err != nil {
+		s.logger.Error().Err(err).Msg("audit deal create")
+	}
+}

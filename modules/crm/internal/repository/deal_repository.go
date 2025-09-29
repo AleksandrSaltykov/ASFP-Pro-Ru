@@ -78,7 +78,7 @@ func (r *DealRepository) History(ctx context.Context, dealID string, limit int) 
 	var events []entity.DealEvent
 	for rows.Next() {
 		var (
-			e entity.DealEvent
+			e       entity.DealEvent
 			payload []byte
 		)
 		if err := rows.Scan(&e.ID, &e.DealID, &e.EventType, &payload, &e.CreatedAt); err != nil {

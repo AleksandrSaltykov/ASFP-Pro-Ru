@@ -21,12 +21,12 @@ var (
 )
 
 // User represents authenticated principal.
- type User struct {
+type User struct {
 	ID       uuid.UUID
 	Email    string
 	FullName string
 	Roles    []string
- }
+}
 
 // Service provides authentication helpers backed by Postgres.
 type Service struct {
@@ -58,12 +58,12 @@ GROUP BY u.id;
 	row := s.pool.QueryRow(ctx, query, email)
 
 	var (
-		id uuid.UUID
-		dbEmail string
-		fullName string
+		id           uuid.UUID
+		dbEmail      string
+		fullName     string
 		passwordHash string
-		isActive bool
-		roles []string
+		isActive     bool
+		roles        []string
 	)
 
 	if err := row.Scan(&id, &dbEmail, &fullName, &passwordHash, &isActive, &roles); err != nil {

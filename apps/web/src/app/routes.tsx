@@ -20,6 +20,7 @@ const HomeExecPage = lazy(() => import("@pages/home-exec/HomeExecPage"));
 const SalesLaunchpadPage = lazy(() => import("@pages/sales/SalesLaunchpadPage"));
 const OrderDetailsPage = lazy(() => import("@pages/orders/OrderDetailsPage"));
 const KioskPage = lazy(() => import("@pages/kiosk/KioskPage"));
+const AuditLogPage = lazy(() => import("@pages/admin/AuditLogPage"));
 
 export const router = createBrowserRouter([
   {
@@ -41,7 +42,9 @@ export const router = createBrowserRouter([
       { path: 'production', element: <ProductionPage /> },
       { path: 'logistics', element: <LogisticsPage /> },
       { path: 'settings', element: <SettingsPage /> },
-      { path: 'directories', element: <DirectoriesPage /> }
+      { path: 'directories', element: <DirectoriesPage /> },
+      { path: 'admin', element: <Navigate to='admin/audit' replace /> },
+      { path: 'admin/audit', element: <AuditLogPage /> }
     ]
   },
   {

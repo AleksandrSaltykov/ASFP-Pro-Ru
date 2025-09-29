@@ -8,6 +8,7 @@ export type RequestConfig<TBody = unknown, TQuery = Record<string, string>> = {
   body?: TBody;
   query?: TQuery;
   token?: string;
+  headers?: Record<string, string>;
 };
 
 const errorSchema = z.object({
@@ -30,7 +31,8 @@ export const createHttpClient = (baseUrl: string, client: QueryClient) => {
       method: config.method ?? 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...(config.token ? { Authorization: `Bearer ${config.token}` } : {})
+        ...(config.token ? { Authorization: `Bearer ${config.token}` } : {}),
+        ...(config.headers ?? {})
       },
       body: config.body ? JSON.stringify(config.body) : undefined
     });

@@ -14,6 +14,7 @@ import (
 	"asfppro/modules/crm/internal/handler"
 	"asfppro/modules/crm/internal/repository"
 	"asfppro/modules/crm/internal/service"
+	"asfppro/pkg/audit"
 	"asfppro/pkg/config"
 	"asfppro/pkg/db"
 	logpkg "asfppro/pkg/log"
@@ -43,8 +44,10 @@ func main() {
 	}
 	defer publisher.Close()
 
+	auditor := audit.NewRecorder(pool, logger)
+
 	repo := repository.NewDealRepository(pool)
-	service := service.NewDealService(repo, publisher, logger)
+	service := service.NewDealService(repo, publisher, auditor, logger)
 	h := handler.NewDealHandler(service)
 
 	openapi, err := readOpenAPI("modules/crm/docs/openapi/openapi.json", "CRM_OPENAPI_PATH")

@@ -298,3 +298,11 @@ export type EquipmentPayload = {
   metadata?: Record<string, unknown>;
   actorId?: UUID;
 };
+
+export type StockItem = {
+  sku: string;
+  warehouse: string;
+  quantity: number;
+  uom: string;
+  updatedAt: string;
+};

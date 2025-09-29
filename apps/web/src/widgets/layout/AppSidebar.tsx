@@ -29,12 +29,15 @@ const sidebarStyleBase: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: 24,
-  padding: '18px 16px',
+  padding: 'clamp(14px, 3vw, 20px)',
   borderRadius: 26,
-  border: '1px solid rgba(99, 102, 241, 0.22)',
-  background: 'linear-gradient(155deg, rgba(99, 102, 241, 0.14), rgba(56, 189, 248, 0.12))',
-  boxShadow: '0 26px 56px rgba(82, 109, 166, 0.26)',
-  minHeight: '100%'
+  border: `1px solid ${palette.border}`,
+  background: palette.surface,
+  boxShadow: palette.shadowElevated,
+  minHeight: '100%',
+  width: '100%',
+  boxSizing: 'border-box',
+  transition: 'background-color 0.2s ease, box-shadow 0.2s ease'
 };
 
 const sectionTitleStyle: CSSProperties = {
@@ -76,7 +79,8 @@ const iconWrapperStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  color: palette.primary
+  color: palette.primary,
+  flexShrink: 0
 };
 
 const favoriteButtonStyle: CSSProperties = {
@@ -124,7 +128,7 @@ const moduleItems: SidebarItem[] = [
   { id: 'service', label: 'Сервис', to: '/service', icon: 'gear' },
   { id: 'finance', label: 'Финансы', to: '/finance', icon: 'analytics' },
   { id: 'analytics', label: 'Аналитика', to: '/analytics', icon: 'analytics' },
-  { id: 'admin', label: 'Администрирование', to: '/admin', icon: 'gear' }
+  { id: 'audit', label: 'Журнал аудита', to: '/admin/audit', icon: 'shield' }
 ];
 
 const routeDictionary: Record<string, RouteDescriptor> = {
@@ -133,7 +137,8 @@ const routeDictionary: Record<string, RouteDescriptor> = {
   '/sales': { label: 'Старт CRM', icon: 'crm' },
   '/directories': { label: 'Справочники', icon: 'files' },
   '/orders/demo': { label: 'Демо-заказ', icon: 'package' },
-  '/wms/inventory': { label: 'Склад', icon: 'warehouse' }
+  '/wms/inventory': { label: 'Склад', icon: 'warehouse' },
+  '/admin/audit': { label: 'Журнал аудита', icon: 'shield' }
 };
 
 export const AppSidebar = ({ collapsed = false }: AppSidebarProps) => {

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -559,14 +560,15 @@ func (r *MasterDataRepository) AddCellHistory(ctx context.Context, record entity
 
 func scanWarehouse(row pgx.Row) (entity.Warehouse, error) {
 	var (
-		warehouse entity.Warehouse
+		warehouse                                                 entity.Warehouse
+		description                                               sql.NullString
 		addressBytes, operatingBytes, contactBytes, metadataBytes []byte
 	)
 	if err := row.Scan(
 		&warehouse.ID,
 		&warehouse.Code,
 		&warehouse.Name,
-		&warehouse.Description,
+		&description,
 		&addressBytes,
 		&warehouse.Timezone,
 		&warehouse.Status,
@@ -580,16 +582,26 @@ func scanWarehouse(row pgx.Row) (entity.Warehouse, error) {
 	); err != nil {
 		return entity.Warehouse{}, err
 	}
-	_ = json.Unmarshal(addressBytes, &warehouse.Address)
-	_ = json.Unmarshal(operatingBytes, &warehouse.OperatingHours)
-	_ = json.Unmarshal(contactBytes, &warehouse.Contact)
+	if description.Valid {
+		warehouse.Description = description.String
+	}
+	if len(addressBytes) > 0 {
+		_ = json.Unmarshal(addressBytes, &warehouse.Address)
+	}
+	if len(operatingBytes) > 0 {
+		_ = json.Unmarshal(operatingBytes, &warehouse.OperatingHours)
+	}
+	if len(contactBytes) > 0 {
+		_ = json.Unmarshal(contactBytes, &warehouse.Contact)
+	}
 	warehouse.Metadata = mustMap(metadataBytes)
 	return warehouse, nil
 }
 
 func scanZone(row pgx.Row) (entity.WarehouseZone, error) {
 	var (
-		zone entity.WarehouseZone
+		zone                                    entity.WarehouseZone
+		hazardClass                             sql.NullString
 		accessBytes, layoutBytes, metadataBytes []byte
 	)
 	if err := row.Scan(
@@ -601,7 +613,7 @@ func scanZone(row pgx.Row) (entity.WarehouseZone, error) {
 		&zone.IsBuffer,
 		&zone.TemperatureMin,
 		&zone.TemperatureMax,
-		&zone.HazardClass,
+		&hazardClass,
 		&accessBytes,
 		&layoutBytes,
 		&metadataBytes,
@@ -612,6 +624,9 @@ func scanZone(row pgx.Row) (entity.WarehouseZone, error) {
 	); err != nil {
 		return entity.WarehouseZone{}, err
 	}
+	if hazardClass.Valid {
+		zone.HazardClass = hazardClass.String
+	}
 	zone.AccessRestrictions = mustStringSlice(accessBytes)
 	zone.Layout = mustMap(layoutBytes)
 	zone.Metadata = mustMap(metadataBytes)
@@ -620,7 +635,8 @@ func scanZone(row pgx.Row) (entity.WarehouseZone, error) {
 
 func scanCell(row pgx.Row) (entity.WarehouseCell, error) {
 	var (
-		cell entity.WarehouseCell
+		cell                                      entity.WarehouseCell
+		label                                     sql.NullString
 		addressBytes, allowedBytes, metadataBytes []byte
 	)
 	if err := row.Scan(
@@ -628,7 +644,7 @@ func scanCell(row pgx.Row) (entity.WarehouseCell, error) {
 		&cell.WarehouseID,
 		&cell.ZoneID,
 		&cell.Code,
-		&cell.Label,
+		&label,
 		&addressBytes,
 		&cell.CellType,
 		&cell.Status,
@@ -650,6 +666,9 @@ func scanCell(row pgx.Row) (entity.WarehouseCell, error) {
 	); err != nil {
 		return entity.WarehouseCell{}, err
 	}
+	if label.Valid {
+		cell.Label = label.String
+	}
 	cell.Address = mustMap(addressBytes)
 	cell.AllowedHandling = mustStringSlice(allowedBytes)
 	cell.Metadata = mustMap(metadataBytes)
@@ -658,7 +677,9 @@ func scanCell(row pgx.Row) (entity.WarehouseCell, error) {
 
 func scanEquipment(row pgx.Row) (entity.WarehouseEquipment, error) {
 	var (
-		eq entity.WarehouseEquipment
+		eq            entity.WarehouseEquipment
+		manufacturer  sql.NullString
+		serialNumber  sql.NullString
 		metadataBytes []byte
 	)
 	if err := row.Scan(
@@ -668,8 +689,8 @@ func scanEquipment(row pgx.Row) (entity.WarehouseEquipment, error) {
 		&eq.Name,
 		&eq.EquipmentType,
 		&eq.Status,
-		&eq.Manufacturer,
-		&eq.SerialNumber,
+		&manufacturer,
+		&serialNumber,
 		&eq.Commissioning,
 		&metadataBytes,
 		&eq.CreatedBy,
@@ -678,6 +699,12 @@ func scanEquipment(row pgx.Row) (entity.WarehouseEquipment, error) {
 		&eq.UpdatedAt,
 	); err != nil {
 		return entity.WarehouseEquipment{}, err
+	}
+	if manufacturer.Valid {
+		eq.Manufacturer = manufacturer.String
+	}
+	if serialNumber.Valid {
+		eq.SerialNumber = serialNumber.String
 	}
 	eq.Metadata = mustMap(metadataBytes)
 	return eq, nil
