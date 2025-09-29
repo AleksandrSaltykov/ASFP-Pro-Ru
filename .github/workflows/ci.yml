@@ -59,6 +59,23 @@ jobs:
       - name: Run unit tests
         run: go test ./...
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Build frontend bundle
+        run: pnpm --filter web build
+      - name: Install Playwright browsers
+        run: pnpm --filter web exec playwright install --with-deps
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -97,6 +114,22 @@ jobs:
           WMS_DOWN_TO=0 make migrate-wms-down
           make migrate-wms
 
+      - name: Refresh demo data
+        env:
+          DATABASE_URL: postgres://asfp:asfp123@localhost:5432/asfp?sslmode=disable
+        run: make refresh-demo
+
+      - name: Validate demo dataset
+        run: make check-demo
+
+      - name: Refresh demo data
+        env:
+          DATABASE_URL: postgres://asfp:asfp123@localhost:5432/asfp?sslmode=disable
+        run: make refresh-demo
+
+      - name: Validate demo dataset
+        run: make check-demo
+
       - name: Start dev stack
         run: docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d
 
@@ -115,6 +148,14 @@ jobs:
           SMOKE_CRM_URL: http://localhost:8081
           SMOKE_WMS_URL: http://localhost:8082
         run: make smoke
+
+      - name: Run Playwright e2e tests
+        env:
+          E2E_GATEWAY_URL: http://localhost:8080
+          E2E_CRM_URL: http://localhost:8081
+          E2E_WMS_URL: http://localhost:8082
+          E2E_GATEWAY_BASIC_AUTH: admin@asfp.pro:admin123
+        run: pnpm --filter web exec playwright test
 
       - name: Tear down stack
         if: always()

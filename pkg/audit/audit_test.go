@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -196,5 +197,55 @@ func TestRecorderList(t *testing.T) {
 	}
 	if string(rec.Payload) != `{"foo":"bar"}` {
 		t.Fatalf("unexpected payload: %s", string(rec.Payload))
+	}
+}
+
+func TestRecorderListFiltersByActionAndDates(t *testing.T) {
+	db := &stubDB{rows: &fakeRows{}}
+	logger := zerolog.New(io.Discard)
+	recorder := NewRecorderWithDB(db, logger)
+
+	from := time.Date(2024, time.September, 1, 0, 0, 0, 0, time.UTC)
+	to := from.Add(24 * time.Hour)
+
+	_, err := recorder.List(context.Background(), Filter{
+		Action:       "crm.deal.create",
+		Entity:       "crm.deal",
+		OccurredFrom: &from,
+		OccurredTo:   &to,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(db.querySQL, "action = $") {
+		t.Fatalf("expected action filter in query: %s", db.querySQL)
+	}
+	if !strings.Contains(db.querySQL, "occurred_at >=") || !strings.Contains(db.querySQL, "occurred_at <=") {
+		t.Fatalf("expected occurred_at filters in query: %s", db.querySQL)
+	}
+
+	if len(db.queryArgs) != 5 {
+		t.Fatalf("expected 5 args, got %d", len(db.queryArgs))
+	}
+
+	action, ok := db.queryArgs[0].(string)
+	if !ok || action != "crm.deal.create" {
+		t.Fatalf("unexpected action arg: %#v", db.queryArgs[0])
+	}
+	entity, ok := db.queryArgs[1].(string)
+	if !ok || entity != "crm.deal" {
+		t.Fatalf("unexpected entity arg: %#v", db.queryArgs[1])
+	}
+	fromArg, ok := db.queryArgs[2].(time.Time)
+	if !ok || !fromArg.Equal(from) {
+		t.Fatalf("unexpected from arg: %#v", db.queryArgs[2])
+	}
+	toArg, ok := db.queryArgs[3].(time.Time)
+	if !ok || !toArg.Equal(to) {
+		t.Fatalf("unexpected to arg: %#v", db.queryArgs[3])
+	}
+	if limit, ok := db.queryArgs[4].(int); !ok || limit != 50 {
+		t.Fatalf("unexpected limit arg: %#v", db.queryArgs[4])
 	}
 }

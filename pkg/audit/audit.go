@@ -35,11 +35,14 @@ type Entry struct {
 
 // Filter narrows audit log queries.
 type Filter struct {
-	ActorID  uuid.UUID
-	Entity   string
-	EntityID string
-	AfterID  int64
-	Limit    int
+	ActorID      uuid.UUID
+	Action       string
+	Entity       string
+	EntityID     string
+	AfterID      int64
+	Limit        int
+	OccurredFrom *time.Time
+	OccurredTo   *time.Time
 }
 
 // Record represents stored audit log row.
@@ -133,6 +136,11 @@ func (r *Recorder) List(ctx context.Context, filter Filter) ([]Record, error) {
 		args = append(args, filter.ActorID)
 		idx++
 	}
+	if action := strings.TrimSpace(filter.Action); action != "" {
+		clauses = append(clauses, fmt.Sprintf("action = $%d", idx))
+		args = append(args, action)
+		idx++
+	}
 	if entity := strings.TrimSpace(filter.Entity); entity != "" {
 		clauses = append(clauses, fmt.Sprintf("entity = $%d", idx))
 		args = append(args, entity)
@@ -146,6 +154,16 @@ func (r *Recorder) List(ctx context.Context, filter Filter) ([]Record, error) {
 	if filter.AfterID > 0 {
 		clauses = append(clauses, fmt.Sprintf("id < $%d", idx))
 		args = append(args, filter.AfterID)
+		idx++
+	}
+	if filter.OccurredFrom != nil {
+		clauses = append(clauses, fmt.Sprintf("occurred_at >= $%d", idx))
+		args = append(args, *filter.OccurredFrom)
+		idx++
+	}
+	if filter.OccurredTo != nil {
+		clauses = append(clauses, fmt.Sprintf("occurred_at <= $%d", idx))
+		args = append(args, *filter.OccurredTo)
 		idx++
 	}
 

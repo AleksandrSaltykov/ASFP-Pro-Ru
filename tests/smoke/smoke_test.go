@@ -25,6 +25,20 @@ type uploadResponse struct {
 	Version string `json:"version"`
 }
 
+type catalogList struct {
+	Items []struct {
+		Code string `json:"code"`
+		Name string `json:"name"`
+	} `json:"items"`
+}
+
+type itemList struct {
+	Items []struct {
+		SKU  string `json:"sku"`
+		Name string `json:"name"`
+	} `json:"items"`
+}
+
 func TestSmokeEndpoints(t *testing.T) {
 	artifactsDir := ensureArtifactsDir(t)
 

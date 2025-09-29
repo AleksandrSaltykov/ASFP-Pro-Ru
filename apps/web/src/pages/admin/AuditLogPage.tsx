@@ -168,7 +168,7 @@ const AuditLogPage = () => {
     queryKey: ['audit-log', filters, authHeader],
     initialPageParam: undefined as number | undefined,
     queryFn: async ({ pageParam }) => {
-      const queryParams = sanitizeFilters(filters, pageParam);
+      const queryParams = sanitizeFilters(filters, pageParam as number | undefined);
       const response = await http.request<AuditResponse>('/api/v1/audit', {
         query: queryParams,
         headers: authHeader ? { Authorization: authHeader } : undefined

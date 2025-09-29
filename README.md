@@ -67,10 +67,12 @@ make up
 
 ### Управление миграциями
 
-- `make migrate-core`- После полного отката выполните `make seed`, чтобы восстановить демо-данные в core/CRM/WMS.
- / `make migrate-core-down` — применяют и откатывают миграции ядра (`CORE_DOWN_TO=0` для полного сброса).
-- `make migrate-crm` / `make migrate-crm-down` — миграции CRM (`CRM_DOWN_TO=0` для сброса).
-- `make migrate-wms` / `make migrate-wms-down` — миграции WMS (`WMS_DOWN_TO=0` для сброса).
+- `make migrate-core` / `make migrate-core-down` — применяют и откатывают миграции ядра (`CORE_DOWN_TO=0` сбрасывает схему).
+- `make migrate-crm` / `make migrate-crm-down` — миграции CRM (`CRM_DOWN_TO=0` для полного сброса).
+- `make migrate-wms` / `make migrate-wms-down` — миграции WMS (`WMS_DOWN_TO=0` для полного сброса).
+- `make refresh-demo` — прогоняет все миграции и сид, требует `DATABASE_URL` и поднятый docker-compose стенд.
+- `make seed` — запускает сид напрямую внутри PostgreSQL контейнера; путь к SQL можно переопределить через `SEED_SQL_PATH`.
+- `make check-demo` — выполняет `scripts/ci/check-demo-data.sh`, проверяя наличие ключевых демо-записей после ресида.
 
 ## Тесты и качество
 

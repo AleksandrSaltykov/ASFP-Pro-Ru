@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -57,6 +58,9 @@ func buildFilter(c *fiber.Ctx) (audit.Filter, error) {
 		filter.ActorID = id
 	}
 
+	if action := strings.TrimSpace(c.Query("action")); action != "" {
+		filter.Action = action
+	}
 	filter.Entity = c.Query("entity")
 	filter.EntityID = c.Query("entityId")
 	filter.Limit = c.QueryInt("limit", 50)
@@ -71,6 +75,22 @@ func buildFilter(c *fiber.Ctx) (audit.Filter, error) {
 		}
 	}
 
+	if raw := strings.TrimSpace(c.Query("from")); raw != "" {
+		moment, err := parseAuditTime(raw)
+		if err != nil {
+			return filter, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("invalid from: %v", err))
+		}
+		filter.OccurredFrom = &moment
+	}
+
+	if raw := strings.TrimSpace(c.Query("to")); raw != "" {
+		moment, err := parseAuditTime(raw)
+		if err != nil {
+			return filter, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("invalid to: %v", err))
+		}
+		filter.OccurredTo = &moment
+	}
+
 	return filter, nil
 }
 
@@ -81,4 +101,14 @@ func hasRole(roles []string, target string) bool {
 		}
 	}
 	return false
+}
+
+func parseAuditTime(value string) (time.Time, error) {
+	layouts := []string{time.RFC3339, "2006-01-02"}
+	for _, layout := range layouts {
+		if ts, err := time.Parse(layout, value); err == nil {
+			return ts, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("cannot parse time %q", value)
 }
