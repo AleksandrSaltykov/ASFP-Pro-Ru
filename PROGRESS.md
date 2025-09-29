@@ -1,3 +1,8 @@
+### 2025-09-29 19:36:39
+- Action: Удалил BOM из core/crm миграций, переписал seed на jsonb_build_object и проверил up/down для всех модулей.
+- Result: `make migrate-core|crm|wms` и соответствующие `*-down`/`*_DOWN_TO=0` проходят на чистой БД; CI теперь гоняет полный цикл up/down/up для всех модулей.
+- Next steps: Подумать об автоматическом `make seed` в CI после откатов и оценить необходимость очистки связанных сервисов при down-to 0.
+
 ### 2025-09-29 19:10:45
 - Action: Добавил down-таргеты для core/crm, задокументировал команды и встроил прогон `make migrate-wms` + откаты в CI (postgres-only этап).
 - Result: Makefile поддерживает `migrate-core-down`/`migrate-crm-down`, README описывает откаты, а workflow CI прогоняет последовательность up/down/up `make migrate-wms`.

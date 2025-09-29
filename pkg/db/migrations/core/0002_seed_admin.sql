@@ -1,4 +1,4 @@
-﻿-- +goose Up
+-- +goose Up
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 INSERT INTO core.roles (code, description)
@@ -16,10 +16,11 @@ VALUES (
 )
 ON CONFLICT (email) DO NOTHING;
 
-INSERT INTO core.user_roles (user_id, role_code)
+INSERT INTO core.user_roles (user_id, role_code, warehouse_scope)
 VALUES (
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-    'admin'
+    'admin',
+    '*'
 )
 ON CONFLICT DO NOTHING;
 
@@ -27,4 +28,3 @@ ON CONFLICT DO NOTHING;
 DELETE FROM core.user_roles WHERE user_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 DELETE FROM core.users WHERE id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 DELETE FROM core.roles WHERE code IN ('admin', 'manager');
-

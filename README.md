@@ -67,7 +67,8 @@ make up
 
 ### Управление миграциями
 
-- `make migrate-core` / `make migrate-core-down` — применяют и откатывают миграции ядра (`CORE_DOWN_TO=0` для полного сброса).
+- `make migrate-core`- После полного отката выполните `make seed`, чтобы восстановить демо-данные в core/CRM/WMS.
+ / `make migrate-core-down` — применяют и откатывают миграции ядра (`CORE_DOWN_TO=0` для полного сброса).
 - `make migrate-crm` / `make migrate-crm-down` — миграции CRM (`CRM_DOWN_TO=0` для сброса).
 - `make migrate-wms` / `make migrate-wms-down` — миграции WMS (`WMS_DOWN_TO=0` для сброса).
 

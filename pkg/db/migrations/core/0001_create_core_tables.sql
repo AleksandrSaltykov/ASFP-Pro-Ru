@@ -1,4 +1,4 @@
-﻿-- +goose Up
+-- +goose Up
 CREATE SCHEMA IF NOT EXISTS core;
 
 CREATE TABLE IF NOT EXISTS core.users (

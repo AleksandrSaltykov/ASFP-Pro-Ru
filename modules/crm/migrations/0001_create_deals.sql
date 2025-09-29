@@ -1,4 +1,4 @@
-﻿-- +goose Up
+-- +goose Up
 CREATE SCHEMA IF NOT EXISTS crm;
 
 CREATE TABLE IF NOT EXISTS crm.customers (
