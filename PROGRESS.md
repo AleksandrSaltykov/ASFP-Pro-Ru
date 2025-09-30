@@ -1,3 +1,73 @@
+### 2025-09-30 13:20:00
+- Action: Синхронизировал roadmap/PROGRESS, задокументировал реализованные доменные API, обновил модульные README, фронтенд-гайд и описание тестов.
+- Result: Фаза 2 отмечена как завершённая по CRUD/seed/test; roadmap отражает фокус на RBAC, расширенном аудите и BI; README модулей описывают доступные endpoints и сиды; tests/README содержит справку по smoke.
+- Next steps: Запустить спринт по RBAC/permission matrix, усилить аудит и события, подготовить BI-витрины и e2e/Playwright сценарии для ключевых потоков.
+
+### 2025-09-30 12:05:00
+- Action: Настроил ClickHouse сиды и реализовал минимальный Analytics API (reports/exports) в сервисе и через gateway, задокументировал OpenAPI и добавил smoke-сценарий.
+- Result: `/api/v1/analytics/reports/*` и `/api/v1/analytics/exports/*` доступны через gateway, демо-данные подгружаются в ClickHouse, smoke `gateway_analytics_reports_exports` проходит.
+- Next steps: Подготовить e2e BI сценарий и расширить отчётность при необходимости.
+
+### 2025-09-30 10:38:41
+- Action: Реализовал BPM minimal API (processes/forms/tasks) с расширенной схемой (`assignment_rule`, `escalation`), обновил миграции/seed, OpenAPI сервисов и подключил сценарий в gateway + smoke.
+- Result: миграция 0001 дополнилась новыми таблицами, `deploy/.env.example` и gateway OpenAPI отражают BPM, placeholder в smoke заменён CRUD сценарием; `go test` (кроме smoke) проходит локально.
+- Next steps: поднять docker-compose стенд и прогнать `make smoke` с новым BPM сценарием, затем перейти к подготовке minimal API для Analytics.
+
+### 2025-09-30 06:41:22
+- Action: Реализовал Montage minimal API (бригады/транспорт/задачи) в отдельном сервисе и через gateway, добавил схему БД, миграции, OpenAPI и Docker-образ.
+- Result: docker compose пересобирает сервисы, make seed наполняет новые таблицы, smoke сценарий для montage готов (требуется прогон после ребилда).
+- Next steps: Запустить make smoke после обновления окружения и приступить к Docs minimal API.
+
+### 2025-09-30 05:44:51
+- Action: Реализовал minimal MES API (work-centers/operations/routes) в отдельном сервисе и через gateway: схема Postgres, репозитории/сервисы, HTTP-хендлеры, Docker и OpenAPI.
+- Result: docker compose собрал новый mes, миграции/seed прогнаны, go test ./..., make smoke подтверждает сценарий mes_minimal_api.
+- Next steps: Перейти к подготовке minimal API для Montage и расширить smoke по аналогии.
+
+### 2025-09-30 01:07:32
+- Action: Привёл CRM/WMS/gateway код к gofmt, связал CRM сервис с gateway, поправил updateDeal/UpdateCustomer без несуществующего updated_at, убрал NULLIF для createdBy и пересобрал контейнеры перед make seed/check-demo/smoke.
+- Result: CRM minimal API отдаёт данные через gateway (/api/v1/crm/*), smoke gateway_crm_customer_deal_crud и go test ./... проходят, CRM сервис корректно обрабатывает пустой created_by.
+- Next steps: Приступить к реализации minimal API для MES и добавить для него smoke сценарии.
+
+### 2025-09-29 23:46:00
+- Action: Реализовал minimal Core API (users/roles) в gateway: добавлены репозиторий/сервис, REST-обработчики и аудит.
+- Result: /api/v1/users и /api/v1/roles доступны через gateway, сиды + smoke/e2e проверяют демо-данные; placeholders готовы к снятию после следующих доменов.
+- Next steps: Перейти к реализации WMS minimal API, затем CRM, и включить новые smoke/e2e проверки без skip.
+
+### 2025-09-29 23:26:36
+- Action: Добавил seed-файлы для MES/Montage/Docs/BPM и демо-вставки для ClickHouse, обновил smoke/e2e под CRM/WMS и задал плейсхолдеры для будущих доменов.
+- Result: make seed покрывает новые домены (с безопасным пропуском, если таблиц ещё нет), smoke проверяет CRM demo и содержит placeholders, Playwright отслеживает CRM и будущие разделы.
+- Next steps: Реализовать минимальные API по приоритету (Core -> WMS -> CRM) и включить новые smoke/e2e сценарии без skip.
+
+### 2025-09-29 23:00:05
+- Action: Добавил таблицу minimal API/seed/test требований для всех доменов Фазы 2 и отметился в чеклисте roadmap.
+- Result: Понятно, какие эндпоинты, сиды и типы тестов нужны для каждого сервиса перед разработкой; чеклист дополнен отдельным пунктом.
+- Next steps: Перейти к плану реализации minimal API (приоритизация доменов) и подготовке сидов/тестов.
+
+### 2025-09-29 22:52:30
+- Action: Зафиксировал обязательные события, аудит и Swagger-артефакты для доменов Фазы 2 (таблица в docs/roadmap.md).
+- Result: Чеклист Фазы 2 пополнен деталями по событиям/аудиту; понятно, какие топики и действия нужны для каждого домена.
+- Next steps: Сформировать план minimal API и обновление сидов/тестов под выбранные домены.
+
+### 2025-09-29 22:44:00
+- Action: Составил матрицу доменов и справочников (core/CRM/WMS/MES/монтаж/BPM/docs/analytics) и добавил её в docs/roadmap.md.
+- Result: Фаза 2 имеет зафиксированный объем данных и зависимостей; можно переходить к описанию событий, аудита и Swagger для доменов.
+- Next steps: Описать требования к обязательным событиям/аудиту/Swagger для сервисных пластов.
+
+### 2025-09-29 22:37:12
+- Action: Обновил roadmap — зафиксирован переход к Фазе 2 и новый чекпоинт (матрица доменов, события/Swagger, план API).
+- Result: Текущая позиция отражает завершение Фазы 1, чекпоинты сфокусированы на сервисных пластах.
+- Next steps: Подготовить матрицу доменов ↔ справочники и зафиксировать её в docs/roadmap.md.
+
+### 2025-09-29 22:26:33
+- Action: Подготовил how-to по расширению справочников без миграций и зафиксировал правила тестового покрытия (docs/masterdata/how-to-extend-directories.md).
+- Result: Roadmap обновлён, ссылки на документацию добавлены в Фазу 1; динамический контракт ссылается на обновлённый процесс.
+- Next steps: Проверить необходимость дополнительной автоматизации для `make smoke` при появлении новых справочников.
+
+### 2025-09-29 22:15:38
+- Action: Описал контракт динамических атрибутов и порядок валидации/значений для WMS master data (docs/masterdata/dynamic-attributes.md).
+- Result: Зафиксированы допустимые типы, поведение сервисного слоя и форматы API; ссылки в roadmap обновлены.
+- Next steps: Подготовить how-to по добавлению новых справочников/атрибутов без миграций и зафиксировать требования к тестовому покрытию.
+
 ### 2025-09-29 19:36:39
 - Action: Удалил BOM из core/crm миграций, переписал seed на jsonb_build_object и проверил up/down для всех модулей.
 - Result: `make migrate-core|crm|wms` и соответствующие `*-down`/`*_DOWN_TO=0` проходят на чистой БД; CI теперь гоняет полный цикл up/down/up для всех модулей.
@@ -126,7 +196,11 @@
 - Action: Подготовили набор фирменных иконок (overview/crm/wms/files/system) и внедрили их в боковое меню; иконки построены в цветах #2962FF/#131A2D/#E6EDFF.
 - Result: Навигация теперь передаёт смысловые акценты брендбука через векторные пиктограммы; код лежит в @shared/ui/icons.
 - Next steps: Завершить настройку lint (eslint.config) и отключить временные devserver артефакты перед коммитом.
-### 2025-09-24 20:25:00\n- Action: Перерисовали иконки под стиль образца (grid, clipboard, куб, папка, gear).\n- Result: Иконки минималистичны, stroke 1.7, подчёркивают смысл пунктов меню.\n- Next steps: Проверить визуально и утвердить набор.\n
+### 2025-09-24 20:25:00
+- Action: Перерисовали иконки под стиль образца (grid, clipboard, куб, папка, gear).
+- Result: Иконки минималистичны, stroke 1.7, подчёркивают смысл пунктов меню.
+- Next steps: Проверить визуально и утвердить набор.
+
 ### 2025-09-27 22:45:00
 - Action: git reset --hard origin/main && git clean -fd; сформирован план по универсальным каталогам/атрибутам.
 - Result: рабочее дерево приведено к чистому состоянию; зафиксирован roadmap реализации динамического WMS.
@@ -146,4 +220,3 @@
 - Action: Обновил README под актуальный dev-стек (MinIO по умолчанию, статус smoke/CI), довёл фронтенд lint/tsconfig до рабочего состояния и подключил React Query-клиенты к новым WMS endpoint (каталоги, атрибуты, товары).
 - Result: README отражает MinIO-first сценарий и предупреждает о нестабильном smoke, `pnpm lint`/`pnpm build` проходят без js-артефактов (tsconfig `noEmit`), `CatalogManager`/`ItemManager` используют API (`useCatalogNodesQuery`, `useItemsQuery`, `useReplaceCatalogLinksMutation`).
 - Next steps: интегрировать формы с реальными бэкенд-токенами и правами, покрыть новые хэндлеры e2e-тестами и зафиксировать smoke-фиксы после стабилизации CI.
-
