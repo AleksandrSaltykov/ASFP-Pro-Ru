@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "createdAt": "2025-09-24T06:19:22.085Z",
-  "lastUpdated": "2025-10-03T15:27:09.204Z",
+  "lastUpdated": "2025-10-03T15:27:39.159Z",
   "workspaceRoot": "/Users/aleksandrsaltykov/работа/ИИ/ASFP-Pro-ru",
   "files": [
     [
@@ -164,7 +164,7 @@
         "path": "/Users/aleksandrsaltykov/работа/ИИ/ASFP-Pro-Ru-clean/.autoclaude/tasks/sessions.json",
         "relativePath": ".autoclaude/tasks/sessions.json",
         "size": 1736,
-        "lastModified": "2025-10-03T15:27:09.057Z",
+        "lastModified": "2025-10-03T15:27:39.062Z",
         "hash": "3a0d51631afb20000dd7edd02f4dc010",
         "language": "json"
       }
@@ -175,7 +175,7 @@
         "path": "/Users/aleksandrsaltykov/работа/ИИ/ASFP-Pro-Ru-clean/.autoclaude/tasks/tasks.json",
         "relativePath": ".autoclaude/tasks/tasks.json",
         "size": 2,
-        "lastModified": "2025-10-03T15:27:09.056Z",
+        "lastModified": "2025-10-03T15:27:39.062Z",
         "hash": "d751713988987e9331980363e24189ce",
         "language": "json"
       }
@@ -87565,51 +87565,51 @@
     "filesByLanguage": [
       [
         "json",
-        31833200
+        31833252
       ],
       [
         "markdown",
-        21488664
+        21488694
       ],
       [
         "shellscript",
-        2977344
+        2977372
       ],
       [
         "yaml",
-        2880448
+        2880458
       ],
       [
         "go",
-        40863392
+        40863634
       ],
       [
         "sql",
-        5411522
+        5411586
       ],
       [
         "lua",
-        362151
+        362153
       ],
       [
         "typescript",
-        1103909
+        1103997
       ],
       [
         "html",
-        2269969
+        2269973
       ],
       [
         "typescriptreact",
-        1254456
+        1254524
       ],
       [
         "css",
-        1583857
+        1583859
       ],
       [
         "javascript",
-        722732
+        722734
       ],
       [
         "xml",
