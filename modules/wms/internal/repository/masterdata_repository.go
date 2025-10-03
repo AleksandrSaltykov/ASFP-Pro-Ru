@@ -28,7 +28,7 @@ func NewMasterDataRepository(pool *pgxpool.Pool) *MasterDataRepository {
 func (r *MasterDataRepository) ListWarehouses(ctx context.Context) ([]entity.Warehouse, error) {
 	query := `
 		SELECT id, code, name, description, address, timezone, status, operating_hours, contact,
-		       metadata, created_by, updated_by, created_at, updated_at
+		       metadata, created_by, updated_by, created_at, updated_at, org_unit_code
 		FROM wms.warehouse
 		ORDER BY name
 	`
@@ -54,7 +54,7 @@ func (r *MasterDataRepository) ListWarehouses(ctx context.Context) ([]entity.War
 func (r *MasterDataRepository) GetWarehouse(ctx context.Context, id uuid.UUID) (entity.Warehouse, error) {
 	query := `
 		SELECT id, code, name, description, address, timezone, status, operating_hours, contact,
-		       metadata, created_by, updated_by, created_at, updated_at
+		       metadata, created_by, updated_by, created_at, updated_at, org_unit_code
 		FROM wms.warehouse
 		WHERE id = $1
 	`
@@ -82,17 +82,17 @@ func (r *MasterDataRepository) CreateWarehouse(ctx context.Context, warehouse en
 	query := `
 		INSERT INTO wms.warehouse (
 			id, code, name, description, address, timezone, status, operating_hours,
-			contact, metadata, created_by, updated_by
+			contact, metadata, created_by, updated_by, org_unit_code
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8,
-			$9, $10, $11, $12
+			$9, $10, $11, $12, $13
 		)
 		RETURNING created_at, updated_at
 	`
 	row := r.pool.QueryRow(ctx, query,
 		warehouse.ID, warehouse.Code, warehouse.Name, warehouse.Description,
 		address, warehouse.Timezone, warehouse.Status, operating,
-		contact, metadata, nilUUID(warehouse.CreatedBy), nilUUID(warehouse.UpdatedBy),
+		contact, metadata, nilUUID(warehouse.CreatedBy), nilUUID(warehouse.UpdatedBy), warehouse.OrgUnitCode,
 	)
 	if err := row.Scan(&warehouse.CreatedAt, &warehouse.UpdatedAt); err != nil {
 		return entity.Warehouse{}, fmt.Errorf("insert warehouse: %w", err)
@@ -579,6 +579,7 @@ func scanWarehouse(row pgx.Row) (entity.Warehouse, error) {
 		&warehouse.UpdatedBy,
 		&warehouse.CreatedAt,
 		&warehouse.UpdatedAt,
+		&warehouse.OrgUnitCode,
 	); err != nil {
 		return entity.Warehouse{}, err
 	}

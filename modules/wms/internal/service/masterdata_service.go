@@ -99,6 +99,12 @@ func (s *MasterDataService) CreateWarehouse(ctx context.Context, payload entity.
 	if payload.Metadata == nil {
 		payload.Metadata = map[string]any{}
 	}
+	scope := strings.TrimSpace(payload.OrgUnitCode)
+	if scope == "" {
+		payload.OrgUnitCode = "HQ-WMS"
+	} else {
+		payload.OrgUnitCode = strings.ToUpper(scope)
+	}
 
 	warehouse, err := s.repo.CreateWarehouse(ctx, payload)
 	if err != nil {

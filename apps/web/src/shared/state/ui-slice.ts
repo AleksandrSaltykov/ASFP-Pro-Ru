@@ -1,6 +1,6 @@
 import { createAction, createSlice, nanoid, PayloadAction } from "@reduxjs/toolkit";
 
-export type FeatureFlagKey = "ui.viz_revamp";
+export type FeatureFlagKey = "ui.viz_revamp" | "ui.warehouse.rebuild";
 
 type FeatureFlagState = {
   defaults: Record<FeatureFlagKey, boolean>;
@@ -35,11 +35,13 @@ const MAX_RECENT = 12;
 const initialState: UiState = {
   featureFlags: {
     defaults: {
-      "ui.viz_revamp": false
+      "ui.viz_revamp": false,
+      "ui.warehouse.rebuild": true
     },
     overrides: {},
     roleAccess: {
-      "ui.viz_revamp": ["ui-tester"]
+      "ui.viz_revamp": ["ui-tester"],
+      "ui.warehouse.rebuild": []
     }
   },
   recent: ["/sales", "/directories", "/orders/demo"],

@@ -6,13 +6,13 @@ VALUES
     ('33333333-3333-3333-3333-333333333333', 'ИП Сидоров П.А.', '5409876543', NULL)
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO crm.deals (id, title, customer_id, stage, amount, currency, created_by, created_at)
+INSERT INTO crm.deals (id, title, customer_id, stage, amount, currency, created_by, created_at, org_unit_code)
 VALUES
-    ('31111111-aaaa-4aaa-8aaa-111111111111', 'Ремонт фасада ТЦ "Альфа"', '11111111-1111-1111-1111-111111111111', 'new', 1200000, 'RUB', 'demo@asfp.pro', NOW() - INTERVAL '10 days'),
-    ('32222222-bbbb-4bbb-8bbb-222222222222', 'Подсветка автосалона "Неон"', '22222222-2222-2222-2222-222222222222', 'qualification', 850000, 'RUB', 'demo@asfp.pro', NOW() - INTERVAL '7 days'),
-    ('33333333-cccc-4ccc-8ccc-333333333333', 'Экран на фасад БЦ "Орион"', '22222222-2222-2222-2222-222222222222', 'negotiation', 2150000, 'RUB', 'demo@asfp.pro', NOW() - INTERVAL '3 days'),
-    ('34444444-dddd-4ddd-8ddd-444444444444', 'Печать баннеров для ИП Сидоров П.А.', '33333333-3333-3333-3333-333333333333', 'won', 320000, 'RUB', 'demo@asfp.pro', NOW() - INTERVAL '1 day'),
-    ('35555555-eeee-4eee-8eee-555555555555', 'Рестайлинг витрины "Ромашка"', '11111111-1111-1111-1111-111111111111', 'lost', 540000, 'RUB', 'demo@asfp.pro', NOW() - INTERVAL '5 days')
+    ('31111111-aaaa-4aaa-8aaa-111111111111', 'Ремонт фасада ТЦ "Альфа"', '11111111-1111-1111-1111-111111111111', 'new', 1200000, 'RUB', 'demo@asfp.pro', NOW() - INTERVAL '10 days', 'HQ-SALES'),
+    ('32222222-bbbb-4bbb-8bbb-222222222222', 'Подсветка автосалона "Неон"', '22222222-2222-2222-2222-222222222222', 'qualification', 850000, 'RUB', 'demo@asfp.pro', NOW() - INTERVAL '7 days', 'HQ-SALES'),
+    ('33333333-cccc-4ccc-8ccc-333333333333', 'Экран на фасад БЦ "Орион"', '22222222-2222-2222-2222-222222222222', 'negotiation', 2150000, 'RUB', 'demo@asfp.pro', NOW() - INTERVAL '3 days', 'HQ-SALES'),
+    ('34444444-dddd-4ddd-8ddd-444444444444', 'Печать баннеров для ИП Сидоров П.А.', '33333333-3333-3333-3333-333333333333', 'won', 320000, 'RUB', 'demo@asfp.pro', NOW() - INTERVAL '1 day', 'HQ-SALES'),
+    ('35555555-eeee-4eee-8eee-555555555555', 'Рестайлинг витрины "Ромашка"', '11111111-1111-1111-1111-111111111111', 'lost', 540000, 'RUB', 'demo@asfp.pro', NOW() - INTERVAL '5 days', 'HQ-SALES')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO crm.deal_events (deal_id, event_type, payload)

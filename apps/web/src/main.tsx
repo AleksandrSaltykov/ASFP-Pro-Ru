@@ -5,11 +5,22 @@ import ReactDOM from 'react-dom/client';
 import { AppProviders } from '@app/providers';
 import { App } from '@app/App';
 
-const enableMocks = async () => {
+const shouldEnableMocks = () => {
   if (import.meta.env.VITE_ENABLE_MSW === 'true') {
-    const { enableMocks: startWorker } = await import('@shared/api/mocks/browser');
-    await startWorker();
+    return true;
   }
+  if (import.meta.env.VITE_ENABLE_MSW === 'false') {
+    return false;
+  }
+  return import.meta.env.DEV;
+};
+
+const enableMocks = async () => {
+  if (!shouldEnableMocks()) {
+    return;
+  }
+  const { enableMocks: startWorker } = await import('@shared/api/mocks/browser');
+  await startWorker();
 };
 
 const root = document.getElementById('root');

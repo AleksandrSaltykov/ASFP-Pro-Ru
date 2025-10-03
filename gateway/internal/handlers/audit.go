@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 
+	"asfppro/gateway/internal/auth"
 	"asfppro/pkg/audit"
 )
 
@@ -94,9 +95,9 @@ func buildFilter(c *fiber.Ctx) (audit.Filter, error) {
 	return filter, nil
 }
 
-func hasRole(roles []string, target string) bool {
+func hasRole(roles []auth.Role, target string) bool {
 	for _, role := range roles {
-		if strings.EqualFold(strings.TrimSpace(role), target) {
+		if strings.EqualFold(strings.TrimSpace(role.Code), target) {
 			return true
 		}
 	}

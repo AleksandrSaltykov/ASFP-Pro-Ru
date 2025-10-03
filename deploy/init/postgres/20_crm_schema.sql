@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS crm.deals (
     amount NUMERIC(18,2) NOT NULL,
     currency TEXT NOT NULL DEFAULT 'RUB',
     created_by TEXT,
+    org_unit_code TEXT NOT NULL REFERENCES core.org_units(code),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

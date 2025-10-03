@@ -19,12 +19,13 @@ import (
 
 // DealCreateInput describes payload required to create deal.
 type DealCreateInput struct {
-	Title      string  `json:"title"`
-	CustomerID string  `json:"customerId"`
-	Stage      string  `json:"stage"`
-	Amount     float64 `json:"amount"`
-	Currency   string  `json:"currency"`
-	CreatedBy  string  `json:"createdBy"`
+	Title       string  `json:"title"`
+	CustomerID  string  `json:"customerId"`
+	Stage       string  `json:"stage"`
+	Amount      float64 `json:"amount"`
+	Currency    string  `json:"currency"`
+	CreatedBy   string  `json:"createdBy"`
+	OrgUnitCode string  `json:"orgUnitCode"`
 }
 
 // DealService wraps business logic around deals.
@@ -60,6 +61,11 @@ func (s *DealService) Create(ctx context.Context, input DealCreateInput) (entity
 		Currency:   strings.ToUpper(input.Currency),
 		CreatedBy:  input.CreatedBy,
 	}
+	scope := strings.TrimSpace(input.OrgUnitCode)
+	if scope == "" {
+		scope = "HQ-SALES"
+	}
+	deal.OrgUnitCode = strings.ToUpper(scope)
 
 	stored, err := s.repo.Create(ctx, deal)
 	if err != nil {

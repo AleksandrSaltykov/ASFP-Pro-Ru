@@ -1,4 +1,4 @@
-.PHONY: up up-build restart down stop build lint test migrate-core migrate-core-down migrate-crm migrate-crm-down migrate-wms migrate-wms-down seed refresh-demo check-demo clean smoke certs mkcert clean-certs env frontend frontend-install
+.PHONY: up up-build restart down stop build lint test migrate-core migrate-core-down migrate-crm migrate-crm-down migrate-wms migrate-wms-down migrate-mes migrate-mes-down migrate-montage migrate-montage-down migrate-docs migrate-docs-down migrate-bpm migrate-bpm-down seed refresh-demo check-demo clean smoke certs mkcert clean-certs env frontend frontend-install
 
 GOOSE?=goose
 GOOSE_BIN:=$(shell command -v $(GOOSE) 2>/dev/null)
@@ -30,6 +30,38 @@ else
 GOOSE_WMS_DOWN_CMD:=down-to $(WMS_DOWN_TO)
 endif
 GOOSE_WMS_TABLE?=goose_db_version_wms
+
+MES_DOWN_TO?=
+ifeq ($(strip $(MES_DOWN_TO)),)
+GOOSE_MES_DOWN_CMD:=down
+else
+GOOSE_MES_DOWN_CMD:=down-to $(MES_DOWN_TO)
+endif
+GOOSE_MES_TABLE?=goose_db_version_mes
+
+MONTAGE_DOWN_TO?=
+ifeq ($(strip $(MONTAGE_DOWN_TO)),)
+GOOSE_MONTAGE_DOWN_CMD:=down
+else
+GOOSE_MONTAGE_DOWN_CMD:=down-to $(MONTAGE_DOWN_TO)
+endif
+GOOSE_MONTAGE_TABLE?=goose_db_version_montage
+
+DOCS_DOWN_TO?=
+ifeq ($(strip $(DOCS_DOWN_TO)),)
+GOOSE_DOCS_DOWN_CMD:=down
+else
+GOOSE_DOCS_DOWN_CMD:=down-to $(DOCS_DOWN_TO)
+endif
+GOOSE_DOCS_TABLE?=goose_db_version_docs
+
+BPM_DOWN_TO?=
+ifeq ($(strip $(BPM_DOWN_TO)),)
+GOOSE_BPM_DOWN_CMD:=down
+else
+GOOSE_BPM_DOWN_CMD:=down-to $(BPM_DOWN_TO)
+endif
+GOOSE_BPM_TABLE?=goose_db_version_bpm
 
 COMPOSE_FILE=deploy/docker-compose.yml
 ENV_FILE?=deploy/.env
@@ -97,6 +129,30 @@ migrate-wms:
 migrate-wms-down:
 	$(GOOSE_RUN) -table $(GOOSE_WMS_TABLE) -dir modules/wms/migrations postgres "$(DATABASE_URL)" $(GOOSE_WMS_DOWN_CMD)
 
+migrate-mes:
+	$(GOOSE_RUN) -table $(GOOSE_MES_TABLE) -dir modules/mes/migrations postgres "$(DATABASE_URL)" up
+
+migrate-mes-down:
+	$(GOOSE_RUN) -table $(GOOSE_MES_TABLE) -dir modules/mes/migrations postgres "$(DATABASE_URL)" $(GOOSE_MES_DOWN_CMD)
+
+migrate-montage:
+	$(GOOSE_RUN) -table $(GOOSE_MONTAGE_TABLE) -dir modules/montage/migrations postgres "$(DATABASE_URL)" up
+
+migrate-montage-down:
+	$(GOOSE_RUN) -table $(GOOSE_MONTAGE_TABLE) -dir modules/montage/migrations postgres "$(DATABASE_URL)" $(GOOSE_MONTAGE_DOWN_CMD)
+
+migrate-docs:
+	$(GOOSE_RUN) -table $(GOOSE_DOCS_TABLE) -dir modules/docs/migrations postgres "$(DATABASE_URL)" up
+
+migrate-docs-down:
+	$(GOOSE_RUN) -table $(GOOSE_DOCS_TABLE) -dir modules/docs/migrations postgres "$(DATABASE_URL)" $(GOOSE_DOCS_DOWN_CMD)
+
+migrate-bpm:
+	$(GOOSE_RUN) -table $(GOOSE_BPM_TABLE) -dir modules/bpm/migrations postgres "$(DATABASE_URL)" up
+
+migrate-bpm-down:
+	$(GOOSE_RUN) -table $(GOOSE_BPM_TABLE) -dir modules/bpm/migrations postgres "$(DATABASE_URL)" $(GOOSE_BPM_DOWN_CMD)
+
 seed:
 	$(SEED_PSQL) -f $(SEED_SQL_PATH)
 
@@ -104,6 +160,10 @@ refresh-demo:
 	$(MAKE) migrate-core
 	$(MAKE) migrate-crm
 	$(MAKE) migrate-wms
+	$(MAKE) migrate-mes
+	$(MAKE) migrate-montage
+	$(MAKE) migrate-docs
+	$(MAKE) migrate-bpm
 	$(MAKE) seed
 
 check-demo:

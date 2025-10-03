@@ -12,7 +12,7 @@ apps/web        — клиентское SPA
 packages/*      — будущие переиспользуемые модули (ui, api, design)
 ```
 
-Ключевые страницы (маршрутизация: `apps/web/src/app/routes.tsx`): CRM сделки, WMS каталоги и остатки, Docs, BPM tasks, Analytics, Files и админский аудит. `CatalogManager` и `InventoryPage` используют React Query-хуки (`@shared/api/wms`) поверх gateway API.
+Ключевые страницы (маршрутизация: `apps/web/src/app/routes.tsx`): CRM сделки, модуль склада `/warehouse/*`, Docs, BPM tasks, Analytics, Files и админский аудит. Верхнее меню склада разворачивает подпункты `stock/balances`, `stock/availability`, `stock/endless`, `stock/history` на моковых API (`@shared/api/wms/stock`).
 
 ## Актуальный бэклог
 1. Реализовать авторизацию: переход от Basic Auth к токенам, состояние пользователя, редиректы.

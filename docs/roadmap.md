@@ -47,7 +47,7 @@
 - [x] Зафиксировать минимальные API/seed/тесты для доменов.
 - [x] Реализовать min viable API по каждому домену (CRUD, фильтры, аудит).
 - [x] Обновить сиды/тесты под новые домены.
-- [ ] Внедрить расширенный RBAC (org units, permission matrix, API tokens) и обновить gateway/core.
+- [x] Внедрить расширенный RBAC (org units, permission matrix, API tokens) и обновить gateway/core.
 - [ ] Расширить аудит и событийну шину, подготовить ClickHouse витрины и BI-дэшборды.
 - [ ] Завершить e2e/Playwright сценарии для CRM, WMS, BPM, Docs, Analytics.
 

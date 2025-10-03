@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	ch "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -17,7 +18,7 @@ func Health() fiber.Handler {
 }
 
 // Ready exposes readiness probe checking critical dependencies.
-func Ready(pool *pgxpool.Pool, storage *s3.Client) fiber.Handler {
+func Ready(pool *pgxpool.Pool, storage *s3.Client, clickhouse ch.Conn) fiber.Handler {
 	if pool == nil || storage == nil {
 		return func(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
@@ -43,5 +44,16 @@ func Ready(pool *pgxpool.Pool, storage *s3.Client) fiber.Handler {
 			},
 		},
 	}
+
+	if clickhouse != nil {
+		checks = append(checks, health.Check{
+			Name:    "clickhouse",
+			Timeout: 3 * time.Second,
+			Probe: func(ctx context.Context) error {
+				return clickhouse.Ping(ctx)
+			},
+		})
+	}
+
 	return health.FiberHandler(checks)
 }

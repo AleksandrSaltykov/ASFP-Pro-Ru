@@ -38,8 +38,16 @@ export const createHttpClient = (baseUrl: string, client: QueryClient) => {
     });
 
     if (!response.ok) {
-      const payload = errorSchema.safeParse(await response.json().catch(() => ({})));
-      const message = payload.success ? payload.data.error : response.statusText;
+      const raw = await response.json().catch(() => ({}));
+      const payload = errorSchema.safeParse(raw);
+      let message = payload.success ? payload.data.error : response.statusText;
+
+      if (response.status === 401) {
+        message = message || 'Требуется повторная авторизация';
+      } else if (response.status === 403) {
+        message = message || 'Недостаточно прав для выполнения операции';
+      }
+
       throw new Error(message || 'Ошибка запроса');
     }
 

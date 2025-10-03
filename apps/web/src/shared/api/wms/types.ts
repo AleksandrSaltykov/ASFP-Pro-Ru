@@ -306,3 +306,76 @@ export type StockItem = {
   uom: string;
   updatedAt: string;
 };
+
+export type StockBalance = {
+  id: UUID;
+  itemCode: string;
+  itemName: string;
+  category?: string;
+  warehouse: string;
+  zone?: string;
+  bin?: string;
+  onHand: number;
+  uom: string;
+  updatedAt: string;
+};
+
+export type StockAvailability = {
+  id: UUID;
+  itemCode: string;
+  itemName: string;
+  category?: string;
+  warehouse: string;
+  onHand: number;
+  reserved: number;
+  onOrder: number;
+  available: number;
+  uom: string;
+};
+
+export type EndlessPolicyKind = 'MINMAX' | 'ROP' | 'NONE';
+
+export type EndlessPolicy = {
+  id: UUID;
+  itemCode: string;
+  itemName: string;
+  warehouse: string;
+  policy: EndlessPolicyKind;
+  min?: number | null;
+  max?: number | null;
+  reorderPoint?: number | null;
+  safetyStock?: number | null;
+  note?: string;
+  available: number;
+  updatedAt: string;
+};
+
+export type EndlessPolicyUpdatePayload = {
+  id: UUID;
+  warehouse: string;
+  policy: EndlessPolicyKind;
+  min?: number | null;
+  max?: number | null;
+  reorderPoint?: number | null;
+  safetyStock?: number | null;
+  note?: string | null;
+};
+
+export type StockMovement = {
+  id: UUID;
+  occurredAt: string;
+  type: 'RECEIPT' | 'MOVE' | 'ISSUE' | 'ADJUST' | 'COUNT' | 'RESERVE' | 'UNRESERVE';
+  itemCode: string;
+  itemName: string;
+  fromWarehouse?: string;
+  fromZone?: string;
+  fromBin?: string;
+  toWarehouse?: string;
+  toZone?: string;
+  toBin?: string;
+  quantity: number;
+  uom: string;
+  reference?: string;
+  actor?: string;
+  note?: string;
+};

@@ -29,7 +29,7 @@ type Server struct {
 }
 
 // NewServer creates configured HTTP server instance.
-func NewServer(cfg config.AppConfig, logger zerolog.Logger, repo *repository.EventRepository, conn ch.Conn, auditor *audit.Recorder) (*Server, error) {
+func NewServer(cfg config.AppConfig, logger zerolog.Logger, repo *repository.EventRepository, conn ch.Conn, auditor *audit.Recorder, openapi []byte) (*Server, error) {
 	app := fiber.New(fiber.Config{
 		AppName:      cfg.AppName,
 		ReadTimeout:  cfg.RequestTimeout,
@@ -42,6 +42,7 @@ func NewServer(cfg config.AppConfig, logger zerolog.Logger, repo *repository.Eve
 	app.Use(loggerMiddleware(logger))
 	app.Get("/health", health.LiveHandler())
 	app.Get("/ready", readyHandler(conn))
+	app.Get("/openapi.json", OpenAPI(openapi))
 	reportHandler.Register(app)
 
 	return &Server{

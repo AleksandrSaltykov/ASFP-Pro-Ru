@@ -23,11 +23,11 @@ func NewDealRepository(pool *pgxpool.Pool) *DealRepository {
 // Create inserts deal row and returns stored entity.
 func (r *DealRepository) Create(ctx context.Context, deal entity.Deal) (entity.Deal, error) {
 	query := `
-	INSERT INTO crm.deals (id, title, customer_id, stage, amount, currency, created_by)
-	VALUES ($1, $2, $3, $4, $5, $6, $7)
+	INSERT INTO crm.deals (id, title, customer_id, stage, amount, currency, created_by, org_unit_code)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	RETURNING created_at
 	`
-	row := r.pool.QueryRow(ctx, query, deal.ID, deal.Title, deal.CustomerID, deal.Stage, deal.Amount, deal.Currency, deal.CreatedBy)
+	row := r.pool.QueryRow(ctx, query, deal.ID, deal.Title, deal.CustomerID, deal.Stage, deal.Amount, deal.Currency, deal.CreatedBy, deal.OrgUnitCode)
 	if err := row.Scan(&deal.CreatedAt); err != nil {
 		return entity.Deal{}, fmt.Errorf("insert deal: %w", err)
 	}
@@ -37,7 +37,7 @@ func (r *DealRepository) Create(ctx context.Context, deal entity.Deal) (entity.D
 // List returns limited deals page.
 func (r *DealRepository) List(ctx context.Context, limit int) ([]entity.Deal, error) {
 	query := `
-	SELECT id, title, customer_id, stage, amount, currency, created_by, created_at
+	SELECT id, title, customer_id, stage, amount, currency, created_by, created_at, org_unit_code
 	FROM crm.deals
 	ORDER BY created_at DESC
 	LIMIT $1
@@ -51,7 +51,7 @@ func (r *DealRepository) List(ctx context.Context, limit int) ([]entity.Deal, er
 	var deals []entity.Deal
 	for rows.Next() {
 		var d entity.Deal
-		if err := rows.Scan(&d.ID, &d.Title, &d.CustomerID, &d.Stage, &d.Amount, &d.Currency, &d.CreatedBy, &d.CreatedAt); err != nil {
+		if err := rows.Scan(&d.ID, &d.Title, &d.CustomerID, &d.Stage, &d.Amount, &d.Currency, &d.CreatedBy, &d.CreatedAt, &d.OrgUnitCode); err != nil {
 			return nil, fmt.Errorf("scan deal: %w", err)
 		}
 		deals = append(deals, d)

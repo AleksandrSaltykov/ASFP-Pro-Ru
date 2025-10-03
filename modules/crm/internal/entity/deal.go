@@ -8,14 +8,15 @@ import (
 
 // Deal describes CRM deal entity.
 type Deal struct {
-	ID         string
-	Title      string
-	CustomerID string
-	Stage      string
-	Amount     float64
-	Currency   string
-	CreatedBy  string
-	CreatedAt  time.Time
+	ID          string
+	Title       string
+	CustomerID  string
+	Stage       string
+	Amount      float64
+	Currency    string
+	CreatedBy   string
+	CreatedAt   time.Time
+	OrgUnitCode string
 }
 
 // DealEvent represents change log entry for a deal.

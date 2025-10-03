@@ -3,6 +3,8 @@ import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 
 import { API_ENDPOINTS } from '@shared/api/endpoints';
 import { createHttpClient } from '@shared/api/http-client';
+import { useGatewayBasicAuthHeader } from '@shared/api/basic-auth';
+import { PermissionGuard } from '@shared/ui/PermissionGuard';
 
 type AuditRecord = {
   id: number;
@@ -97,16 +99,6 @@ const loadMoreStyle: CSSProperties = {
 
 const formatDate = (value: string) => new Date(value).toLocaleString();
 
-const encodeBasic = (credentials?: string) => {
-  if (!credentials) {
-    return undefined;
-  }
-  if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
-    return `Basic ${window.btoa(credentials)}`;
-  }
-  return undefined;
-};
-
 const sanitizeFilters = (filters: Filters, pageParam?: number) => {
   const query: Record<string, string> = {
     limit: String(filters.limit)
@@ -155,14 +147,13 @@ const parseLimit = (value: string) => {
 
 const flattenPages = (pages?: AuditRecord[][]) => pages?.reduce<AuditRecord[]>((acc, page) => acc.concat(page), []) ?? [];
 
-const AuditLogPage = () => {
+const AuditLogPageContent = () => {
   const queryClient = useQueryClient();
   const http = useMemo(() => createHttpClient(API_ENDPOINTS.gateway, queryClient), [queryClient]);
   const [formState, setFormState] = useState(defaultFormState);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
 
-  const basicCredentials = import.meta.env.VITE_GATEWAY_BASIC_AUTH as string | undefined;
-  const authHeader = useMemo(() => encodeBasic(basicCredentials), [basicCredentials]);
+  const authHeader = useGatewayBasicAuthHeader();
 
   const query = useInfiniteQuery<AuditRecord[], Error>({
     queryKey: ['audit-log', filters, authHeader],
@@ -346,5 +337,11 @@ const AuditLogPage = () => {
     </div>
   );
 };
+
+const AuditLogPage = () => (
+  <PermissionGuard permissions={[{ resource: 'core.audit', action: 'read' }]}>
+    <AuditLogPageContent />
+  </PermissionGuard>
+);
 
 export default AuditLogPage;

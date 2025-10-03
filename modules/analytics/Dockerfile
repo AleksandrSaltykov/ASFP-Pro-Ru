@@ -13,5 +13,6 @@ USER app
 WORKDIR /home/app
 COPY --from=build /bin/analytics-consumer ./analytics-consumer
 COPY --from=build /bin/analytics-api ./analytics-api
+COPY --from=build /src/modules/analytics/docs/openapi/openapi.json ./openapi.json
 ENV ANALYTICS_QUEUE_NAME=analytics.events
 ENTRYPOINT ["./analytics-consumer"]

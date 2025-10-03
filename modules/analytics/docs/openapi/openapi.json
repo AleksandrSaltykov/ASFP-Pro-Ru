@@ -1,0 +1,187 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ASFP Analytics API",
+    "version": "0.1.0",
+    "description": "Minimal analytics API exposing conversion and manager load reports"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8090",
+      "description": "Analytics service"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "AnalyticsConversionRow": {
+        "type": "object",
+        "properties": {
+          "period": { "type": "string", "format": "date-time" },
+          "totalCount": { "type": "integer" },
+          "wonCount": { "type": "integer" },
+          "totalAmount": { "type": "number", "format": "double" },
+          "wonAmount": { "type": "number", "format": "double" },
+          "conversionRate": { "type": "number", "format": "double" }
+        },
+        "required": ["period", "totalCount", "wonCount", "totalAmount", "wonAmount", "conversionRate"]
+      },
+      "AnalyticsManagerLoadRow": {
+        "type": "object",
+        "properties": {
+          "manager": { "type": "string" },
+          "totalCount": { "type": "integer" },
+          "totalAmount": { "type": "number", "format": "double" }
+        },
+        "required": ["manager", "totalCount", "totalAmount"]
+      },
+      "AnalyticsExportFile": {
+        "type": "object",
+        "properties": {
+          "fileName": { "type": "string" },
+          "mimeType": { "type": "string" },
+          "contentBase64": { "type": "string", "format": "byte" },
+          "generatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["fileName", "mimeType", "contentBase64", "generatedAt"]
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/analytics/reports/conversion": {
+      "get": {
+        "summary": "Conversion report",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "Start of period (RFC3339)",
+            "required": false
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "End of period (RFC3339)",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregated conversion data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/AnalyticsConversionRow" }
+                    }
+                  },
+                  "required": ["items"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/reports/manager-load": {
+      "get": {
+        "summary": "Manager load report",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" },
+            "required": false
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregated manager load data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/AnalyticsManagerLoadRow" }
+                    }
+                  },
+                  "required": ["items"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/exports/conversion": {
+      "get": {
+        "summary": "Conversion report export",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" },
+            "required": false
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV export payload",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AnalyticsExportFile" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/exports/manager-load": {
+      "get": {
+        "summary": "Manager load export",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" },
+            "required": false
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV export payload",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AnalyticsExportFile" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -46,6 +46,7 @@ type Warehouse struct {
 	OperatingHours WarehouseOperatingHours `json:"operatingHours"`
 	Contact        WarehouseContact        `json:"contact"`
 	Metadata       map[string]any          `json:"metadata,omitempty"`
+	OrgUnitCode    string                  `json:"orgUnitCode"`
 	CreatedBy      uuid.UUID               `json:"createdBy,omitempty"`
 	UpdatedBy      uuid.UUID               `json:"updatedBy,omitempty"`
 	CreatedAt      time.Time               `json:"createdAt"`

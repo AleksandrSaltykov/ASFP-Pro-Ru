@@ -3,7 +3,8 @@ import { useMemo } from 'react';
 
 import { useAppDispatch, useAppSelector } from '@app/hooks';
 import { addRecent, toggleFavorite } from '@shared/state';
-import { selectUiFavorites, selectUiRecent } from '@shared/state/ui-selectors';
+import { selectUiFavorites, selectUiRecent, selectIsFeatureEnabled } from '@shared/state/ui-selectors';
+import { usePermissionMatrix } from '@shared/hooks/usePermissionMatrix';
 import { NavigationLink } from '@shared/ui/NavigationLink';
 import { iconMap } from '@shared/ui/icons';
 import { palette, typography } from '@shared/ui/theme';
@@ -17,7 +18,7 @@ type SidebarItem = {
   label: string;
   to: string;
   icon: keyof typeof iconMap;
-  roles?: string[];
+  permissions?: { resource: string; action: string }[];
 };
 
 type RouteDescriptor = {
@@ -116,35 +117,93 @@ const StarIcon = ({ active }: { active?: boolean }) => (
 );
 
 const moduleItems: SidebarItem[] = [
-  { id: 'crm', label: 'CRM', to: '/sales', icon: 'crm' },
+  {
+    id: 'crm',
+    label: 'CRM',
+    to: '/sales',
+    icon: 'crm',
+    permissions: [{ resource: 'crm.deal', action: 'read' }]
+  },
+  {
+    id: 'crmDeals',
+    label: 'Сделки',
+    to: '/crm/deals',
+    icon: 'crm',
+    permissions: [{ resource: 'crm.deal', action: 'read' }]
+  },
   { id: 'projects', label: 'Проекты', to: '/tasks-projects', icon: 'board' },
-  { id: 'planning', label: 'Планирование', to: '/planning', icon: 'calendar' },
   { id: 'production', label: 'Производство', to: '/production', icon: 'factory' },
-  { id: 'warehouse', label: 'Склад', to: '/wms/inventory', icon: 'warehouse' },
-  { id: 'kiosk', label: 'Киоск', to: '/kiosk', icon: 'barcode' },
-  { id: 'procurement', label: 'Закупки', to: '/procurement', icon: 'package' },
+  {
+    id: 'warehouse',
+    label: 'Склад',
+    to: '/warehouse/stock/balances',
+    icon: 'warehouse',
+    permissions: [{ resource: 'wms.stock', action: 'read' }]
+  },
   { id: 'logistics', label: 'Логистика', to: '/logistics', icon: 'truck' },
-  { id: 'installation', label: 'Монтаж', to: '/installation', icon: 'worker' },
-  { id: 'service', label: 'Сервис', to: '/service', icon: 'gear' },
-  { id: 'finance', label: 'Финансы', to: '/finance', icon: 'analytics' },
-  { id: 'analytics', label: 'Аналитика', to: '/analytics', icon: 'analytics' },
-  { id: 'audit', label: 'Журнал аудита', to: '/admin/audit', icon: 'shield' }
+  { id: 'kiosk', label: 'Киоск', to: '/kiosk', icon: 'barcode' },
+  { id: 'services', label: 'Сервисы', to: '/services', icon: 'gear' },
+  { id: 'messenger', label: 'Мессенджер', to: '/messenger', icon: 'flow' },
+  { id: 'files', label: 'Файлы', to: '/files', icon: 'files' },
+  { id: 'directories', label: 'Справочники', to: '/directories', icon: 'files' },
+  { id: 'hr', label: 'Оргструктура', to: '/hr/org-structure', icon: 'board' },
+  { id: 'settings', label: 'Настройки', to: '/settings', icon: 'gear' },
+  {
+    id: 'audit',
+    label: 'Журнал аудита',
+    to: '/admin/audit',
+    icon: 'shield',
+    permissions: [{ resource: 'core.audit', action: 'read' }]
+  },
+  {
+    id: 'orgUnits',
+    label: 'Оргструктура (админ)',
+    to: '/admin/org-units',
+    icon: 'board',
+    permissions: [{ resource: 'core.org_unit', action: 'read' }]
+  },
+  {
+    id: 'apiTokens',
+    label: 'API токены',
+    to: '/admin/api-tokens',
+    icon: 'gear',
+    permissions: [{ resource: 'core.api_token', action: 'read' }]
+  }
 ];
 
 const routeDictionary: Record<string, RouteDescriptor> = {
   '/': { label: 'Главная', icon: 'overview' },
   '/home-exec': { label: 'Главная', icon: 'overview' },
   '/sales': { label: 'Старт CRM', icon: 'crm' },
+  '/crm/deals': { label: 'Сделки', icon: 'crm' },
+  '/tasks-projects': { label: 'Проекты', icon: 'board' },
+  '/production': { label: 'Производство', icon: 'factory' },
+  '/warehouse': { label: 'Склад', icon: 'warehouse' },
+  '/warehouse/stock/balances': { label: 'Склад — остатки', icon: 'warehouse' },
+  '/warehouse/stock/availability': { label: 'Доступность', icon: 'warehouse' },
+  '/warehouse/stock/endless': { label: 'Нескончаемые остатки', icon: 'warehouse' },
+  '/warehouse/stock/history': { label: 'История движения', icon: 'warehouse' },
+  '/logistics': { label: 'Логистика', icon: 'truck' },
+  '/kiosk': { label: 'Киоск', icon: 'barcode' },
+  '/services': { label: 'Сервисы', icon: 'gear' },
+  '/messenger': { label: 'Мессенджер', icon: 'flow' },
+  '/files': { label: 'Файлы', icon: 'files' },
   '/directories': { label: 'Справочники', icon: 'files' },
+  '/settings': { label: 'Настройки', icon: 'gear' },
+  '/hr/org-structure': { label: 'Оргструктура', icon: 'board' },
   '/orders/demo': { label: 'Демо-заказ', icon: 'package' },
-  '/wms/inventory': { label: 'Склад', icon: 'warehouse' },
-  '/admin/audit': { label: 'Журнал аудита', icon: 'shield' }
+  '/admin/audit': { label: 'Журнал аудита', icon: 'shield' },
+  '/admin/org-units': { label: 'Оргструктура', icon: 'board' },
+  '/admin/api-tokens': { label: 'API токены', icon: 'gear' }
 };
 
 export const AppSidebar = ({ collapsed = false }: AppSidebarProps) => {
   const dispatch = useAppDispatch();
   const favorites = useAppSelector(selectUiFavorites);
   const recent = useAppSelector(selectUiRecent);
+  const isWarehouseEnabled = useAppSelector((state) => selectIsFeatureEnabled(state, 'ui.warehouse.rebuild'));
+  const { hasPermission, isLoading: permissionsLoading, isError: permissionsError } = usePermissionMatrix();
+  const filteredItems = useMemo(() => moduleItems.filter((item) => (item.id === 'warehouse' ? isWarehouseEnabled : true)), [isWarehouseEnabled]);
 
   const primary = useMemo(() => ({
     id: 'home',
@@ -222,6 +281,20 @@ export const AppSidebar = ({ collapsed = false }: AppSidebarProps) => {
     });
   };
 
+  const visibleModuleItems = useMemo(() => {
+    if (permissionsLoading || permissionsError) {
+      return filteredItems;
+    }
+    return filteredItems.filter((item) => {
+      if (!item.permissions || item.permissions.length === 0) {
+        return true;
+      }
+      return item.permissions.some((permission) =>
+        hasPermission(permission.resource, permission.action)
+      );
+    });
+  }, [filteredItems, hasPermission, permissionsError, permissionsLoading]);
+
   return (
     <aside
       style={{
@@ -237,7 +310,7 @@ export const AppSidebar = ({ collapsed = false }: AppSidebarProps) => {
       </section>
       <section>
         <h2 style={sectionTitleStyle}>{collapsed ? 'Модули' : 'Модули'}</h2>
-        <div style={listStyle}>{moduleItems.map(renderNavItem)}</div>
+        <div style={listStyle}>{visibleModuleItems.map(renderNavItem)}</div>
       </section>
       <section>
         <h2 style={sectionTitleStyle}>{collapsed ? 'Недавние' : 'Недавние'}</h2>

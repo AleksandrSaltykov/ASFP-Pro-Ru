@@ -3,7 +3,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	stdlog "log"
+	"os"
 	"time"
 
 	analyticshttp "asfppro/modules/analytics/internal/http"
@@ -40,7 +42,12 @@ func main() {
 	defer func() { _ = conn.Close() }()
 
 	repo := repository.NewEventRepository(conn)
-	server, err := analyticshttp.NewServer(cfg, logger, repo, conn, auditor)
+	spec, err := readOpenAPI("modules/analytics/docs/openapi/openapi.json", "ANALYTICS_OPENAPI_PATH")
+	if err != nil {
+		logger.Fatal().Err(err).Msg("load openapi")
+	}
+
+	server, err := analyticshttp.NewServer(cfg, logger, repo, conn, auditor, spec)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("init analytics api")
 	}
@@ -48,4 +55,21 @@ func main() {
 	if err := server.Run(); err != nil {
 		logger.Fatal().Err(err).Msg("analytics api stopped")
 	}
+}
+
+func readOpenAPI(defaultPath, envVar string) ([]byte, error) {
+	if override := os.Getenv(envVar); override != "" {
+		if data, err := os.ReadFile(override); err == nil {
+			return data, nil
+		}
+	}
+
+	candidates := []string{defaultPath, "openapi.json"}
+	for _, candidate := range candidates {
+		if data, err := os.ReadFile(candidate); err == nil {
+			return data, nil
+		}
+	}
+
+	return nil, fmt.Errorf("openapi spec not found")
 }

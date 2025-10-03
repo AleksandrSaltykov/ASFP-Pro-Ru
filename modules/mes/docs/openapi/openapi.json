@@ -1,0 +1,363 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "MES API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Service liveness probe",
+        "responses": {
+          "200": {"description": "ready"}
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "summary": "Service readiness probe",
+        "responses": {
+          "200": {"description": "dependencies ready"},
+          "503": {"description": "dependencies unavailable"}
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "summary": "Serve OpenAPI specification",
+        "responses": {
+          "200": {"description": "OpenAPI document", "content": {"application/json": {}}}
+        }
+      }
+    },
+    "/api/v1/mes/work-centers": {
+      "get": {
+        "summary": "List work centers",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "maximum": 100},
+            "description": "Maximum items to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Work center collection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/WorkCenter"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create work center",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/WorkCenterCreate"}
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Work center created",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/WorkCenter"}
+              }
+            }
+          },
+          "400": {"description": "Validation error"}
+        }
+      }
+    },
+    "/api/v1/mes/work-centers/{id}": {
+      "put": {
+        "summary": "Update work center",
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/WorkCenterUpdate"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated work center",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/WorkCenter"}
+              }
+            }
+          },
+          "400": {"description": "Validation error"},
+          "404": {"description": "Work center not found"}
+        }
+      }
+    },
+    "/api/v1/mes/operations": {
+      "get": {
+        "summary": "List operations",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "maximum": 100}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation collection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/Operation"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create operation",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/OperationCreate"}
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Operation created",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/Operation"}
+              }
+            }
+          },
+          "400": {"description": "Validation error"}
+        }
+      }
+    },
+    "/api/v1/mes/operations/{id}": {
+      "put": {
+        "summary": "Update operation",
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/OperationUpdate"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated operation",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/Operation"}
+              }
+            }
+          },
+          "400": {"description": "Validation error"},
+          "404": {"description": "Operation not found"}
+        }
+      }
+    },
+    "/api/v1/mes/routes": {
+      "get": {
+        "summary": "List routes",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "maximum": 100}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Route collection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/Route"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create route",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/RouteCreate"}
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Route created",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/Route"}
+              }
+            }
+          },
+          "400": {"description": "Validation error"}
+        }
+      }
+    },
+    "/api/v1/mes/routes/{id}": {
+      "put": {
+        "summary": "Update route",
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/RouteUpdate"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Route updated",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/Route"}
+              }
+            }
+          },
+          "400": {"description": "Validation error"},
+          "404": {"description": "Route not found"}
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "WorkCenter": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "format": "uuid"},
+          "code": {"type": "string"},
+          "name": {"type": "string"},
+          "description": {"type": "string"},
+          "createdAt": {"type": "string", "format": "date-time"},
+          "updatedAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "WorkCenterCreate": {
+        "type": "object",
+        "required": ["code", "name"],
+        "properties": {
+          "code": {"type": "string"},
+          "name": {"type": "string"},
+          "description": {"type": "string"}
+        }
+      },
+      "WorkCenterUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "description": {"type": "string"}
+        }
+      },
+      "Operation": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "format": "uuid"},
+          "code": {"type": "string"},
+          "name": {"type": "string"},
+          "description": {"type": "string"},
+          "defaultDurationMinutes": {"type": "integer"},
+          "createdAt": {"type": "string", "format": "date-time"},
+          "updatedAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "OperationCreate": {
+        "type": "object",
+        "required": ["code", "name"],
+        "properties": {
+          "code": {"type": "string"},
+          "name": {"type": "string"},
+          "description": {"type": "string"},
+          "defaultDurationMinutes": {"type": "integer"}
+        }
+      },
+      "OperationUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "description": {"type": "string"},
+          "defaultDurationMinutes": {"type": "integer"}
+        }
+      },
+      "Route": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "format": "uuid"},
+          "code": {"type": "string"},
+          "name": {"type": "string"},
+          "description": {"type": "string"},
+          "createdAt": {"type": "string", "format": "date-time"},
+          "updatedAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "RouteCreate": {
+        "type": "object",
+        "required": ["code", "name"],
+        "properties": {
+          "code": {"type": "string"},
+          "name": {"type": "string"},
+          "description": {"type": "string"}
+        }
+      },
+      "RouteUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "description": {"type": "string"}
+        }
+      }
+    }
+  }
+}

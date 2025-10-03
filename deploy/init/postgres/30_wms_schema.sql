@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS wms.warehouse (
     status TEXT NOT NULL DEFAULT 'active',
     operating_hours JSONB NOT NULL DEFAULT '{}'::jsonb,
     contact JSONB NOT NULL DEFAULT '{}'::jsonb,
+    org_unit_code TEXT NOT NULL REFERENCES core.org_units(code),
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_by UUID,
     updated_by UUID,

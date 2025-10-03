@@ -17,7 +17,9 @@ describe('OrderStepper', () => {
 
     expect(screen.getByLabelText('КП')).toHaveAttribute('aria-current', 'true');
 
-    fireEvent.click(screen.getByRole('button', { name: /Следующий этап/i }));
+    const nextButton = screen.getByRole('button', { name: /(Следующий этап|Next step)/i });
+
+    fireEvent.click(nextButton);
 
     expect(handleNext).toHaveBeenCalledWith('proposal');
   });
@@ -26,7 +28,7 @@ describe('OrderStepper', () => {
     const handleNext = vi.fn();
     render(<OrderStepper steps={steps} currentStepId="order" onRequestNext={handleNext} />);
 
-    const nextButton = screen.getByRole('button', { name: /Следующий этап/i });
+    const nextButton = screen.getByRole('button', { name: /(Следующий этап|Next step)/i });
     expect(nextButton).toBeDisabled();
     fireEvent.click(nextButton);
     expect(handleNext).not.toHaveBeenCalled();

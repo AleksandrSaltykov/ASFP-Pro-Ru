@@ -6,16 +6,18 @@ import type { PaginatedResponse, StockItem } from './types';
 
 const INVENTORY_PREFIX = ['wms', 'inventory'] as const;
 
-const stockListKey = (warehouseCode: string, limit: number) => [
+const stockListKey = (warehouseCode: string, limit: number, sku: string) => [
   ...INVENTORY_PREFIX,
   'stock',
   warehouseCode || 'all',
-  limit
+  limit,
+  sku || 'all'
 ] as const;
 
 type StockQueryParams = {
   warehouseCode?: string;
   limit?: number;
+  sku?: string;
 };
 
 type QueryOptionsOverride<TQueryFnData, TData> = Omit<
@@ -28,14 +30,15 @@ const buildQueryConfig = (
   params: Required<StockQueryParams>,
   options?: QueryOptionsOverride<PaginatedResponse<StockItem>, StockItem[]>
 ) => {
-  const { warehouseCode, limit } = params;
+  const { warehouseCode, limit, sku } = params;
   return {
-    queryKey: stockListKey(warehouseCode, limit),
+    queryKey: stockListKey(warehouseCode, limit, sku),
     queryFn: () =>
       http.request<PaginatedResponse<StockItem>>('/api/v1/stock/', {
         query: {
           warehouse: warehouseCode,
-          limit: String(limit)
+          limit: String(limit),
+          ...(sku ? { sku } : {})
         }
       }),
     select: (response: PaginatedResponse<StockItem>) => response.items,
@@ -44,14 +47,15 @@ const buildQueryConfig = (
 };
 
 export const useStockQuery = (
-  { warehouseCode = '', limit = 100 }: StockQueryParams = {},
+  { warehouseCode = '', limit = 100, sku = '' }: StockQueryParams = {},
   options?: QueryOptionsOverride<PaginatedResponse<StockItem>, StockItem[]>
 ) => {
   const http = useWmsHttpClient();
-  const queryConfig = useMemo(() => buildQueryConfig(http, { warehouseCode, limit }, options), [
+  const queryConfig = useMemo(() => buildQueryConfig(http, { warehouseCode, limit, sku }, options), [
     http,
     warehouseCode,
     limit,
+    sku,
     options
   ]);
 

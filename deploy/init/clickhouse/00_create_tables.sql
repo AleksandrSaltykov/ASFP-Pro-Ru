@@ -1,4 +1,4 @@
-﻿CREATE DATABASE IF NOT EXISTS analytics;
+CREATE DATABASE IF NOT EXISTS analytics;
 
 CREATE TABLE IF NOT EXISTS analytics.events
 (

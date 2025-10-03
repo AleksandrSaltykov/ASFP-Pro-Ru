@@ -7,7 +7,8 @@ INSERT INTO wms.warehouse (
     timezone,
     status,
     operating_hours,
-    contact
+    contact,
+    org_unit_code
 )
 VALUES (
     uuid_generate_v4(),
@@ -18,7 +19,8 @@ VALUES (
     'Europe/Moscow',
     'active',
     '{"mon-fri":"08:00-20:00","sat":"09:00-15:00"}'::jsonb,
-    '{"manager":"Анна Волкова","phone":"+7 (495) 000-11-22"}'::jsonb
+    '{"manager":"Анна Волкова","phone":"+7 (495) 000-11-22"}'::jsonb,
+    'HQ-WMS'
 )
 ON CONFLICT (code) DO UPDATE SET
     name = EXCLUDED.name,
@@ -28,6 +30,7 @@ ON CONFLICT (code) DO UPDATE SET
     status = EXCLUDED.status,
     operating_hours = EXCLUDED.operating_hours,
     contact = EXCLUDED.contact,
+    org_unit_code = EXCLUDED.org_unit_code,
     updated_at = NOW();
 
 INSERT INTO wms.warehouse_zone (

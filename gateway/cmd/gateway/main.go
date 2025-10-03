@@ -5,6 +5,8 @@ import (
 	"context"
 	stdlog "log"
 
+	ch "github.com/ClickHouse/clickhouse-go/v2"
+
 	"asfppro/gateway/internal/auth"
 	"asfppro/gateway/internal/http"
 	"asfppro/pkg/audit"
@@ -33,10 +35,18 @@ func main() {
 		logger.Fatal().Err(err).Msg("init s3")
 	}
 
+	chConn, err := db.NewClickHouse(context.Background(), cfg.ClickHouseDSN)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("init clickhouse")
+	}
+	defer func(conn ch.Conn) {
+		_ = conn.Close()
+	}(chConn)
+
 	authService := auth.NewService(pool)
 	auditRecorder := audit.NewRecorder(pool, logger)
 
-	server, err := http.NewServer(cfg, logger, pool, storage, authService, auditRecorder)
+	server, err := http.NewServer(cfg, logger, pool, storage, chConn, authService, auditRecorder)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("init server")
 	}
