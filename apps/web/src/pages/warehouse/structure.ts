@@ -136,6 +136,14 @@ const collectNav = (items: WarehouseNavItem[], acc: WarehouseNavItem[] = []) => 
   return acc;
 };
 
+const PLACEHOLDER_EXCLUDED_PREFIXES = ['stock'];
+const PLACEHOLDER_EXCLUDED_PATHS = new Set<string>(['masters/items', 'masters/items/categories', 'masters/items/units', 'masters/items/attributes']);
+
 export const WAREHOUSE_PLACEHOLDER_ROUTES = collectNav(WAREHOUSE_NAV, [])
-  .filter((item) => !item.path.startsWith("stock"))
+  .filter((item) => {
+    if (PLACEHOLDER_EXCLUDED_PREFIXES.some((prefix) => item.path.startsWith(prefix))) {
+      return false;
+    }
+    return !PLACEHOLDER_EXCLUDED_PATHS.has(item.path);
+  })
   .map((item) => ({ label: item.label, path: item.path }));

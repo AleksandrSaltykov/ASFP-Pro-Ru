@@ -5,6 +5,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+
+	"asfppro/modules/wms/internal/entity"
 )
 
 func TestItemRequestToEntity_Success(t *testing.T) {
@@ -80,6 +82,29 @@ func TestCatalogNodeRequestToEntity(t *testing.T) {
 	require.True(t, node.IsActive)
 }
 
+func TestAttributeTemplateRequestToEntity(t *testing.T) {
+	req := attributeTemplateRequest{
+		Code:        " color ",
+		Name:        "Color",
+		Description: "Main color",
+		TargetType:  "item",
+		DataType:    "string",
+		IsRequired:  ptrBool(true),
+		Position:    ptrInt(50),
+		Metadata:    map[string]any{"options": []string{"red", "blue"}},
+		UISchema:    map[string]any{"component": "Select"},
+	}
+	template := req.toEntity()
+	require.Equal(t, " color ", template.Code)
+	require.Equal(t, "Color", template.Name)
+	require.Equal(t, "Main color", template.Description)
+	require.Equal(t, entity.AttributeDataType("string"), template.DataType)
+	require.True(t, template.IsRequired)
+	require.Equal(t, 50, template.Position)
+	require.Equal(t, map[string]any{"options": []string{"red", "blue"}}, template.Metadata)
+	require.Equal(t, map[string]any{"component": "Select"}, template.UISchema)
+}
+
 func TestAttributeValueRequestToUpsert(t *testing.T) {
 	tpl := uuid.New()
 	req := attributeValueRequest{TemplateID: tpl.String()}
@@ -89,5 +114,14 @@ func TestAttributeValueRequestToUpsert(t *testing.T) {
 }
 
 func ptrString(v string) *string {
+	return &v
+}
+
+
+func ptrBool(v bool) *bool {
+	return &v
+}
+
+func ptrInt(v int) *int {
 	return &v
 }

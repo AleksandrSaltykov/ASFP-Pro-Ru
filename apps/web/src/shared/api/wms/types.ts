@@ -51,6 +51,18 @@ export type AttributeTemplate = {
   updatedAt: string;
 };
 
+export type AttributeTemplatePayload = {
+  code: string;
+  name: string;
+  description?: string;
+  targetType?: string;
+  dataType: AttributeDataType;
+  isRequired?: boolean;
+  metadata?: Record<string, unknown>;
+  uiSchema?: Record<string, unknown>;
+  position?: number;
+};
+
 export type AttributeValue = {
   template: AttributeTemplate;
   ownerType?: string;

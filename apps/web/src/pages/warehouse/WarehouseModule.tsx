@@ -1,4 +1,12 @@
-import { Suspense, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode
+} from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { useAppSelector } from "@app/hooks";
@@ -56,8 +64,8 @@ const caretStyle: CSSProperties = {
 };
 
 const dropdownStyle: CSSProperties = {
-  position: "absolute",
-  top: "100%",
+  position: "fixed",
+  top: 0,
   left: 0,
   display: "flex",
   flexDirection: "column",
@@ -68,7 +76,7 @@ const dropdownStyle: CSSProperties = {
   borderRadius: 18,
   border: `1px solid ${palette.border}`,
   boxShadow: palette.shadowElevated,
-  zIndex: 20
+  zIndex: 2000
 };
 
 const dropdownSectionStyle: CSSProperties = {
@@ -185,9 +193,15 @@ export const WarehouseModule = () => {
   const enabled = useAppSelector((state) => selectIsFeatureEnabled(state, "ui.warehouse.rebuild"));
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const navRef = useRef<HTMLDivElement | null>(null);
+  const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
   useEffect(() => {
     setOpenMenu(null);
@@ -205,6 +219,48 @@ export const WarehouseModule = () => {
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!openMenu) {
+      setDropdownPosition(null);
+      return undefined;
+    }
+
+    const updatePosition = () => {
+      const button = buttonRefs.current.get(openMenu);
+      if (!button) {
+        return;
+      }
+      const rect = button.getBoundingClientRect();
+      const dropdownWidth = Math.max(rect.width, 260);
+      const maxLeft = Math.max(16, window.innerWidth - dropdownWidth - 16);
+      const left = Math.min(rect.left, maxLeft);
+      const top = rect.bottom + 8;
+
+      setDropdownPosition({ top, left, width: dropdownWidth });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [openMenu]);
+
+  const registerButton = useMemo(
+    () =>
+      (path: string) => (element: HTMLButtonElement | null) => {
+        if (!element) {
+          buttonRefs.current.delete(path);
+          return;
+        }
+        buttonRefs.current.set(path, element);
+      },
+    []
+  );
 
   if (!enabled) {
     return (
@@ -278,6 +334,7 @@ export const WarehouseModule = () => {
                 onClick={() => handlePrimaryClick(item)}
                 aria-expanded={hasChildren ? isOpen : undefined}
                 aria-haspopup={hasChildren ? "true" : undefined}
+                ref={registerButton(item.path)}
               >
                 <span>{displayLabel}</span>
                 {hasChildren ? <DropdownCaret open={isOpen} /> : null}
@@ -285,7 +342,13 @@ export const WarehouseModule = () => {
 
               {hasChildren && isOpen ? (
                 <div
-                  style={{ ...dropdownStyle, background: resolveDropdownBackground() }}
+                  style={{
+                    ...dropdownStyle,
+                    background: resolveDropdownBackground(),
+                    top: dropdownPosition?.top ?? 0,
+                    left: dropdownPosition?.left ?? 0,
+                    minWidth: dropdownPosition?.width ?? 260
+                  }}
                   role='menu'
                   aria-label={displayLabel}
                   onMouseEnter={() => setOpenMenu(item.path)}

@@ -29,6 +29,10 @@ const StockBalancesPage = lazy(() => import("@pages/warehouse/stock/BalancesPage
 const StockAvailabilityPage = lazy(() => import("@pages/warehouse/stock/AvailabilityPage"));
 const StockEndlessPage = lazy(() => import("@pages/warehouse/stock/EndlessPage"));
 const StockHistoryPage = lazy(() => import("@pages/warehouse/stock/HistoryPage"));
+const WarehouseCatalogCategoriesPage = lazy(() => import("@pages/warehouse/masters/items/CategoriesPage"));
+const WarehouseItemsPage = lazy(() => import("@pages/warehouse/masters/items/ItemsPage"));
+const WarehouseUnitsPage = lazy(() => import("@pages/warehouse/masters/items/UnitsPage"));
+const WarehouseAttributesPage = lazy(() => import("@pages/warehouse/masters/items/AttributesPage"));
 
 const warehousePlaceholderRoutes = WAREHOUSE_PLACEHOLDER_ROUTES.map(({ path, label }) => ({
   path,
@@ -56,6 +60,10 @@ export const router = createBrowserRouter([
           { path: 'stock/availability', element: <StockAvailabilityPage /> },
           { path: 'stock/endless', element: <StockEndlessPage /> },
           { path: 'stock/history', element: <StockHistoryPage /> },
+          { path: 'masters/items', element: <WarehouseItemsPage /> },
+          { path: 'masters/items/categories', element: <WarehouseCatalogCategoriesPage /> },
+          { path: 'masters/items/units', element: <WarehouseUnitsPage /> },
+          { path: 'masters/items/attributes', element: <WarehouseAttributesPage /> },
           ...warehousePlaceholderRoutes
         ]
       },

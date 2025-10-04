@@ -1,10 +1,16 @@
 -- +goose Up
 ALTER TABLE wms.warehouse
-    ADD COLUMN org_unit_code TEXT NOT NULL DEFAULT 'HQ-WMS' REFERENCES core.org_units(code);
+    ADD COLUMN IF NOT EXISTS org_unit_code TEXT REFERENCES core.org_units(code);
 
 UPDATE wms.warehouse
 SET org_unit_code = 'HQ-WMS'
 WHERE org_unit_code IS NULL;
+
+ALTER TABLE wms.warehouse
+    ALTER COLUMN org_unit_code SET DEFAULT 'HQ-WMS';
+
+ALTER TABLE wms.warehouse
+    ALTER COLUMN org_unit_code SET NOT NULL;
 
 ALTER TABLE wms.warehouse
     ALTER COLUMN org_unit_code DROP DEFAULT;

@@ -19,10 +19,11 @@ import (
 )
 
 var (
-	errWarehouseNotFound = errors.New("warehouse not found")
-	errZoneNotFound      = errors.New("zone not found")
-	errCellNotFound      = errors.New("cell not found")
-	errItemNotFound      = errors.New("item not found")
+	errWarehouseNotFound          = errors.New("warehouse not found")
+	errZoneNotFound               = errors.New("zone not found")
+	errCellNotFound               = errors.New("cell not found")
+	errAttributeTemplateNotFound = errors.New("attribute template not found")
+	errItemNotFound               = errors.New("item not found")
 )
 
 // MasterDataService contains business logic for warehouses/zones/cells.
@@ -456,6 +457,84 @@ func (s *MasterDataService) ListAttributeTemplates(ctx context.Context, targetTy
 	return s.repo.ListAttributeTemplates(ctx, target)
 }
 
+// CreateAttributeTemplate validates input and persists template.
+func (s *MasterDataService) CreateAttributeTemplate(ctx context.Context, payload entity.AttributeTemplate) (entity.AttributeTemplate, error) {
+	payload.Code = normalizeAttributeCode(payload.Code)
+	payload.Name = strings.TrimSpace(payload.Name)
+	if payload.Code == "" || payload.Name == "" {
+		return entity.AttributeTemplate{}, fmt.Errorf("code and name are required")
+	}
+	payload.TargetType = strings.TrimSpace(payload.TargetType)
+	if payload.TargetType == "" {
+		payload.TargetType = "item"
+	}
+	if err := validateAttributeDataType(payload.DataType); err != nil {
+		return entity.AttributeTemplate{}, err
+	}
+	payload.Description = strings.TrimSpace(payload.Description)
+	if payload.Metadata == nil {
+		payload.Metadata = map[string]any{}
+	}
+	if payload.UISchema == nil {
+		payload.UISchema = map[string]any{}
+	}
+	if payload.Position == 0 {
+		payload.Position = 100
+	}
+	return s.repo.CreateAttributeTemplate(ctx, payload)
+}
+
+// UpdateAttributeTemplate updates existing template.
+func (s *MasterDataService) UpdateAttributeTemplate(ctx context.Context, id uuid.UUID, payload entity.AttributeTemplate) (entity.AttributeTemplate, error) {
+	if id == uuid.Nil {
+		return entity.AttributeTemplate{}, fmt.Errorf("id is required")
+	}
+	payload.ID = id
+	payload.Name = strings.TrimSpace(payload.Name)
+	if payload.Name == "" {
+		return entity.AttributeTemplate{}, fmt.Errorf("name is required")
+	}
+	payload.Code = normalizeAttributeCode(payload.Code)
+	if payload.Code == "" {
+		payload.Code = ""
+	}
+	payload.Description = strings.TrimSpace(payload.Description)
+	if payload.TargetType == "" {
+		payload.TargetType = "item"
+	}
+	if err := validateAttributeDataType(payload.DataType); err != nil {
+		return entity.AttributeTemplate{}, err
+	}
+	if payload.Metadata == nil {
+		payload.Metadata = map[string]any{}
+	}
+	if payload.UISchema == nil {
+		payload.UISchema = map[string]any{}
+	}
+	updated, err := s.repo.UpdateAttributeTemplate(ctx, payload)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return entity.AttributeTemplate{}, errAttributeTemplateNotFound
+		}
+		return entity.AttributeTemplate{}, err
+	}
+	return updated, nil
+}
+
+// DeleteAttributeTemplate removes template by id.
+func (s *MasterDataService) DeleteAttributeTemplate(ctx context.Context, id uuid.UUID) error {
+	if id == uuid.Nil {
+		return fmt.Errorf("id is required")
+	}
+	if err := s.repo.DeleteAttributeTemplate(ctx, id); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return errAttributeTemplateNotFound
+		}
+		return err
+	}
+	return nil
+}
+
 // ListItems returns item master data with attributes.
 func (s *MasterDataService) ListItems(ctx context.Context) ([]entity.Item, error) {
 	return s.repo.ListItems(ctx)
@@ -680,6 +759,24 @@ func uniqueUUIDs(values []uuid.UUID) []uuid.UUID {
 	}
 	return result
 }
+
+func normalizeAttributeCode(code string) string {
+	code = strings.TrimSpace(code)
+	code = strings.ToLower(code)
+	code = strings.ReplaceAll(code, " ", "_")
+	return code
+}
+
+func validateAttributeDataType(dataType entity.AttributeDataType) error {
+	switch dataType {
+	case entity.AttributeDataTypeString, entity.AttributeDataTypeNumber, entity.AttributeDataTypeBoolean, entity.AttributeDataTypeJSON:
+		return nil
+	default:
+		return fmt.Errorf("unsupported attribute data type: %s", dataType)
+	}
+}
+
+
 func normalizeCellCode(code string) string {
 	code = strings.TrimSpace(code)
 	code = strings.ToUpper(code)
@@ -698,3 +795,6 @@ func ErrCellNotFound() error { return errCellNotFound }
 
 // ErrItemNotFound exposes service error.
 func ErrItemNotFound() error { return errItemNotFound }
+
+// ErrAttributeTemplateNotFound exposes service error.
+func ErrAttributeTemplateNotFound() error { return errAttributeTemplateNotFound }

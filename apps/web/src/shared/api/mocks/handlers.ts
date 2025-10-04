@@ -145,6 +145,352 @@ const wmsEquipment = [
   }
 ];
 
+const catalogRootId = 'cat-root';
+
+type CatalogNodeMock = {
+  id: string;
+  type: string;
+  parentId: string | null;
+  code: string;
+  name: string;
+  description: string | null;
+  level: number;
+  path: string;
+  metadata: Record<string, unknown>;
+  sortOrder: number;
+  isActive: boolean;
+  createdBy: string | null;
+  updatedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const wmsCatalogNodes: Record<string, CatalogNodeMock[]> = {
+  category: [
+    {
+      id: catalogRootId,
+      type: 'category',
+      parentId: null,
+      code: 'ROOT',
+      name: 'Root Catalog',
+      description: 'System root node',
+      level: 0,
+      path: 'ROOT',
+      metadata: { system: true },
+      sortOrder: 0,
+      isActive: true,
+      createdBy: null,
+      updatedBy: null,
+      createdAt: now(),
+      updatedAt: now()
+    },
+    {
+      id: 'cat-signage',
+      type: 'category',
+      parentId: catalogRootId,
+      code: 'SIGNAGE',
+      name: 'Рекламные конструкции',
+      description: 'Категория для наружных конструкций',
+      level: 1,
+      path: 'ROOT.SIGNAGE',
+      metadata: { demo: true },
+      sortOrder: 10,
+      isActive: true,
+      createdBy: null,
+      updatedBy: null,
+      createdAt: now(),
+      updatedAt: now()
+    },
+    {
+      id: 'cat-print',
+      type: 'category',
+      parentId: catalogRootId,
+      code: 'PRINT',
+      name: 'Печатная продукция',
+      description: 'Категория для печатных материалов',
+      level: 1,
+      path: 'ROOT.PRINT',
+      metadata: { demo: true },
+      sortOrder: 20,
+      isActive: true,
+      createdBy: null,
+      updatedBy: null,
+      createdAt: now(),
+      updatedAt: now()
+    }
+  ],
+  unit: [
+    {
+      id: 'unit-pcs',
+      type: 'unit',
+      parentId: null,
+      code: 'PCS',
+      name: 'Штуки',
+      description: 'Единицы поштучного учёта',
+      level: 0,
+      path: 'PCS',
+      metadata: { decimalPlaces: 0 },
+      sortOrder: 0,
+      isActive: true,
+      createdBy: null,
+      updatedBy: null,
+      createdAt: now(),
+      updatedAt: now()
+    },
+    {
+      id: 'unit-kg',
+      type: 'unit',
+      parentId: null,
+      code: 'KG',
+      name: 'Килограммы',
+      description: 'Единицы массы',
+      level: 0,
+      path: 'KG',
+      metadata: { decimalPlaces: 3 },
+      sortOrder: 10,
+      isActive: true,
+      createdBy: null,
+      updatedBy: null,
+      createdAt: now(),
+      updatedAt: now()
+    }
+  ]
+};
+
+const ensureCatalogCollection = (catalogType: string): CatalogNodeMock[] => {
+  if (!wmsCatalogNodes[catalogType]) {
+    wmsCatalogNodes[catalogType] = [];
+  }
+  return wmsCatalogNodes[catalogType];
+};
+
+const recalcHierarchy = (collection: CatalogNodeMock[], node: CatalogNodeMock) => {
+  const parent = node.parentId ? collection.find((item) => item.id === node.parentId) : null;
+  if (parent) {
+    node.level = parent.level + 1;
+    node.path = `${parent.path}.${node.code}`;
+  } else {
+    node.level = 0;
+    node.path = node.code;
+  }
+};
+
+const updateDescendantHierarchy = (collection: CatalogNodeMock[], node: CatalogNodeMock) => {
+  recalcHierarchy(collection, node);
+  for (const child of collection.filter((item) => item.parentId === node.id)) {
+    updateDescendantHierarchy(collection, child);
+  }
+};
+
+const nextCatalogId = (prefix: string) => `${prefix}-${Math.random().toString(16).slice(2, 8)}-${Date.now()}`;
+
+
+type AttributeTemplateMock = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  targetType: string;
+  dataType: string;
+  isRequired: boolean;
+  metadata: Record<string, unknown>;
+  uiSchema: Record<string, unknown>;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const wmsAttributeTemplates: Record<string, AttributeTemplateMock[]> = {
+  item: [
+    {
+      id: 'tpl-color',
+      code: 'color',
+      name: 'Цвет конструкции',
+      description: 'Основной цвет изделия',
+      targetType: 'item',
+      dataType: 'string',
+      isRequired: false,
+      metadata: { options: ['Синий', 'Красный', 'Белый'] },
+      uiSchema: { component: 'Select' },
+      position: 10,
+      createdAt: now(),
+      updatedAt: now()
+    },
+    {
+      id: 'tpl-width',
+      code: 'width_mm',
+      name: 'Ширина, мм',
+      description: 'Габаритная ширина',
+      targetType: 'item',
+      dataType: 'number',
+      isRequired: true,
+      metadata: { unit: 'mm' },
+      uiSchema: { component: 'NumberInput', step: 1 },
+      position: 20,
+      createdAt: now(),
+      updatedAt: now()
+    },
+    {
+      id: 'tpl-outdoor',
+      code: 'is_outdoor',
+      name: 'Уличное размещение',
+      description: 'Подходит для улицы',
+      targetType: 'item',
+      dataType: 'boolean',
+      isRequired: false,
+      metadata: {},
+      uiSchema: { component: 'Switch' },
+      position: 30,
+      createdAt: now(),
+      updatedAt: now()
+    }
+  ]
+};
+
+const ensureAttributeTemplateCollection = (targetType: string): AttributeTemplateMock[] => {
+  if (!wmsAttributeTemplates[targetType]) {
+    wmsAttributeTemplates[targetType] = [];
+  }
+  return wmsAttributeTemplates[targetType];
+};
+
+const nextTemplateId = () => `tpl-${Math.random().toString(16).slice(2, 8)}-${Date.now()}`;
+
+
+type AttributeValueMock = {
+  template: AttributeTemplateMock;
+  stringValue?: string;
+  numberValue?: number;
+  booleanValue?: boolean;
+  jsonValue?: Record<string, unknown>;
+};
+
+type ItemAttributePayload = {
+  templateId?: string;
+  templateID?: string;
+  template_id?: string;
+  stringValue?: string;
+  numberValue?: number;
+  booleanValue?: boolean;
+  jsonValue?: unknown;
+};
+
+type ItemPayloadInput = {
+  sku?: string;
+  name?: string;
+  description?: string;
+  categoryId?: string;
+  unitId?: string;
+  barcode?: string;
+  weightKg?: number;
+  volumeM3?: number;
+  metadata?: Record<string, unknown>;
+  attributes?: ItemAttributePayload[];
+  warehouseIds?: string[];
+};
+
+type ItemMock = {
+  id: string;
+  sku: string;
+  name: string;
+  description: string | null;
+  categoryId: string | null;
+  categoryPath: string;
+  category?: {
+    id: string;
+    code: string;
+    name: string;
+    path: string;
+    metadata: Record<string, unknown>;
+  };
+  unitId: string;
+  unit?: {
+    id: string;
+    code: string;
+    name: string;
+    metadata: Record<string, unknown>;
+  };
+  barcode: string | null;
+  weightKg: number | null;
+  volumeM3: number | null;
+  metadata: Record<string, unknown>;
+  attributes: AttributeValueMock[];
+  warehouseIds: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+const nextItemId = () => `item-${Math.random().toString(16).slice(2, 8)}-${Date.now()}`;
+
+const buildAttributeValue = (attr: ItemAttributePayload): AttributeValueMock | null => {
+  const templateId = attr.templateId ?? attr.templateID ?? attr.template_id ?? '';
+  if (!templateId) {
+    return null;
+  }
+  const templates = ensureAttributeTemplateCollection('item');
+  const template = templates.find((tpl) => tpl.id === templateId);
+  if (!template) {
+    return null;
+  }
+  return {
+    template,
+    stringValue: attr.stringValue,
+    numberValue: attr.numberValue,
+    booleanValue: attr.booleanValue,
+    jsonValue: attr.jsonValue ?? undefined
+  };
+};
+
+const wmsItems: ItemMock[] = [
+  (() => {
+    const templates = ensureAttributeTemplateCollection('item');
+    const nowTs = now();
+    const category = ensureCatalogCollection('category').find((node) => node.id === 'cat-signage');
+    const unit = ensureCatalogCollection('unit').find((node) => node.id === 'unit-pcs');
+    const attrs = [
+      { templateId: templates[0].id, stringValue: 'Синий' },
+      { templateId: templates[1].id, numberValue: 2400 },
+      { templateId: templates[2].id, booleanValue: true }
+    ];
+    return {
+      id: 'item-demo-1',
+      sku: 'DEMO-SIGN-001',
+      name: 'Демонстрационная вывеска',
+      description: 'Базовая демонстрационная карточка изделия',
+      categoryId: category?.id ?? null,
+      categoryPath: category?.path ?? '',
+      category: category
+        ? { id: category.id, code: category.code, name: category.name, path: category.path, metadata: category.metadata }
+        : undefined,
+      unitId: unit?.id ?? 'unit-pcs',
+      unit: unit ? { id: unit.id, code: unit.code, name: unit.name, metadata: unit.metadata } : undefined,
+      barcode: '4600000000017',
+      weightKg: 35.5,
+      volumeM3: 0.8,
+      metadata: { demo: true },
+      attributes: attrs.map((attr) => buildAttributeValue(attr)).filter(Boolean) as AttributeValueMock[],
+      warehouseIds: ['wh-1'],
+      createdAt: nowTs,
+      updatedAt: nowTs
+    } as ItemMock;
+  })()
+];
+
+const collectCatalogDescendants = (collection: CatalogNodeMock[], nodeId: string): Set<string> => {
+  const descendants = new Set<string>([nodeId]);
+  const stack = [nodeId];
+  while (stack.length) {
+    const current = stack.pop();
+    for (const child of collection.filter((item) => item.parentId === current)) {
+      if (!descendants.has(child.id)) {
+        descendants.add(child.id);
+        stack.push(child.id);
+      }
+    }
+  }
+  return descendants;
+};
+
 const stockItems = [
   { sku: 'SKU-001', warehouse: 'MSK-01', quantity: 125, uom: 'pcs', updatedAt: now() },
   { sku: 'SKU-002', warehouse: 'MSK-01', quantity: 12, uom: 'pcs', updatedAt: now() },
@@ -298,6 +644,42 @@ const crmDealHistory = {
   ],
   'deal-2': [
     { id: 3, dealId: 'deal-2', eventType: 'stage.changed', payload: { from: 'proposal', to: 'negotiation' }, createdAt: now() }
+  ],
+  unit: [
+    {
+      id: 'unit-pcs',
+      type: 'unit',
+      parentId: null,
+      code: 'PCS',
+      name: 'Штуки',
+      description: 'Единицы поштучного учёта',
+      level: 0,
+      path: 'PCS',
+      metadata: { decimalPlaces: 0 },
+      sortOrder: 0,
+      isActive: true,
+      createdBy: null,
+      updatedBy: null,
+      createdAt: now(),
+      updatedAt: now()
+    },
+    {
+      id: 'unit-kg',
+      type: 'unit',
+      parentId: null,
+      code: 'KG',
+      name: 'Килограммы',
+      description: 'Единицы массы',
+      level: 0,
+      path: 'KG',
+      metadata: { decimalPlaces: 3 },
+      sortOrder: 10,
+      isActive: true,
+      createdBy: null,
+      updatedBy: null,
+      createdAt: now(),
+      updatedAt: now()
+    }
   ]
 };
 
@@ -459,6 +841,378 @@ export const handlers = [
       return HttpResponse.json({ message: 'Warehouse not found' }, { status: 404 });
     }
     return HttpResponse.json(details);
+  }),
+  http.get('*/api/v1/master-data/catalog/:type', ({ params }) => {
+    const { type } = params as { type: string };
+    const collection = ensureCatalogCollection(type);
+    return HttpResponse.json({ items: collection });
+  }),
+  http.post('*/api/v1/master-data/catalog/:type', async ({ params, request }) => {
+    const { type } = params as { type: string };
+    const payload = (await request.json()) as {
+      parentId?: string | null;
+      code?: string;
+      name?: string;
+      description?: string;
+      sortOrder?: number;
+      isActive?: boolean;
+      metadata?: Record<string, unknown>;
+    };
+    const collection = ensureCatalogCollection(type);
+    const code = (payload.code ?? '').trim();
+    const name = (payload.name ?? '').trim();
+    if (!code || !name) {
+      return HttpResponse.json({ message: 'code and name are required' }, { status: 400 });
+    }
+    if (collection.some((node) => node.code.toLowerCase() === code.toLowerCase())) {
+      return HttpResponse.json({ message: 'duplicate code' }, { status: 409 });
+    }
+
+    const defaultParent = collection.find((node) => node.parentId === null) ?? null;
+    const parent = payload.parentId ? collection.find((node) => node.id === payload.parentId) : defaultParent;
+
+    const node: CatalogNodeMock = {
+      id: nextCatalogId(type),
+      type,
+      parentId: parent?.id ?? null,
+      code,
+      name,
+      description: payload.description?.trim() || null,
+      level: 0,
+      path: code,
+      metadata: payload.metadata && typeof payload.metadata === 'object' && !Array.isArray(payload.metadata)
+        ? payload.metadata
+        : {},
+      sortOrder:
+        typeof payload.sortOrder === 'number' && Number.isFinite(payload.sortOrder)
+          ? payload.sortOrder
+          : (parent ? parent.level + 1 : 0) * 100 + 10,
+      isActive: payload.isActive ?? true,
+      createdBy: null,
+      updatedBy: null,
+      createdAt: now(),
+      updatedAt: now()
+    };
+
+    collection.push(node);
+    updateDescendantHierarchy(collection, node);
+
+    return HttpResponse.json(node, { status: 201 });
+  }),
+  http.put('*/api/v1/master-data/catalog/:type/:id', async ({ params, request }) => {
+    const { type, id } = params as { type: string; id: string };
+    const payload = (await request.json()) as {
+      parentId?: string | null;
+      code?: string;
+      name?: string;
+      description?: string;
+      sortOrder?: number;
+      isActive?: boolean;
+      metadata?: Record<string, unknown>;
+    };
+    const collection = ensureCatalogCollection(type);
+    const node = collection.find((item) => item.id === id);
+    if (!node) {
+      return HttpResponse.json({ message: 'not found' }, { status: 404 });
+    }
+
+    if (payload.code) {
+      const trimmed = payload.code.trim();
+      if (!trimmed) {
+        return HttpResponse.json({ message: 'code is required' }, { status: 400 });
+      }
+      if (
+        collection.some((item) => item.id !== node.id && item.code.toLowerCase() === trimmed.toLowerCase())
+      ) {
+        return HttpResponse.json({ message: 'duplicate code' }, { status: 409 });
+      }
+      node.code = trimmed;
+    }
+
+    if (payload.name) {
+      node.name = payload.name.trim() || node.name;
+    }
+    if (payload.description !== undefined) {
+      node.description = payload.description?.trim() || null;
+    }
+    if (payload.metadata && typeof payload.metadata === 'object' && !Array.isArray(payload.metadata)) {
+      node.metadata = payload.metadata;
+    }
+    if (typeof payload.sortOrder === 'number' && Number.isFinite(payload.sortOrder)) {
+      node.sortOrder = payload.sortOrder;
+    }
+    if (typeof payload.isActive === 'boolean') {
+      node.isActive = payload.isActive;
+    }
+
+    if (payload.parentId !== undefined) {
+      const parent = payload.parentId ? collection.find((item) => item.id === payload.parentId) : null;
+      if (parent && parent.id === node.id) {
+        return HttpResponse.json({ message: 'parent cannot be self' }, { status: 400 });
+      }
+      if (payload.parentId && !parent) {
+        return HttpResponse.json({ message: 'parent not found' }, { status: 404 });
+      }
+      if (parent) {
+        const descendants = collectCatalogDescendants(collection, node.id);
+        if (descendants.has(parent.id)) {
+          return HttpResponse.json({ message: 'parent cannot be descendant' }, { status: 400 });
+        }
+      }
+      node.parentId = parent?.id ?? null;
+    }
+
+    node.updatedAt = now();
+    updateDescendantHierarchy(collection, node);
+
+    return HttpResponse.json(node);
+  }),
+  http.delete('*/api/v1/master-data/catalog/:type/:id', ({ params }) => {
+    const { type, id } = params as { type: string; id: string };
+    const collection = ensureCatalogCollection(type);
+    const index = collection.findIndex((item) => item.id === id);
+    if (index < 0) {
+      return HttpResponse.json({ message: 'not found' }, { status: 404 });
+    }
+    const node = collection[index];
+    if (node.parentId === null) {
+      return HttpResponse.json({ message: 'root cannot be removed' }, { status: 400 });
+    }
+    if (collection.some((item) => item.parentId === node.id)) {
+      return HttpResponse.json({ message: 'delete children first' }, { status: 409 });
+    }
+    collection.splice(index, 1);
+    return HttpResponse.json(null, { status: 204 });
+  }),
+  http.get('*/api/v1/master-data/attribute-templates', ({ request }) => {
+    const url = new URL(request.url);
+    const target = (url.searchParams.get('target') ?? 'item').trim() || 'item';
+    const templates = ensureAttributeTemplateCollection(target);
+    return HttpResponse.json({ items: templates });
+  }),
+  http.post('*/api/v1/master-data/attribute-templates', async ({ request }) => {
+    const payload = (await request.json()) as {
+      code?: string;
+      name?: string;
+      description?: string;
+      targetType?: string;
+      dataType?: string;
+      isRequired?: boolean;
+      position?: number;
+      metadata?: Record<string, unknown>;
+      uiSchema?: Record<string, unknown>;
+    };
+    const code = (payload.code ?? '').trim();
+    const name = (payload.name ?? '').trim();
+    const dataType = (payload.dataType ?? '').trim();
+    if (!code || !name || !dataType) {
+      return HttpResponse.json({ message: 'code, name and dataType are required' }, { status: 400 });
+    }
+    const target = (payload.targetType ?? 'item').trim() || 'item';
+    const collection = ensureAttributeTemplateCollection(target);
+    if (collection.some((tpl) => tpl.code === code)) {
+      return HttpResponse.json({ message: 'duplicate code' }, { status: 409 });
+    }
+    const template: AttributeTemplateMock = {
+      id: nextTemplateId(),
+      code,
+      name,
+      description: payload.description?.trim() || null,
+      targetType: target,
+      dataType: dataType.toLowerCase(),
+      isRequired: Boolean(payload.isRequired),
+      metadata:
+        payload.metadata && typeof payload.metadata === 'object' && !Array.isArray(payload.metadata)
+          ? payload.metadata
+          : {},
+      uiSchema:
+        payload.uiSchema && typeof payload.uiSchema === 'object' && !Array.isArray(payload.uiSchema)
+          ? payload.uiSchema
+          : {},
+      position:
+        typeof payload.position === 'number' && Number.isFinite(payload.position)
+          ? payload.position
+          : collection.length * 10 + 10,
+      createdAt: now(),
+      updatedAt: now()
+    };
+    collection.push(template);
+    return HttpResponse.json(template, { status: 201 });
+  }),
+  http.put('*/api/v1/master-data/attribute-templates/:templateId', async ({ params, request }) => {
+    const { templateId } = params as { templateId: string };
+    const payload = (await request.json()) as {
+      name?: string;
+      description?: string;
+      dataType?: string;
+      isRequired?: boolean;
+      position?: number;
+      metadata?: Record<string, unknown>;
+      uiSchema?: Record<string, unknown>;
+    };
+    const collections = Object.values(wmsAttributeTemplates);
+    let template: AttributeTemplateMock | undefined;
+    for (const templates of collections) {
+      const found = templates.find((tpl) => tpl.id === templateId);
+      if (found) {
+        template = found;
+        break;
+      }
+    }
+    if (!template) {
+      return HttpResponse.json({ message: 'not found' }, { status: 404 });
+    }
+    if (payload.name !== undefined) {
+      const name = payload.name.trim();
+      if (!name) {
+        return HttpResponse.json({ message: 'name is required' }, { status: 400 });
+      }
+      template.name = name;
+    }
+    if (payload.description !== undefined) {
+      template.description = payload.description?.trim() || null;
+    }
+    if (payload.dataType) {
+      template.dataType = payload.dataType.trim().toLowerCase();
+    }
+    if (payload.isRequired !== undefined) {
+      template.isRequired = Boolean(payload.isRequired);
+    }
+    if (payload.position !== undefined && Number.isFinite(payload.position)) {
+      template.position = Number(payload.position);
+    }
+    if (payload.metadata && typeof payload.metadata === 'object' && !Array.isArray(payload.metadata)) {
+      template.metadata = payload.metadata;
+    }
+    if (payload.uiSchema && typeof payload.uiSchema === 'object' && !Array.isArray(payload.uiSchema)) {
+      template.uiSchema = payload.uiSchema;
+    }
+    template.updatedAt = now();
+    return HttpResponse.json(template);
+  }),
+  http.delete('*/api/v1/master-data/attribute-templates/:templateId', ({ params }) => {
+    const { templateId } = params as { templateId: string };
+    const collections = Object.values(wmsAttributeTemplates);
+    for (const templates of collections) {
+      const index = templates.findIndex((tpl) => tpl.id === templateId);
+      if (index >= 0) {
+        templates.splice(index, 1);
+        return HttpResponse.json(null, { status: 204 });
+      }
+    }
+    return HttpResponse.json({ message: 'not found' }, { status: 404 });
+  }),
+  http.get('*/api/v1/master-data/items', () => HttpResponse.json({ items: wmsItems })),
+  http.get('*/api/v1/master-data/items/:id', ({ params }) => {
+    const { id } = params as { id: string };
+    const item = wmsItems.find((entry) => entry.id === id);
+    if (!item) {
+      return HttpResponse.json({ message: 'not found' }, { status: 404 });
+    }
+    return HttpResponse.json(item);
+  }),
+  http.post('*/api/v1/master-data/items', async ({ request }) => {
+    const payload = (await request.json()) as ItemPayloadInput;
+    const sku = (payload.sku ?? '').trim();
+    const name = (payload.name ?? '').trim();
+    const unitId = (payload.unitId ?? '').trim();
+    if (!sku || !name || !unitId) {
+      return HttpResponse.json({ message: 'sku, name and unitId are required' }, { status: 400 });
+    }
+    const unit = ensureCatalogCollection('unit').find((node) => node.id === unitId);
+    if (!unit) {
+      return HttpResponse.json({ message: 'unit not found' }, { status: 400 });
+    }
+    const category = payload.categoryId ? ensureCatalogCollection('category').find((node) => node.id === payload.categoryId) : null;
+    const attributesPayload = Array.isArray(payload.attributes) ? payload.attributes : [];
+    const attributes = attributesPayload
+      .map((attr) => buildAttributeValue(attr))
+      .filter(Boolean) as AttributeValueMock[];
+    const nowTs = now();
+    const item: ItemMock = {
+      id: nextItemId(),
+      sku,
+      name,
+      description: payload.description?.trim() || null,
+      categoryId: category?.id ?? null,
+      categoryPath: category?.path ?? '',
+      category: category
+        ? { id: category.id, code: category.code, name: category.name, path: category.path, metadata: category.metadata }
+        : undefined,
+      unitId: unit.id,
+      unit: { id: unit.id, code: unit.code, name: unit.name, metadata: unit.metadata },
+      barcode: payload.barcode?.trim() || null,
+      weightKg: typeof payload.weightKg === 'number' ? payload.weightKg : null,
+      volumeM3: typeof payload.volumeM3 === 'number' ? payload.volumeM3 : null,
+      metadata:
+        payload.metadata && typeof payload.metadata === 'object' && !Array.isArray(payload.metadata)
+          ? payload.metadata
+          : {},
+      attributes,
+      warehouseIds: Array.isArray(payload.warehouseIds) ? payload.warehouseIds : [],
+      createdAt: nowTs,
+      updatedAt: nowTs
+    };
+    wmsItems.push(item);
+    return HttpResponse.json(item, { status: 201 });
+  }),
+  http.put('*/api/v1/master-data/items/:id', async ({ params, request }) => {
+    const { id } = params as { id: string };
+    const index = wmsItems.findIndex((entry) => entry.id === id);
+    if (index < 0) {
+      return HttpResponse.json({ message: 'not found' }, { status: 404 });
+    }
+    const payload = (await request.json()) as ItemPayloadInput;
+    const sku = (payload.sku ?? '').trim();
+    const name = (payload.name ?? '').trim();
+    const unitId = (payload.unitId ?? '').trim();
+    if (!sku || !name || !unitId) {
+      return HttpResponse.json({ message: 'sku, name and unitId are required' }, { status: 400 });
+    }
+    const unit = ensureCatalogCollection('unit').find((node) => node.id === unitId);
+    if (!unit) {
+      return HttpResponse.json({ message: 'unit not found' }, { status: 400 });
+    }
+    const category = payload.categoryId ? ensureCatalogCollection('category').find((node) => node.id === payload.categoryId) : null;
+    const attributesPayload = Array.isArray(payload.attributes) ? payload.attributes : [];
+    const attributes = attributesPayload
+      .map((attr) => buildAttributeValue(attr))
+      .filter(Boolean) as AttributeValueMock[];
+    const existing = wmsItems[index];
+    const updated: ItemMock = {
+      ...existing,
+      sku,
+      name,
+      description: payload.description?.trim() || null,
+      categoryId: category?.id ?? null,
+      categoryPath: category?.path ?? '',
+      category: category
+        ? { id: category.id, code: category.code, name: category.name, path: category.path, metadata: category.metadata }
+        : undefined,
+      unitId: unit.id,
+      unit: { id: unit.id, code: unit.code, name: unit.name, metadata: unit.metadata },
+      barcode: payload.barcode?.trim() || null,
+      weightKg: typeof payload.weightKg === 'number' ? payload.weightKg : null,
+      volumeM3: typeof payload.volumeM3 === 'number' ? payload.volumeM3 : null,
+      metadata:
+        payload.metadata && typeof payload.metadata === 'object' && !Array.isArray(payload.metadata)
+          ? payload.metadata
+          : {},
+      attributes,
+      warehouseIds: Array.isArray(payload.warehouseIds) ? payload.warehouseIds : existing.warehouseIds,
+      updatedAt: now()
+    };
+    wmsItems[index] = updated;
+    return HttpResponse.json(updated);
+  }),
+  http.delete('*/api/v1/master-data/items/:id', ({ params }) => {
+    const { id } = params as { id: string };
+    const index = wmsItems.findIndex((entry) => entry.id === id);
+    if (index < 0) {
+      return HttpResponse.json({ message: 'not found' }, { status: 404 });
+    }
+    wmsItems.splice(index, 1);
+    return HttpResponse.json(null, { status: 204 });
   }),
   http.get('*/api/v1/stock/', ({ request }) => {
     if (request.headers.get('x-mock-rbac') === 'deny') {

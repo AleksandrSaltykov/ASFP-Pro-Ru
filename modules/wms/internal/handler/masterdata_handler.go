@@ -37,6 +37,9 @@ func (h *MasterDataHandler) Register(app *fiber.App) {
 	group.Put("/catalog-links/:leftType/:leftID", h.replaceCatalogLinks)
 
 	group.Get("/attribute-templates", h.listAttributeTemplates)
+	group.Post("/attribute-templates", h.createAttributeTemplate)
+	group.Put("/attribute-templates/:templateID", h.updateAttributeTemplate)
+	group.Delete("/attribute-templates/:templateID", h.deleteAttributeTemplate)
 
 	group.Get("/items", h.listItems)
 	group.Post("/items", h.createItem)
@@ -155,6 +158,100 @@ func (h *MasterDataHandler) listAttributeTemplates(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(fiber.Map{"items": templates})
+}
+
+type attributeTemplateRequest struct {
+	Code        string                 `json:"code"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	TargetType  string                 `json:"targetType"`
+	DataType    string                 `json:"dataType"`
+	IsRequired  *bool                  `json:"isRequired"`
+	Position    *int                   `json:"position"`
+	Metadata    map[string]any         `json:"metadata"`
+	UISchema    map[string]any         `json:"uiSchema"`
+}
+
+func (r attributeTemplateRequest) toEntity() entity.AttributeTemplate {
+	req := entity.AttributeTemplate{
+		Code:        r.Code,
+		Name:        r.Name,
+		Description: r.Description,
+		TargetType:  r.TargetType,
+		DataType:    entity.AttributeDataType(strings.TrimSpace(r.DataType)),
+		Metadata:    r.Metadata,
+		UISchema:    r.UISchema,
+	}
+	if r.IsRequired != nil {
+		req.IsRequired = *r.IsRequired
+	}
+	if r.Position != nil {
+		req.Position = *r.Position
+	}
+	return req
+}
+
+func (h *MasterDataHandler) createAttributeTemplate(c *fiber.Ctx) error {
+	var req attributeTemplateRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid payload")
+	}
+	template := req.toEntity()
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	created, err := h.service.CreateAttributeTemplate(ctx, template)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	return c.Status(fiber.StatusCreated).JSON(created)
+}
+
+func (h *MasterDataHandler) updateAttributeTemplate(c *fiber.Ctx) error {
+	templateID, err := parseUUIDParam(c, "templateID")
+	if err != nil {
+		return err
+	}
+
+	var req attributeTemplateRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid payload")
+	}
+
+	template := req.toEntity()
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	updated, err := h.service.UpdateAttributeTemplate(ctx, templateID, template)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrAttributeTemplateNotFound()):
+			return fiber.NewError(fiber.StatusNotFound, "attribute template not found")
+		default:
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	}
+	return c.JSON(updated)
+}
+
+func (h *MasterDataHandler) deleteAttributeTemplate(c *fiber.Ctx) error {
+	templateID, err := parseUUIDParam(c, "templateID")
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	defer cancel()
+
+	if err := h.service.DeleteAttributeTemplate(ctx, templateID); err != nil {
+		switch {
+		case errors.Is(err, service.ErrAttributeTemplateNotFound()):
+			return fiber.NewError(fiber.StatusNotFound, "attribute template not found")
+		default:
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	}
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 // listItems returns item master data.

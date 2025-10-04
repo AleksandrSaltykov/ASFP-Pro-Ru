@@ -270,6 +270,31 @@
             }
           }
         }
+      },
+      "post": {
+        "summary": "Create attribute template",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttributeTemplateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeTemplate"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/master-data/items": {
@@ -491,6 +516,69 @@
         "responses": {
           "204": {
             "description": "Updated"
+          }
+        }
+      }
+    },
+    "/api/v1/master-data/attribute-templates/{templateId}": {
+      "put": {
+        "summary": "Update attribute template",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttributeTemplateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeTemplate"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete attribute template",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       }
@@ -867,6 +955,49 @@
           "rightId",
           "rightType",
           "relationCode"
+        ]
+      },
+      "AttributeTemplateInput": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "targetType": {
+            "type": "string"
+          },
+          "dataType": {
+            "type": "string",
+            "enum": [
+              "string",
+              "number",
+              "boolean",
+              "json"
+            ]
+          },
+          "isRequired": {
+            "type": "boolean"
+          },
+          "position": {
+            "type": "integer"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "uiSchema": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "dataType"
         ]
       }
     }

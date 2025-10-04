@@ -276,6 +276,90 @@ func (r *MasterDataRepository) ListAttributeTemplates(ctx context.Context, targe
 }
 
 // ListItems returns enriched item master data.
+
+func (r *MasterDataRepository) CreateAttributeTemplate(ctx context.Context, template entity.AttributeTemplate) (entity.AttributeTemplate, error) {
+	if template.ID == uuid.Nil {
+		template.ID = uuid.New()
+	}
+	description := sql.NullString{String: strings.TrimSpace(template.Description), Valid: strings.TrimSpace(template.Description) != ""}
+	metadata := mustJSON(template.Metadata)
+	uiSchema := mustJSON(template.UISchema)
+
+	row := r.pool.QueryRow(ctx, `
+        INSERT INTO wms.attribute_templates (
+            id, code, name, description, target_type, data_type, is_required,
+            metadata, ui_schema, position
+        ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7,
+            $8, $9, $10
+        )
+        RETURNING created_at, updated_at`,
+		template.ID,
+		template.Code,
+		template.Name,
+		description,
+		template.TargetType,
+		template.DataType,
+		template.IsRequired,
+		metadata,
+		uiSchema,
+		template.Position,
+	)
+	if err := row.Scan(&template.CreatedAt, &template.UpdatedAt); err != nil {
+		return entity.AttributeTemplate{}, fmt.Errorf("insert attribute template: %w", err)
+	}
+	return template, nil
+}
+
+func (r *MasterDataRepository) UpdateAttributeTemplate(ctx context.Context, template entity.AttributeTemplate) (entity.AttributeTemplate, error) {
+	description := sql.NullString{String: strings.TrimSpace(template.Description), Valid: strings.TrimSpace(template.Description) != ""}
+	metadata := mustJSON(template.Metadata)
+	uiSchema := mustJSON(template.UISchema)
+
+	row := r.pool.QueryRow(ctx, `
+        UPDATE wms.attribute_templates
+        SET name = $2,
+            description = $3,
+            data_type = $4,
+            is_required = $5,
+            metadata = $6,
+            ui_schema = $7,
+            position = $8,
+            updated_at = NOW()
+        WHERE id = $1
+        RETURNING code, target_type, created_at, updated_at`,
+		template.ID,
+		template.Name,
+		description,
+		template.DataType,
+		template.IsRequired,
+		metadata,
+		uiSchema,
+		template.Position,
+	)
+	var code, targetType string
+	if err := row.Scan(&code, &targetType, &template.CreatedAt, &template.UpdatedAt); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return entity.AttributeTemplate{}, pgx.ErrNoRows
+		}
+		return entity.AttributeTemplate{}, fmt.Errorf("update attribute template: %w", err)
+	}
+	template.Code = code
+	template.TargetType = targetType
+	return template, nil
+}
+
+func (r *MasterDataRepository) DeleteAttributeTemplate(ctx context.Context, id uuid.UUID) error {
+	cmdTag, err := r.pool.Exec(ctx, `DELETE FROM wms.attribute_templates WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("delete attribute template: %w", err)
+	}
+	if cmdTag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
+}
+
 func (r *MasterDataRepository) ListItems(ctx context.Context) ([]entity.Item, error) {
 	return r.loadItems(ctx, "", nil)
 }

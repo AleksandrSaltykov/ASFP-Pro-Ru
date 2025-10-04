@@ -25,6 +25,8 @@ const CATALOG_PREFIX = ['wms', 'catalog'] as const;
 const catalogListKey = (catalogType: string) => [...CATALOG_PREFIX, 'nodes', catalogType] as const;
 const attributeTemplatesKey = (targetType: string) => [...CATALOG_PREFIX, 'attribute-templates', targetType] as const;
 const itemListKey = [...CATALOG_PREFIX, 'items'] as const;
+const invalidateAttributeTemplates = (http: Http, targetType?: string) =>
+  http.invalidate(attributeTemplatesKey(targetType || 'item'));
 const itemDetailsKey = (itemId: string) => [...CATALOG_PREFIX, 'items', itemId] as const;
 const itemDetailsDisabledKey = [...CATALOG_PREFIX, 'items', 'detail-disabled'] as const;
 const catalogLinksKey = (leftType: string, leftId: string) => [...CATALOG_PREFIX, 'links', leftType, leftId] as const;
@@ -58,6 +60,22 @@ type UpdateCatalogNodeVariables = {
 type DeleteCatalogNodeVariables = {
   catalogType: string;
   nodeId: string;
+};
+
+type CreateAttributeTemplateVariables = {
+  targetType?: string;
+  payload: AttributeTemplatePayload;
+};
+
+type UpdateAttributeTemplateVariables = {
+  templateId: string;
+  targetType?: string;
+  payload: AttributeTemplatePayload;
+};
+
+type DeleteAttributeTemplateVariables = {
+  templateId: string;
+  targetType?: string;
 };
 
 type UpdateItemVariables = {
@@ -153,6 +171,69 @@ export const useDeleteCatalogNodeMutation = (
       }),
     onSuccess: async (data, variables, context) => {
       await invalidateCatalogNodes(http, variables.catalogType);
+      onSuccess?.(data, variables, context, undefined as never);
+    },
+    ...rest
+  });
+};
+
+export const useCreateAttributeTemplateMutation = (
+  options?: MutationOptionsOverride<AttributeTemplate, CreateAttributeTemplateVariables>
+) => {
+  const http = useCatalogHttpClient();
+  const { onSuccess, ...rest } = options ?? {};
+  return useMutation({
+    mutationFn: ({ targetType, payload }: CreateAttributeTemplateVariables) => {
+      const target = targetType ?? payload.targetType ?? 'item';
+      return http.request<AttributeTemplate>('/api/v1/master-data/attribute-templates', {
+        method: 'POST',
+        body: { ...payload, targetType: target }
+      });
+    },
+    onSuccess: async (data, variables, context) => {
+      const target = variables.targetType ?? variables.payload.targetType ?? 'item';
+      await invalidateAttributeTemplates(http, target);
+      onSuccess?.(data, variables, context, undefined as never);
+    },
+    ...rest
+  });
+};
+
+export const useUpdateAttributeTemplateMutation = (
+  options?: MutationOptionsOverride<AttributeTemplate, UpdateAttributeTemplateVariables>
+) => {
+  const http = useCatalogHttpClient();
+  const { onSuccess, ...rest } = options ?? {};
+  return useMutation({
+    mutationFn: ({ templateId, targetType, payload }: UpdateAttributeTemplateVariables) => {
+      const target = targetType ?? payload.targetType ?? 'item';
+      return http.request<AttributeTemplate>(`/api/v1/master-data/attribute-templates/${templateId}`, {
+        method: 'PUT',
+        body: { ...payload, targetType: target }
+      });
+    },
+    onSuccess: async (data, variables, context) => {
+      const target = variables.targetType ?? variables.payload.targetType ?? 'item';
+      await invalidateAttributeTemplates(http, target);
+      onSuccess?.(data, variables, context, undefined as never);
+    },
+    ...rest
+  });
+};
+
+export const useDeleteAttributeTemplateMutation = (
+  options?: MutationOptionsOverride<null, DeleteAttributeTemplateVariables>
+) => {
+  const http = useCatalogHttpClient();
+  const { onSuccess, ...rest } = options ?? {};
+  return useMutation({
+    mutationFn: ({ templateId }: DeleteAttributeTemplateVariables) =>
+      http.request<null>(`/api/v1/master-data/attribute-templates/${templateId}`, {
+        method: 'DELETE'
+      }),
+    onSuccess: async (data, variables, context) => {
+      const target = variables.targetType ?? 'item';
+      await invalidateAttributeTemplates(http, target);
       onSuccess?.(data, variables, context, undefined as never);
     },
     ...rest
