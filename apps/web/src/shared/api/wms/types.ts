@@ -218,9 +218,13 @@ export type Item = {
   category?: CatalogNode;
   unitId: UUID;
   unit?: CatalogNode;
+  alternativeUnitId?: UUID | null;
+  alternativeUnit?: CatalogNode;
+  conversionRate?: number | null;
   barcode?: string;
   weightKg?: number;
   volumeM3?: number;
+  powerW?: number;
   metadata?: Record<string, unknown>;
   warehouseIds?: UUID[];
   attributes?: AttributeValue[];
@@ -239,6 +243,9 @@ export type ItemPayload = {
   barcode?: string;
   weightKg?: number | null;
   volumeM3?: number | null;
+  powerW?: number | null;
+  alternativeUnitId?: UUID | null;
+  conversionRate?: number | null;
   metadata?: Record<string, unknown>;
   warehouseIds?: UUID[];
   attributes?: AttributeValueInput[];

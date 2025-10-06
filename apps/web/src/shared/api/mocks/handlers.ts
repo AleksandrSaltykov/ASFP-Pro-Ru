@@ -381,12 +381,45 @@ type ItemPayloadInput = {
   description?: string;
   categoryId?: string;
   unitId?: string;
+  alternativeUnitId?: string | null;
+  conversionRate?: number | null;
   barcode?: string;
   weightKg?: number;
   volumeM3?: number;
+  powerW?: number;
   metadata?: Record<string, unknown>;
   attributes?: ItemAttributePayload[];
   warehouseIds?: string[];
+};
+
+type CrmCustomerPayloadInput = {
+  name?: string;
+  inn?: string;
+  kpp?: string;
+  comment?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  legalAddress?: string;
+  actualAddress?: string;
+  bankAccounts?: Array<{
+    id?: string;
+    accountName?: string;
+    bankName?: string;
+    accountNumber?: string;
+    bik?: string;
+    corrAccount?: string;
+    comment?: string;
+    isDefault?: boolean;
+  }>;
+  contacts?: Array<{
+    id?: string;
+    name?: string;
+    position?: string;
+    phone?: string;
+    email?: string;
+    comment?: string;
+  }>;
 };
 
 type ItemMock = {
@@ -410,9 +443,18 @@ type ItemMock = {
     name: string;
     metadata: Record<string, unknown>;
   };
+  alternativeUnitId: string | null;
+  alternativeUnit?: {
+    id: string;
+    code: string;
+    name: string;
+    metadata: Record<string, unknown>;
+  };
+  conversionRate: number | null;
   barcode: string | null;
   weightKg: number | null;
   volumeM3: number | null;
+  powerW: number | null;
   metadata: Record<string, unknown>;
   attributes: AttributeValueMock[];
   warehouseIds: string[];
@@ -446,7 +488,9 @@ const wmsItems: ItemMock[] = [
     const templates = ensureAttributeTemplateCollection('item');
     const nowTs = now();
     const category = ensureCatalogCollection('category').find((node) => node.id === 'cat-signage');
-    const unit = ensureCatalogCollection('unit').find((node) => node.id === 'unit-pcs');
+    const unitsCollection = ensureCatalogCollection('unit');
+    const unit = unitsCollection.find((node) => node.id === 'unit-pcs');
+    const alternativeUnit = unitsCollection.find((node) => node.id === 'unit-kg');
     const attrs = [
       { templateId: templates[0].id, stringValue: 'Синий' },
       { templateId: templates[1].id, numberValue: 2400 },
@@ -464,9 +508,15 @@ const wmsItems: ItemMock[] = [
         : undefined,
       unitId: unit?.id ?? 'unit-pcs',
       unit: unit ? { id: unit.id, code: unit.code, name: unit.name, metadata: unit.metadata } : undefined,
+      alternativeUnitId: 'unit-kg',
+      alternativeUnit: alternativeUnit
+        ? { id: alternativeUnit.id, code: alternativeUnit.code, name: alternativeUnit.name, metadata: alternativeUnit.metadata }
+        : undefined,
+      conversionRate: 0.2,
       barcode: '4600000000017',
       weightKg: 35.5,
       volumeM3: 0.8,
+      powerW: 185,
       metadata: { demo: true },
       attributes: attrs.map((attr) => buildAttributeValue(attr)).filter(Boolean) as AttributeValueMock[],
       warehouseIds: ['wh-1'],
@@ -603,16 +653,132 @@ const crmCustomers = [
     name: 'ООО «Интеграция»',
     inn: '7701234567',
     kpp: '770101001',
-    createdAt: now()
+    comment: 'Поставщик',
+    phone: '+7 (495) 111-22-33',
+    email: 'supply@integration.ru',
+    website: 'https://integration.ru',
+    legalAddress: '109004, г. Москва, ул. Николоямская, д. 12',
+    actualAddress: '142715, Московская обл., г. Видное, ул. Центральная, д. 3',
+    bankAccounts: [
+      {
+        id: 'cust-1-account-1',
+        accountName: 'Основной расчетный счет',
+        bankName: 'ПАО Сбербанк',
+        accountNumber: '40702810500000000004',
+        bik: '044525225',
+        corrAccount: '30101810400000000225',
+        comment: 'Для поставок'
+      }
+    ],
+    contacts: [
+      {
+        id: 'cust-1-contact-1',
+        name: 'Дмитрий Орлов',
+        position: 'Менеджер по снабжению',
+        phone: '+7 (985) 111-44-55',
+        email: 'dorlov@integration.ru'
+      }
+    ],
+    createdAt: now(),
+    updatedAt: now()
   },
   {
     id: 'cust-2',
     name: 'АО «Фабрика решений»',
     inn: '7809876543',
     kpp: '780901001',
-    createdAt: now()
+    comment: 'Поставщик',
+    phone: '+7 (812) 200-33-55',
+    email: 'info@solutionsfab.ru',
+    website: 'https://solutionsfab.ru',
+    legalAddress: '197342, г. Санкт-Петербург, пр. Медиков, д. 5',
+    actualAddress: '188689, Ленинградская обл., г. Зеленогорск, ш. Приморское, д. 40',
+    bankAccounts: [
+      {
+        id: 'cust-2-account-1',
+        accountName: 'Р/с в ВТБ',
+        bankName: 'Банк ВТБ (ПАО)',
+        accountNumber: '40702810600000000005',
+        bik: '044525411',
+        corrAccount: '30101810700000000411'
+      }
+    ],
+    contacts: [
+      {
+        id: 'cust-2-contact-1',
+        name: 'Екатерина Соколова',
+        position: 'Ключевой менеджер',
+        phone: '+7 (921) 300-77-88',
+        email: 'esokolova@solutionsfab.ru'
+      },
+      {
+        id: 'cust-2-contact-2',
+        name: 'Павел Козлов',
+        position: 'Бухгалтер',
+        email: 'pkozlov@solutionsfab.ru'
+      }
+    ],
+    createdAt: now(),
+    updatedAt: now()
   }
 ];
+
+const nextCustomerId = () => `cust-${Math.random().toString(16).slice(2, 8)}-${Date.now()}`;
+const nextCustomerEntityId = (prefix: string) => `${prefix}-${Math.random().toString(16).slice(2, 8)}-${Date.now()}`;
+
+const trimOrUndefined = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : undefined;
+};
+
+const normalizeBankAccountsInput = (accounts: CrmCustomerPayloadInput['bankAccounts'] | undefined) => {
+  if (!Array.isArray(accounts)) {
+    return [];
+  }
+  return accounts
+    .map((account) => {
+      const accountNumber = trimOrUndefined(account?.accountNumber ?? '');
+      if (!accountNumber) {
+        return null;
+      }
+      return {
+        id: account?.id ?? nextCustomerEntityId('acct'),
+        accountName: trimOrUndefined(account?.accountName ?? account?.comment ?? ''),
+        bankName: trimOrUndefined(account?.bankName ?? ''),
+        accountNumber,
+        bik: trimOrUndefined(account?.bik ?? ''),
+        corrAccount: trimOrUndefined(account?.corrAccount ?? ''),
+        comment: trimOrUndefined(account?.comment ?? ''),
+        isDefault: Boolean(account?.isDefault)
+      };
+    })
+    .filter((account): account is NonNullable<typeof account> => Boolean(account));
+};
+
+const normalizeContactsInput = (contacts: CrmCustomerPayloadInput['contacts'] | undefined) => {
+  if (!Array.isArray(contacts)) {
+    return [];
+  }
+  return contacts
+    .map((contact) => {
+      const name = trimOrUndefined(contact?.name ?? '');
+      if (!name) {
+        return null;
+      }
+      return {
+        id: contact?.id ?? nextCustomerEntityId('contact'),
+        name,
+        position: trimOrUndefined(contact?.position ?? ''),
+        phone: trimOrUndefined(contact?.phone ?? ''),
+        email: trimOrUndefined(contact?.email ?? ''),
+        comment: trimOrUndefined(contact?.comment ?? '')
+      };
+    })
+    .filter((contact): contact is NonNullable<typeof contact> => Boolean(contact));
+};
 
 const crmDeals = [
   {
@@ -1119,11 +1285,14 @@ export const handlers = [
     if (!sku || !name || !unitId) {
       return HttpResponse.json({ message: 'sku, name and unitId are required' }, { status: 400 });
     }
-    const unit = ensureCatalogCollection('unit').find((node) => node.id === unitId);
+    const unitsCollection = ensureCatalogCollection('unit');
+    const unit = unitsCollection.find((node) => node.id === unitId);
     if (!unit) {
       return HttpResponse.json({ message: 'unit not found' }, { status: 400 });
     }
     const category = payload.categoryId ? ensureCatalogCollection('category').find((node) => node.id === payload.categoryId) : null;
+    const alternativeUnitId = (payload.alternativeUnitId ?? '').trim();
+    const alternativeUnit = alternativeUnitId ? unitsCollection.find((node) => node.id === alternativeUnitId) : undefined;
     const attributesPayload = Array.isArray(payload.attributes) ? payload.attributes : [];
     const attributes = attributesPayload
       .map((attr) => buildAttributeValue(attr))
@@ -1141,9 +1310,15 @@ export const handlers = [
         : undefined,
       unitId: unit.id,
       unit: { id: unit.id, code: unit.code, name: unit.name, metadata: unit.metadata },
+      alternativeUnitId: alternativeUnit?.id ?? null,
+      alternativeUnit: alternativeUnit
+        ? { id: alternativeUnit.id, code: alternativeUnit.code, name: alternativeUnit.name, metadata: alternativeUnit.metadata }
+        : undefined,
+      conversionRate: typeof payload.conversionRate === 'number' ? payload.conversionRate : null,
       barcode: payload.barcode?.trim() || null,
       weightKg: typeof payload.weightKg === 'number' ? payload.weightKg : null,
       volumeM3: typeof payload.volumeM3 === 'number' ? payload.volumeM3 : null,
+      powerW: typeof payload.powerW === 'number' ? payload.powerW : null,
       metadata:
         payload.metadata && typeof payload.metadata === 'object' && !Array.isArray(payload.metadata)
           ? payload.metadata
@@ -1174,6 +1349,8 @@ export const handlers = [
       return HttpResponse.json({ message: 'unit not found' }, { status: 400 });
     }
     const category = payload.categoryId ? ensureCatalogCollection('category').find((node) => node.id === payload.categoryId) : null;
+    const alternativeUnitId = (payload.alternativeUnitId ?? '').trim();
+    const alternativeUnit = alternativeUnitId ? ensureCatalogCollection('unit').find((node) => node.id === alternativeUnitId) : undefined;
     const attributesPayload = Array.isArray(payload.attributes) ? payload.attributes : [];
     const attributes = attributesPayload
       .map((attr) => buildAttributeValue(attr))
@@ -1191,9 +1368,15 @@ export const handlers = [
         : undefined,
       unitId: unit.id,
       unit: { id: unit.id, code: unit.code, name: unit.name, metadata: unit.metadata },
+      alternativeUnitId: alternativeUnit?.id ?? null,
+      alternativeUnit: alternativeUnit
+        ? { id: alternativeUnit.id, code: alternativeUnit.code, name: alternativeUnit.name, metadata: alternativeUnit.metadata }
+        : undefined,
+      conversionRate: typeof payload.conversionRate === 'number' ? payload.conversionRate : null,
       barcode: payload.barcode?.trim() || null,
       weightKg: typeof payload.weightKg === 'number' ? payload.weightKg : null,
       volumeM3: typeof payload.volumeM3 === 'number' ? payload.volumeM3 : null,
+      powerW: typeof payload.powerW === 'number' ? payload.powerW : null,
       metadata:
         payload.metadata && typeof payload.metadata === 'object' && !Array.isArray(payload.metadata)
           ? payload.metadata
@@ -1240,6 +1423,62 @@ export const handlers = [
     const url = new URL(request.url);
     const limit = Number.parseInt(url.searchParams.get('limit') ?? '25', 10);
     return HttpResponse.json({ items: crmCustomers.slice(0, Number.isFinite(limit) ? limit : 25) });
+  }),
+  http.post('*/api/v1/crm/customers', async ({ request }) => {
+    const payload = (await request.json()) as CrmCustomerPayloadInput;
+    const name = trimOrUndefined(payload?.name ?? '');
+    if (!name) {
+      return HttpResponse.json({ message: 'name is required' }, { status: 400 });
+    }
+    const nowTs = now();
+    const customer = {
+      id: nextCustomerId(),
+      name,
+      inn: trimOrUndefined(payload?.inn ?? '') ?? undefined,
+      kpp: trimOrUndefined(payload?.kpp ?? '') ?? undefined,
+      comment: trimOrUndefined(payload?.comment) ?? 'Поставщик',
+      phone: trimOrUndefined(payload?.phone),
+      email: trimOrUndefined(payload?.email),
+      website: trimOrUndefined(payload?.website),
+      legalAddress: trimOrUndefined(payload?.legalAddress),
+      actualAddress: trimOrUndefined(payload?.actualAddress),
+      bankAccounts: normalizeBankAccountsInput(payload?.bankAccounts),
+      contacts: normalizeContactsInput(payload?.contacts),
+      createdAt: nowTs,
+      updatedAt: nowTs
+    };
+    crmCustomers.unshift(customer);
+    return HttpResponse.json(customer, { status: 201 });
+  }),
+  http.put('*/api/v1/crm/customers/:id', async ({ params, request }) => {
+    const { id } = params as { id: string };
+    const index = crmCustomers.findIndex((customer) => customer.id === id);
+    if (index === -1) {
+      return HttpResponse.json({ message: 'not found' }, { status: 404 });
+    }
+    const payload = (await request.json()) as CrmCustomerPayloadInput;
+    const name = trimOrUndefined(payload?.name ?? '');
+    if (!name) {
+      return HttpResponse.json({ message: 'name is required' }, { status: 400 });
+    }
+    const existing = crmCustomers[index];
+    const updated = {
+      ...existing,
+      name,
+      inn: trimOrUndefined(payload?.inn ?? '') ?? undefined,
+      kpp: trimOrUndefined(payload?.kpp ?? '') ?? undefined,
+      comment: trimOrUndefined(payload?.comment) ?? trimOrUndefined(existing.comment) ?? 'Поставщик',
+      phone: trimOrUndefined(payload?.phone),
+      email: trimOrUndefined(payload?.email),
+      website: trimOrUndefined(payload?.website),
+      legalAddress: trimOrUndefined(payload?.legalAddress),
+      actualAddress: trimOrUndefined(payload?.actualAddress),
+      bankAccounts: normalizeBankAccountsInput(payload?.bankAccounts),
+      contacts: normalizeContactsInput(payload?.contacts),
+      updatedAt: now()
+    };
+    crmCustomers[index] = updated;
+    return HttpResponse.json(updated);
   }),
   http.get('*/api/v1/crm/deals', ({ request }) => {
     if (request.headers.get('x-mock-rbac') === 'deny') {
