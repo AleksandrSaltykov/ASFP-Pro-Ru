@@ -44,12 +44,12 @@ jobs:
       - name: Verify gofmt
         run: |
           set -euo pipefail
-          GO_SOURCES=$(git ls-files -z -- '*.go' ':!:vendor/*')
-          if [ -z "$GO_SOURCES" ]; then
+          mapfile -d '' -t GO_SOURCES < <(git ls-files -z -- '*.go' ':!:vendor/*')
+          if [ "${#GO_SOURCES[@]}" -eq 0 ]; then
             echo "No Go sources to check"
             exit 0
           fi
-          CHANGED=$(printf "%s" "$GO_SOURCES" | xargs -0 gofmt -l)
+          CHANGED=$(printf '%s\0' "${GO_SOURCES[@]}" | xargs -0 gofmt -l)
           if [ -n "$CHANGED" ]; then
             echo "Go files need formatting:"
             echo "$CHANGED"
