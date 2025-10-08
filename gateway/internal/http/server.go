@@ -1,19 +1,20 @@
 package http
 
 import (
-	"context"
-	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+    "context"
+    "fmt"
+    "os"
+    "os/signal"
+    "syscall"
+    "time"
 
-	ch "github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/recover"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/rs/zerolog"
+    ch "github.com/ClickHouse/clickhouse-go/v2"
+    "github.com/gofiber/fiber/v2"
+    "github.com/gofiber/fiber/v2/middleware/cors"
+    "github.com/gofiber/fiber/v2/middleware/recover"
+    "github.com/google/uuid"
+    "github.com/jackc/pgx/v5/pgxpool"
+    "github.com/rs/zerolog"
 
 	analyticspkg "asfppro/gateway/internal/analytics"
 	"asfppro/gateway/internal/auth"
@@ -51,9 +52,16 @@ func NewServer(cfg config.AppConfig, logger zerolog.Logger, pool *pgxpool.Pool, 
 		WriteTimeout: cfg.RequestTimeout,
 	})
 
-	app.Use(recover.New())
-	app.Use(loggerMiddleware(logger))
-	app.Use(requestIDMiddleware)
+    app.Use(recover.New())
+    app.Use(loggerMiddleware(logger))
+    app.Use(requestIDMiddleware)
+    app.Use(cors.New(cors.Config{
+        AllowOrigins:     cfg.CORS.AllowOrigins,
+        AllowHeaders:     cfg.CORS.AllowHeaders,
+        AllowMethods:     cfg.CORS.AllowMethods,
+        ExposeHeaders:    cfg.CORS.ExposeHeaders,
+        AllowCredentials: cfg.CORS.AllowCredentials,
+    }))
 
 	app.Get("/", handlers.Home())
 	app.Get("/health", handlers.Health())

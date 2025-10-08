@@ -1,13 +1,12 @@
-import { FormEvent, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { FormEvent, useMemo, useState, type CSSProperties } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
-  useAttributeTemplatesQuery,
   useCatalogNodesQuery,
   useCreateItemMutation,
   useDeleteItemMutation,
   useItemsQuery,
   useUpdateItemMutation,
-  type AttributeTemplate,
   type Item
 } from '@shared/api';
 import { PageLoader } from '@shared/ui/PageLoader';
@@ -15,6 +14,8 @@ import { palette, typography } from '@shared/ui/theme';
 
 import DataTable, { type TableColumn } from '../../components/DataTable';
 import SlideOver from '../../components/SlideOver';
+import { generateSku } from '@shared/utils/identifiers';
+import { fallbackCategories, fallbackUnits } from '../../../../modules/warehouse/views/masters/fallbacks';
 
 const layoutStyle: CSSProperties = {
   display: 'flex',
@@ -28,6 +29,13 @@ const headerStyle: CSSProperties = {
   alignItems: 'center',
   flexWrap: 'wrap',
   gap: 16
+};
+
+const headerActionsStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  flexWrap: 'wrap',
+  gap: 12
 };
 
 const headingStyle: CSSProperties = {
@@ -77,6 +85,11 @@ const formControlStyle: CSSProperties = {
   gap: 6
 };
 
+const fieldHintStyle: CSSProperties = {
+  fontSize: 12,
+  color: palette.textSecondary
+};
+
 const labelStyle: CSSProperties = {
   fontSize: 12,
   textTransform: 'uppercase' as const,
@@ -99,18 +112,6 @@ const textareaStyle: CSSProperties = {
   ...textInputStyle,
   minHeight: 110,
   resize: 'vertical' as const
-};
-
-const checkboxRowStyle: CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 8,
-  padding: '10px 12px',
-  borderRadius: 12,
-  border: `1px solid ${palette.glassBorder}`,
-  background: palette.surface,
-  fontSize: 13,
-  color: palette.textPrimary
 };
 
 const buttonRowStyle: CSSProperties = {
@@ -144,24 +145,18 @@ const errorStyle: CSSProperties = {
   fontWeight: 600
 };
 
-type AttributeValueState = {
-  stringValue?: string;
-  numberValue?: string;
-  booleanValue?: boolean;
-  jsonValue?: string;
-};
-
 type ItemFormState = {
   sku: string;
   name: string;
   description: string;
   categoryId: string;
   unitId: string;
+  alternativeUnitId: string;
+  conversionRate: string;
   barcode: string;
   weightKg: string;
   volumeM3: string;
-  metadata: string;
-  attributes: Record<string, AttributeValueState>;
+  powerW: string;
 };
 
 const defaultItemFormState: ItemFormState = {
@@ -170,46 +165,12 @@ const defaultItemFormState: ItemFormState = {
   description: '',
   categoryId: '',
   unitId: '',
+  alternativeUnitId: '',
+  conversionRate: '',
   barcode: '',
   weightKg: '',
   volumeM3: '',
-  metadata: `{\n  "demo": false\n}`,
-  attributes: {}
-};
-
-const createDefaultAttributeState = (template: AttributeTemplate): AttributeValueState => {
-  switch (template.dataType) {
-    case 'number':
-      return { numberValue: '' };
-    case 'boolean':
-      return { booleanValue: false };
-    case 'json':
-      return { jsonValue: `{\n}` };
-    default:
-      return { stringValue: '' };
-  }
-};
-
-const stringifyMetadata = (value: Record<string, unknown> | undefined) => {
-  try {
-    return JSON.stringify(value ?? {}, null, 2);
-  } catch {
-    return `{
-}`;
-  }
-};
-
-const stringifyJsonValue = (value: unknown) => {
-  if (!value) {
-    return `{
-}`;
-  }
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return `{
-}`;
-  }
+  powerW: ''
 };
 
 const formatDateTime = (value: string) => new Date(value).toLocaleString('ru-RU');
@@ -223,11 +184,10 @@ const parseNumber = (value: string) => {
 };
 
 const ItemsPage = () => {
+  const navigate = useNavigate();
   const itemsQuery = useItemsQuery();
   const categoriesQuery = useCatalogNodesQuery('category');
   const unitsQuery = useCatalogNodesQuery('unit');
-  const templatesQuery = useAttributeTemplatesQuery('item');
-
   const createMutation = useCreateItemMutation();
   const updateMutation = useUpdateItemMutation();
   const deleteMutation = useDeleteItemMutation();
@@ -238,38 +198,48 @@ const ItemsPage = () => {
   const [formState, setFormState] = useState<ItemFormState>(defaultItemFormState);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const templates = useMemo(() => templatesQuery.data ?? [], [templatesQuery.data]);
-
-  useEffect(() => {
-    if (!templates.length) {
-      return;
-    }
-    setFormState((prev) => {
-      const nextAttributes: Record<string, AttributeValueState> = { ...prev.attributes };
-      let changed = false;
-      const validIds = new Set<string>();
-      templates.forEach((template) => {
-        validIds.add(template.id);
-        if (!nextAttributes[template.id]) {
-          nextAttributes[template.id] = createDefaultAttributeState(template);
-          changed = true;
-        }
-      });
-      Object.keys(nextAttributes).forEach((id) => {
-        if (!validIds.has(id)) {
-          delete nextAttributes[id];
-          changed = true;
-        }
-      });
-      return changed ? { ...prev, attributes: nextAttributes } : prev;
-    });
-  }, [templates]);
-
   const categories = useMemo(() => {
-    return (categoriesQuery.data ?? []).filter((node) => node.code !== 'ROOT');
+    const source =
+      categoriesQuery.data && categoriesQuery.data.length ? categoriesQuery.data : fallbackCategories;
+    return source.filter((node) => node.code !== 'ROOT');
   }, [categoriesQuery.data]);
 
-  const units = useMemo(() => unitsQuery.data ?? [], [unitsQuery.data]);
+  const categoryOptions = useMemo(() => {
+    return categories
+      .slice()
+      .sort((a, b) => {
+        const sort = (a.path ?? '').localeCompare(b.path ?? '');
+        if (sort !== 0) {
+          return sort;
+        }
+        const orderDiff = (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+        if (orderDiff !== 0) {
+          return orderDiff;
+        }
+        return a.name.localeCompare(b.name);
+      })
+      .map((category) => {
+        const depth = category.path ? Math.max(category.path.split('.').length - 2, 0) : 0;
+        const prefix = depth ? `${'  '.repeat(depth)}- ` : '';
+        return {
+          value: category.id,
+          label: `${prefix}${category.name}`
+        };
+      });
+  }, [categories]);
+
+  const units = useMemo(() => {
+    const source = unitsQuery.data && unitsQuery.data.length ? unitsQuery.data : fallbackUnits;
+    return source;
+  }, [unitsQuery.data]);
+
+  const unitNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    units.forEach((unit) => {
+      map.set(unit.id, unit.name ?? unit.code ?? unit.id);
+    });
+    return map;
+  }, [units]);
 
   const items = itemsQuery.data ?? [];
 
@@ -291,7 +261,7 @@ const ItemsPage = () => {
     },
     {
       id: 'unit',
-      label: 'Ед. изм.',
+      label: 'Основная ед. изм.',
       render: (item) => item.unit?.code ?? '—',
       width: 120
     },
@@ -323,11 +293,7 @@ const ItemsPage = () => {
     setFormError(null);
     setFormState({
       ...defaultItemFormState,
-      unitId: units[0]?.id ?? '',
-      attributes: templates.reduce<Record<string, AttributeValueState>>((acc, template) => {
-        acc[template.id] = createDefaultAttributeState(template);
-        return acc;
-      }, {})
+      unitId: units[0]?.id ?? ''
     });
     setIsDrawerOpen(true);
   };
@@ -342,31 +308,12 @@ const ItemsPage = () => {
       description: item.description ?? '',
       categoryId: item.category?.id ?? '',
       unitId: item.unit?.id ?? '',
+      alternativeUnitId: item.alternativeUnit?.id ?? '',
+      conversionRate: item.conversionRate != null ? String(item.conversionRate) : '',
       barcode: item.barcode ?? '',
       weightKg: item.weightKg != null ? String(item.weightKg) : '',
       volumeM3: item.volumeM3 != null ? String(item.volumeM3) : '',
-      metadata: stringifyMetadata(item.metadata),
-      attributes: (item.attributes ?? []).reduce<Record<string, AttributeValueState>>((acc, attr) => {
-        const templateId = attr.template?.id;
-        if (!templateId) {
-          return acc;
-        }
-        switch (attr.template.dataType) {
-          case 'number':
-            acc[templateId] = { numberValue: attr.numberValue != null ? String(attr.numberValue) : '' };
-            break;
-          case 'boolean':
-            acc[templateId] = { booleanValue: attr.booleanValue ?? false };
-            break;
-          case 'json':
-            acc[templateId] = { jsonValue: stringifyJsonValue(attr.jsonValue) };
-            break;
-          default:
-            acc[templateId] = { stringValue: attr.stringValue ?? '' };
-            break;
-        }
-        return acc;
-      }, {})
+      powerW: item.powerW != null ? String(item.powerW) : ''
     });
     setIsDrawerOpen(true);
   };
@@ -375,105 +322,97 @@ const ItemsPage = () => {
     setIsDrawerOpen(false);
     setCurrentItem(null);
     setFormError(null);
+    setFormState(defaultItemFormState);
   };
 
   const handleInputChange = (field: keyof ItemFormState, value: string) => {
+    if (field === 'alternativeUnitId') {
+      setFormState((prev) => ({
+        ...prev,
+        alternativeUnitId: value,
+        conversionRate: value ? prev.conversionRate : ''
+      }));
+      return;
+    }
     setFormState((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleAttributeChange = (templateId: string, update: AttributeValueState) => {
-    setFormState((prev) => ({
-      ...prev,
-      attributes: {
-        ...prev.attributes,
-        [templateId]: {
-          ...prev.attributes[templateId],
-          ...update
-        }
-      }
-    }));
-  };
+  const conversionHint = useMemo(() => {
+    if (!formState.alternativeUnitId || !formState.unitId) {
+      return null;
+    }
+    const rate = Number(formState.conversionRate);
+    if (!Number.isFinite(rate) || rate <= 0) {
+      return null;
+    }
+    const baseName = unitNameById.get(formState.unitId);
+    const altName = unitNameById.get(formState.alternativeUnitId);
+    if (!baseName || !altName) {
+      return null;
+    }
+    const formattedRate = rate.toLocaleString('ru-RU', { maximumFractionDigits: 4 });
+    return `1 ${altName.toLowerCase()} = ${formattedRate} ${baseName.toLowerCase()}`;
+  }, [formState.alternativeUnitId, formState.unitId, formState.conversionRate, unitNameById]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError(null);
 
+    const trimmedName = formState.name.trim();
+    if (!trimmedName) {
+      setFormError('Укажите наименование изделия');
+      return;
+    }
+
+    if (!formState.unitId) {
+      setFormError('Выберите основную единицу измерения');
+      return;
+    }
+
+    if (formState.alternativeUnitId && formState.alternativeUnitId === formState.unitId) {
+      setFormError('Альтернативная единица должна отличаться от основной');
+      return;
+    }
+
+    const conversionRateValue = parseNumber(formState.conversionRate);
+    if (formState.alternativeUnitId) {
+      if (conversionRateValue == null || conversionRateValue <= 0) {
+        setFormError('Укажите коэффициент пересчёта для альтернативной единицы (> 0)');
+        return;
+      }
+    } else if (conversionRateValue != null) {
+      setFormError('Выберите альтернативную единицу или очистите коэффициент пересчёта');
+      return;
+    }
+
+    const sku = mode === 'create' ? generateSku() : formState.sku.trim();
+    if (!sku) {
+      setFormError('Не удалось определить SKU изделия');
+      return;
+    }
+
+    const powerValue = parseNumber(formState.powerW);
+    if (powerValue != null && powerValue < 0) {
+      setFormError('Мощность не может быть отрицательной');
+      return;
+    }
+
+    const payload = {
+      sku,
+      name: trimmedName,
+      description: formState.description.trim() || undefined,
+      categoryId: formState.categoryId ? formState.categoryId : undefined,
+      unitId: formState.unitId,
+      alternativeUnitId: formState.alternativeUnitId ? formState.alternativeUnitId : undefined,
+      conversionRate: conversionRateValue ?? undefined,
+      barcode: formState.barcode.trim() || undefined,
+      weightKg: parseNumber(formState.weightKg),
+      volumeM3: parseNumber(formState.volumeM3),
+      powerW: powerValue,
+      warehouseIds: mode === 'edit' && currentItem?.warehouseIds ? currentItem.warehouseIds : []
+    };
+
     try {
-      const payloadMetadata = JSON.parse(formState.metadata || '{}');
-      if (typeof payloadMetadata !== 'object' || Array.isArray(payloadMetadata)) {
-        throw new Error('metadata must be an object');
-      }
-      const attributesPayload = templates
-        .map((template) => {
-          const state = formState.attributes[template.id] ?? createDefaultAttributeState(template);
-          switch (template.dataType) {
-            case 'number': {
-              if (!state.numberValue || !state.numberValue.trim()) {
-                return null;
-              }
-              const parsed = Number(state.numberValue);
-              if (!Number.isFinite(parsed)) {
-                throw new Error(`Атрибут «${template.name}»: значение должно быть числом`);
-              }
-              return { templateId: template.id, numberValue: parsed };
-            }
-            case 'boolean': {
-              if (state.booleanValue === undefined) {
-                return null;
-              }
-              return { templateId: template.id, booleanValue: Boolean(state.booleanValue) };
-            }
-            case 'json': {
-              if (!state.jsonValue || !state.jsonValue.trim()) {
-                return null;
-              }
-              let parsed: unknown;
-              try {
-                parsed = JSON.parse(state.jsonValue);
-              } catch {
-                throw new Error(`Атрибут «${template.name}»: некорректный JSON`);
-              }
-              return { templateId: template.id, jsonValue: parsed };
-            }
-            default: {
-              if (!state.stringValue || !state.stringValue.trim()) {
-                return null;
-              }
-              return { templateId: template.id, stringValue: state.stringValue.trim() };
-            }
-          }
-        })
-        .filter(Boolean) as {
-          templateId: string;
-          stringValue?: string;
-          numberValue?: number;
-          booleanValue?: boolean;
-          jsonValue?: unknown;
-        }[];
-
-      const payload = {
-        sku: formState.sku.trim(),
-        name: formState.name.trim(),
-        description: formState.description.trim() || undefined,
-        categoryId: formState.categoryId ? formState.categoryId : undefined,
-        unitId: formState.unitId,
-        barcode: formState.barcode.trim() || undefined,
-        weightKg: parseNumber(formState.weightKg),
-        volumeM3: parseNumber(formState.volumeM3),
-        metadata: payloadMetadata as Record<string, unknown>,
-        attributes: attributesPayload,
-        warehouseIds: mode === 'edit' && currentItem?.warehouseIds ? currentItem.warehouseIds : []
-      };
-
-      if (!payload.sku || !payload.name) {
-        setFormError('Укажите SKU и наименование изделия');
-        return;
-      }
-      if (!payload.unitId) {
-        setFormError('Выберите единицу измерения');
-        return;
-      }
-
       if (mode === 'create') {
         await createMutation.mutateAsync(payload);
       } else if (currentItem) {
@@ -500,7 +439,7 @@ const ItemsPage = () => {
     }
   };
 
-  if (itemsQuery.isLoading || categoriesQuery.isLoading || unitsQuery.isLoading || templatesQuery.isLoading) {
+  if (itemsQuery.isLoading || categoriesQuery.isLoading || unitsQuery.isLoading) {
     return <PageLoader />;
   }
 
@@ -512,15 +451,24 @@ const ItemsPage = () => {
     <section style={layoutStyle}>
       <header style={headerStyle}>
         <h1 style={headingStyle}>Номенклатура</h1>
-        <button type='button' style={primaryButtonStyle} onClick={openCreateDrawer}>
-          Создать изделие
-        </button>
+        <div style={headerActionsStyle}>
+          <button type='button' style={primaryButtonStyle} onClick={openCreateDrawer}>
+            Создать
+          </button>
+          <button
+            type='button'
+            style={secondaryButtonStyle}
+            onClick={() => navigate('/warehouse/masters/items/categories')}
+          >
+            Категории
+          </button>
+        </div>
       </header>
       <DataTable columns={columns} items={items} emptyMessage='Карточки изделий отсутствуют' />
 
       {isDrawerOpen ? (
         <SlideOver
-          title={mode === 'create' ? 'Новое изделие' : `Редактирование: ${currentItem?.name ?? ''}`}
+          title={mode === 'create' ? 'Новая номенклатура' : `Редактирование: ${currentItem?.name ?? ''}`}
           onClose={closeDrawer}
         >
           <form style={formStyle} onSubmit={handleSubmit}>
@@ -529,10 +477,14 @@ const ItemsPage = () => {
                 <span style={labelStyle}>SKU</span>
                 <input
                   style={textInputStyle}
-                  value={formState.sku}
-                  onChange={(event) => handleInputChange('sku', event.target.value)}
-                  required
+                  value={mode === 'create' ? 'Автоматически' : formState.sku}
+                  readOnly
+                  disabled={mode === 'create'}
+                  title='SKU генерируется автоматически'
                 />
+                {mode === 'create' ? (
+                  <span style={fieldHintStyle}>Значение появится автоматически после сохранения</span>
+                ) : null}
               </label>
               <label style={formControlStyle}>
                 <span style={labelStyle}>Наименование</span>
@@ -563,15 +515,15 @@ const ItemsPage = () => {
                   onChange={(event) => handleInputChange('categoryId', event.target.value)}
                 >
                   <option value=''>Без категории</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
+                  {categoryOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
                     </option>
                   ))}
                 </select>
               </label>
               <label style={formControlStyle}>
-                <span style={labelStyle}>Единица измерения</span>
+                <span style={labelStyle}>Основная единица измерения</span>
                 <select
                   style={textInputStyle}
                   value={formState.unitId}
@@ -583,7 +535,38 @@ const ItemsPage = () => {
                   </option>
                   {units.map((unit) => (
                     <option key={unit.id} value={unit.id}>
-                      {unit.name} ({unit.code})
+                      {unit.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div style={formRowStyle}>
+              <label style={formControlStyle}>
+                <span style={labelStyle}>Коэффициент пересчёта</span>
+                <input
+                  style={textInputStyle}
+                  type='number'
+                  step='0.0001'
+                  min='0'
+                  value={formState.conversionRate}
+                  onChange={(event) => handleInputChange('conversionRate', event.target.value)}
+                  disabled={!formState.alternativeUnitId}
+                />
+                {conversionHint ? <span style={fieldHintStyle}>{conversionHint}</span> : null}
+              </label>
+              <label style={formControlStyle}>
+                <span style={labelStyle}>Альтернативная единица</span>
+                <select
+                  style={textInputStyle}
+                  value={formState.alternativeUnitId}
+                  onChange={(event) => handleInputChange('alternativeUnitId', event.target.value)}
+                >
+                  <option value=''>Без альтернативной единицы</option>
+                  {units.map((unit) => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.name}
                     </option>
                   ))}
                 </select>
@@ -619,78 +602,17 @@ const ItemsPage = () => {
                   onChange={(event) => handleInputChange('volumeM3', event.target.value)}
                 />
               </label>
-            </div>
-
-            <label style={formControlStyle}>
-              <span style={labelStyle}>Метаданные (JSON)</span>
-              <textarea
-                style={textareaStyle}
-                value={formState.metadata}
-                onChange={(event) => handleInputChange('metadata', event.target.value)}
-              />
-            </label>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <span style={{ ...labelStyle, color: palette.textSecondary }}>Динамические атрибуты</span>
-              {templates.map((template) => {
-                const state = formState.attributes[template.id] ?? createDefaultAttributeState(template);
-                switch (template.dataType) {
-                  case 'number':
-                    return (
-                      <label key={template.id} style={formControlStyle}>
-                        <span style={labelStyle}>{template.name}</span>
-                        <input
-                          style={textInputStyle}
-                          type='number'
-                          value={state.numberValue ?? ''}
-                          onChange={(event) =>
-                            handleAttributeChange(template.id, { numberValue: event.target.value })
-                          }
-                        />
-                      </label>
-                    );
-                  case 'boolean':
-                    return (
-                      <label key={template.id} style={checkboxRowStyle}>
-                        <input
-                          type='checkbox'
-                          checked={Boolean(state.booleanValue)}
-                          onChange={(event) =>
-                            handleAttributeChange(template.id, { booleanValue: event.target.checked })
-                          }
-                        />
-                        {template.name}
-                      </label>
-                    );
-                  case 'json':
-                    return (
-                      <label key={template.id} style={formControlStyle}>
-                        <span style={labelStyle}>{template.name}</span>
-                        <textarea
-                          style={textareaStyle}
-                          value={state.jsonValue ?? `{
-}`}
-                          onChange={(event) =>
-                            handleAttributeChange(template.id, { jsonValue: event.target.value })
-                          }
-                        />
-                      </label>
-                    );
-                  default:
-                    return (
-                      <label key={template.id} style={formControlStyle}>
-                        <span style={labelStyle}>{template.name}</span>
-                        <input
-                          style={textInputStyle}
-                          value={state.stringValue ?? ''}
-                          onChange={(event) =>
-                            handleAttributeChange(template.id, { stringValue: event.target.value })
-                          }
-                        />
-                      </label>
-                    );
-                }
-              })}
+              <label style={formControlStyle}>
+                <span style={labelStyle}>Мощность, Вт</span>
+                <input
+                  style={textInputStyle}
+                  type='number'
+                  step='1'
+                  min='0'
+                  value={formState.powerW}
+                  onChange={(event) => handleInputChange('powerW', event.target.value)}
+                />
+              </label>
             </div>
 
             {formError ? <div style={errorStyle}>{formError}</div> : null}

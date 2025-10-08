@@ -14,7 +14,7 @@ const overlayStyle: CSSProperties = {
 };
 
 const panelStyle: CSSProperties = {
-  width: "min(560px, 95vw)",
+  width: "min(1024px, 90vw)",
   maxHeight: "min(90vh, 900px)",
   borderRadius: 28,
   boxShadow: "0 24px 64px rgba(15, 23, 42, 0.32)",

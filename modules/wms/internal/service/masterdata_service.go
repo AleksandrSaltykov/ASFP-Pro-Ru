@@ -12,18 +12,18 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog"
 
-	"asfppro/pkg/audit"
-
 	"asfppro/modules/wms/internal/entity"
 	"asfppro/modules/wms/internal/repository"
+	"asfppro/pkg/audit"
+	"asfppro/pkg/identifier"
 )
 
 var (
-	errWarehouseNotFound          = errors.New("warehouse not found")
-	errZoneNotFound               = errors.New("zone not found")
-	errCellNotFound               = errors.New("cell not found")
+	errWarehouseNotFound         = errors.New("warehouse not found")
+	errZoneNotFound              = errors.New("zone not found")
+	errCellNotFound              = errors.New("cell not found")
 	errAttributeTemplateNotFound = errors.New("attribute template not found")
-	errItemNotFound               = errors.New("item not found")
+	errItemNotFound              = errors.New("item not found")
 )
 
 // MasterDataService contains business logic for warehouses/zones/cells.
@@ -82,10 +82,10 @@ func (s *MasterDataService) GetWarehouseDetails(ctx context.Context, id uuid.UUI
 
 // CreateWarehouse validates and creates warehouse.
 func (s *MasterDataService) CreateWarehouse(ctx context.Context, payload entity.Warehouse) (entity.Warehouse, error) {
-	payload.Code = strings.TrimSpace(payload.Code)
+	payload.Code = strings.TrimSpace(strings.ToUpper(payload.Code))
 	payload.Name = strings.TrimSpace(payload.Name)
 	if payload.Code == "" {
-		return entity.Warehouse{}, fmt.Errorf("code is required")
+		payload.Code = identifier.WarehouseCode()
 	}
 	if payload.Name == "" {
 		return entity.Warehouse{}, fmt.Errorf("name is required")
@@ -117,7 +117,7 @@ func (s *MasterDataService) CreateWarehouse(ctx context.Context, payload entity.
 // UpdateWarehouse updates existing warehouse.
 func (s *MasterDataService) UpdateWarehouse(ctx context.Context, id uuid.UUID, payload entity.Warehouse) (entity.Warehouse, error) {
 	payload.ID = id
-	payload.Code = strings.TrimSpace(payload.Code)
+	payload.Code = strings.TrimSpace(strings.ToUpper(payload.Code))
 	payload.Name = strings.TrimSpace(payload.Name)
 	if payload.Code == "" || payload.Name == "" {
 		return entity.Warehouse{}, fmt.Errorf("code and name are required")
@@ -418,6 +418,21 @@ func (s *MasterDataService) CreateCatalogNode(ctx context.Context, catalogType s
 	if err != nil {
 		return entity.CatalogNode{}, err
 	}
+	payload.Code = strings.TrimSpace(strings.ToUpper(payload.Code))
+	payload.Name = strings.TrimSpace(payload.Name)
+	if payload.Name == "" {
+		return entity.CatalogNode{}, fmt.Errorf("name is required")
+	}
+	if payload.Code == "" {
+		switch typ {
+		case entity.CatalogTypeCategory:
+			payload.Code = identifier.CategoryCode()
+		case entity.CatalogTypeUnit:
+			payload.Code = identifier.UnitCode()
+		default:
+			payload.Code = identifier.WithPrefix(string(typ))
+		}
+	}
 	payload.Type = typ
 	if payload.Metadata == nil {
 		payload.Metadata = map[string]any{}
@@ -554,10 +569,14 @@ func (s *MasterDataService) GetItem(ctx context.Context, id uuid.UUID) (entity.I
 
 // CreateItem validates payload and creates new item entry.
 func (s *MasterDataService) CreateItem(ctx context.Context, payload entity.Item, attributes []entity.AttributeValueUpsert) (entity.Item, error) {
-	payload.SKU = strings.TrimSpace(payload.SKU)
+	payload.SKU = strings.TrimSpace(strings.ToUpper(payload.SKU))
 	payload.Name = strings.TrimSpace(payload.Name)
-	if payload.SKU == "" || payload.Name == "" {
-		return entity.Item{}, fmt.Errorf("sku and name are required")
+	payload.Barcode = strings.TrimSpace(payload.Barcode)
+	if payload.SKU == "" {
+		payload.SKU = identifier.SKU()
+	}
+	if payload.Name == "" {
+		return entity.Item{}, fmt.Errorf("name is required")
 	}
 	if payload.UnitID == uuid.Nil {
 		return entity.Item{}, fmt.Errorf("unitId is required")
@@ -775,7 +794,6 @@ func validateAttributeDataType(dataType entity.AttributeDataType) error {
 		return fmt.Errorf("unsupported attribute data type: %s", dataType)
 	}
 }
-
 
 func normalizeCellCode(code string) string {
 	code = strings.TrimSpace(code)

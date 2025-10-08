@@ -4,7 +4,7 @@ import type { CatalogNode, Item, ItemPayload, Warehouse } from '@shared/api';
 
 import { ItemForm, type ItemFormTab } from '../../../layout/ItemForm/ItemForm';
 import { CategoryTreeSelect } from './components/CategoryTreeSelect';
-import { generateSku } from '@shared/utils/identifiers';
+import { generateBarcode, generateSku } from '@shared/utils/identifiers';
 import '../../../styles/warehouse.css';
 
 export type ItemEditorSubmitPayload = {
@@ -69,11 +69,12 @@ const stringify = (value: Record<string, unknown> | undefined) => {
   }
 };
 
-const buildInitialState = (item: Item | null, defaultSku?: string): FormState => {
+const buildInitialState = (item: Item | null, defaultSku?: string, defaultBarcode?: string): FormState => {
   if (!item) {
     return {
       ...emptyState,
-      sku: defaultSku ?? ''
+      sku: defaultSku ?? '',
+      barcode: defaultBarcode ?? ''
     };
   }
   return {
@@ -85,7 +86,7 @@ const buildInitialState = (item: Item | null, defaultSku?: string): FormState =>
     unitId: item.unitId ?? '',
     alternativeUnitId: item.alternativeUnitId ?? '',
     conversionRate: item.conversionRate != null ? String(item.conversionRate) : '',
-    barcode: item.barcode ?? '',
+    barcode: item.barcode ?? defaultBarcode ?? '',
     weightKg: item.weightKg != null ? String(item.weightKg) : '',
     volumeM3: item.volumeM3 != null ? String(item.volumeM3) : '',
     metadata: stringify(item.metadata),
@@ -127,7 +128,8 @@ export const ItemEditorDrawer = ({
       return;
     }
     const generatedSku = mode === 'create' ? generateSku() : item?.sku ?? '';
-    setState(buildInitialState(item, generatedSku));
+    const generatedBarcode = mode === 'create' ? generateBarcode() : item?.barcode ?? '';
+    setState(buildInitialState(item, generatedSku, generatedBarcode));
     setLocalError(null);
     onErrorDismiss?.();
     // onErrorDismiss изменяется при каждом рендере родителя, но повторный вызов эффекта нам не нужен
@@ -385,7 +387,8 @@ const generalTab: ItemFormTab = {
             name='barcode'
             type='text'
             value={state.barcode}
-            onChange={handleChange}
+            readOnly
+            className='warehouse-input--readonly'
             disabled={isSubmitting}
             placeholder='EAN-13 / внутренний код'
           />

@@ -12,6 +12,8 @@ import { palette, typography } from '@shared/ui/theme';
 
 import DataTable, { type TableColumn } from '../../components/DataTable';
 import SlideOver from '../../components/SlideOver';
+import { generateCategoryCode } from '@shared/utils/identifiers';
+import { fallbackCategories } from '../../../../modules/warehouse/views/masters/fallbacks';
 
 const layoutStyle: CSSProperties = {
   display: 'flex',
@@ -143,16 +145,20 @@ const errorStyle: CSSProperties = {
   fontWeight: 600
 };
 
+const fieldHintStyle: CSSProperties = {
+  fontSize: 12,
+  color: palette.textSecondary
+};
+
 type TreeNode = CatalogNode & { children: TreeNode[] };
+type TreeRow = TreeNode & { depth: number; breadcrumb: string[] };
 
 type CategoryFormState = {
   code: string;
   name: string;
   description: string;
   parentId: string;
-  sortOrder: string;
   isActive: boolean;
-  metadata: string;
 };
 
 const defaultCategoryFormState: CategoryFormState = {
@@ -160,38 +166,50 @@ const defaultCategoryFormState: CategoryFormState = {
   name: '',
   description: '',
   parentId: '',
-  sortOrder: '',
-  isActive: true,
-  metadata: `{
-}`
+  isActive: true
 };
 
 const buildTree = (nodes: CatalogNode[]) => {
   const map = new Map<string, TreeNode>();
-  let rootId: string | undefined;
+  let explicitRootId: string | undefined;
 
   nodes.forEach((node) => {
     const treeNode: TreeNode = { ...node, children: [] };
     map.set(node.id, treeNode);
-    if (node.code === 'ROOT') {
-      rootId = node.id;
+    if (!explicitRootId && node.code === 'ROOT') {
+      explicitRootId = node.id;
     }
   });
 
   map.forEach((node) => {
-    if (node.code === 'ROOT') {
+    if (!node.parentId) {
       return;
     }
-    const parent = node.parentId ? map.get(node.parentId) : undefined;
+    const parent = map.get(node.parentId);
     if (parent) {
       parent.children.push(node);
     }
   });
 
-  const rootNode = rootId ? map.get(rootId) : undefined;
+  if (explicitRootId) {
+    const rootNode = map.get(explicitRootId);
+    return {
+      rootId: explicitRootId,
+      tree: rootNode ? rootNode.children : [],
+      map
+    };
+  }
+
+  const topLevel: TreeNode[] = [];
+  map.forEach((node) => {
+    if (!node.parentId || !map.has(node.parentId)) {
+      topLevel.push(node);
+    }
+  });
+
   return {
-    rootId,
-    tree: rootNode ? rootNode.children : [],
+    rootId: undefined,
+    tree: topLevel,
     map
   };
 };
@@ -213,53 +231,10 @@ const collectDescendantIds = (node: TreeNode | undefined): Set<string> => {
   return ids;
 };
 
-const stringifyMetadata = (metadata: Record<string, unknown> | undefined) => {
-  try {
-    return JSON.stringify(metadata ?? {}, null, 2);
-  } catch {
-    return `{
-}`;
-  }
-};
-
-const parseMetadata = (value: string) => {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return {} as Record<string, unknown>;
-  }
-  try {
-    const parsed = JSON.parse(trimmed);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      throw new Error('metadata must be an object');
-    }
-    return parsed as Record<string, unknown>;
-  } catch (error) {
-    throw new Error((error as Error).message ?? 'Некорректный JSON');
-  }
-};
-
 type ParentOption = {
   value: string;
   label: string;
 };
-
-const parentOptions = (nodes: CatalogNode[], rootId: string | undefined, blocklist?: Set<string>): ParentOption[] => {
-  const options: ParentOption[] = [];
-  if (rootId && (!blocklist || !blocklist.has(rootId))) {
-    options.push({ value: rootId, label: 'Верхний уровень' });
-  }
-  nodes
-    .filter((node) => node.code !== 'ROOT')
-    .forEach((node) => {
-      if (blocklist?.has(node.id)) {
-        return;
-      }
-      options.push({ value: node.id, label: `${node.name} (${node.code})` });
-    });
-  return options;
-};
-
-const formatDateTime = (value: string) => new Date(value).toLocaleString('ru-RU');
 
 const CategoriesPage = () => {
   const catalogQuery = useCatalogNodesQuery('category');
@@ -273,78 +248,96 @@ const CategoriesPage = () => {
   const [formState, setFormState] = useState<CategoryFormState>(defaultCategoryFormState);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const rawNodes = useMemo(() => catalogQuery.data ?? [], [catalogQuery.data]);
-  const { rootId, map } = useMemo(() => buildTree(rawNodes), [rawNodes]);
+  const rawNodes = useMemo(() => {
+    if (catalogQuery.data && catalogQuery.data.length) {
+      return catalogQuery.data;
+    }
+    return fallbackCategories;
+  }, [catalogQuery.data]);
+  const { rootId, tree, map } = useMemo(() => buildTree(rawNodes), [rawNodes]);
+
+  const orderedNodes = useMemo<TreeRow[]>(() => {
+    const result: TreeRow[] = [];
+    const walk = (nodes: TreeNode[], depth: number, trail: string[]) => {
+      const sorted = [...nodes].sort(
+        (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name)
+      );
+      sorted.forEach((node) => {
+        const currentTrail = [...trail, node.name];
+        result.push({ ...node, depth, breadcrumb: currentTrail });
+        if (node.children.length) {
+          walk(node.children, depth + 1, currentTrail);
+        }
+      });
+    };
+    walk(tree, 0, []);
+    return result;
+  }, [tree]);
+
+  const flatNodes = orderedNodes;
 
   const selectedNode = currentNodeId ? map.get(currentNodeId) ?? null : null;
   const descendantBlocklist = useMemo(() => collectDescendantIds(selectedNode ?? undefined), [selectedNode]);
 
-  const flatNodes = useMemo(
-    () =>
-      rawNodes
-        .filter((node) => node.code !== 'ROOT')
-        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name)),
-    [rawNodes]
-  );
-
-  const columns: TableColumn<CatalogNode>[] = [
+  const columns: TableColumn<TreeRow>[] = [
     {
-      id: 'code',
-      label: 'Код',
-      render: (node) => (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <strong>{node.code}</strong>
-          <span style={{ color: palette.textSecondary, fontSize: 12 }}>{node.name}</span>
-        </div>
-      )
-    },
-    {
-      id: 'path',
-      label: 'Путь',
-      render: (node) => node.path?.replace('ROOT.', '').replace('ROOT', '—') ?? '—'
+      id: 'name',
+      label: 'Название',
+      render: (node) => {
+        const fullName = node.breadcrumb.join(' / ');
+        return (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}
+            title={fullName}
+          >
+            <strong>{fullName}</strong>
+          </div>
+        );
+      }
     },
     {
       id: 'parent',
       label: 'Родитель',
+      width: 200,
       render: (node) => {
-        if (!node.parentId || node.parentId === rootId) {
-          return 'Верхний уровень';
+        if (node.breadcrumb.length <= 1) {
+          return <span style={{ whiteSpace: 'nowrap' }}>Верхний уровень</span>;
         }
-        const parent = map.get(node.parentId);
-        return parent ? parent.name : '—';
+        return <span style={{ whiteSpace: 'nowrap' }}>{node.breadcrumb[node.breadcrumb.length - 2]}</span>;
       }
     },
     {
       id: 'active',
-      label: 'Активна',
-      width: 100,
-      render: (node) => (node.isActive ? 'Да' : 'Нет')
-    },
-    {
-      id: 'updated',
-      label: 'Обновлено',
-      width: 180,
-      render: (node) => formatDateTime(node.updatedAt)
+      label: 'Статус',
+      width: 140,
+      render: (node) => (node.isActive ? 'Активна' : 'Неактивна')
     },
     {
       id: 'actions',
       label: 'Действия',
-      width: 220,
+      width: 180,
       render: (node) => (
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap' }}>
           <button
             type='button'
-            style={{ ...secondaryButtonStyle, padding: '8px 14px' }}
+            style={{ ...secondaryButtonStyle, padding: '6px 12px', whiteSpace: 'nowrap' }}
             onClick={() => openEditDrawer(node.id)}
           >
-            Редактировать
+            Изменить
           </button>
           <button
             type='button'
-            style={{ ...secondaryButtonStyle, padding: '8px 14px' }}
+            style={{ ...secondaryButtonStyle, padding: '6px 12px', whiteSpace: 'nowrap' }}
             onClick={() => openCreateDrawer(node.id)}
           >
-            Подкатегория
+            Добавить
           </button>
         </div>
       )
@@ -357,6 +350,7 @@ const CategoriesPage = () => {
     setFormError(null);
     setFormState({
       ...defaultCategoryFormState,
+      code: generateCategoryCode(),
       parentId: parentId ?? rootId ?? '',
       isActive: true
     });
@@ -376,9 +370,7 @@ const CategoriesPage = () => {
       name: node.name,
       description: node.description ?? '',
       parentId: node.parentId ?? rootId ?? '',
-      sortOrder: node.sortOrder != null ? String(node.sortOrder) : '',
-      isActive: node.isActive,
-      metadata: stringifyMetadata(node.metadata)
+      isActive: node.isActive
     });
     setIsDrawerOpen(true);
   };
@@ -393,14 +385,24 @@ const CategoriesPage = () => {
   };
 
   const resolvedParentOptions = useMemo(() => {
-    if (!rootId) {
-      return [];
+    const block = mode === 'edit' && currentNodeId ? descendantBlocklist : undefined;
+    const options: ParentOption[] = [];
+    const topValue = rootId ?? '';
+    if (!block || (rootId ? !block.has(rootId) : true)) {
+      options.push({ value: topValue, label: 'Верхний уровень' });
     }
-    if (mode === 'edit' && currentNodeId) {
-      return parentOptions(rawNodes, rootId, descendantBlocklist);
-    }
-    return parentOptions(rawNodes, rootId);
-  }, [mode, currentNodeId, rawNodes, rootId, descendantBlocklist]);
+    orderedNodes.forEach((node) => {
+      if (block?.has(node.id)) {
+        return;
+      }
+      const indent = node.depth ? `${'  '.repeat(node.depth)}- ` : '';
+      options.push({
+        value: node.id,
+        label: `${indent}${node.name}`
+      });
+    });
+    return options;
+  }, [rootId, orderedNodes, mode, currentNodeId, descendantBlocklist]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -408,36 +410,17 @@ const CategoriesPage = () => {
 
     const code = formState.code.trim();
     const name = formState.name.trim();
-    if (!code || !name) {
-      setFormError('Укажите код и название категории');
+    if (!name) {
+      setFormError('Укажите название категории');
       return;
     }
-    if (!rootId) {
-      setFormError('Не найден корневой узел каталога');
+    if (!code) {
+      setFormError('Не удалось сгенерировать код категории');
       return;
     }
-
-    let metadata: Record<string, unknown>;
-    try {
-      metadata = parseMetadata(formState.metadata);
-    } catch (error) {
-      setFormError((error as Error).message);
-      return;
-    }
-
-    const sortOrderValue = formState.sortOrder.trim();
-    let sortOrder: number | undefined;
-    if (sortOrderValue) {
-      const parsed = Number(sortOrderValue);
-      if (!Number.isFinite(parsed)) {
-        setFormError('Сортировка должна быть числом');
-        return;
-      }
-      sortOrder = parsed;
-    }
-
-    const parentId = formState.parentId || rootId;
-    if (mode === 'edit' && descendantBlocklist.has(parentId)) {
+    const parentValue = formState.parentId || rootId || '';
+    const parentId = parentValue || null;
+    if (mode === 'edit' && parentId && descendantBlocklist.has(parentId)) {
       setFormError('Нельзя выбрать дочерний элемент в качестве родителя');
       return;
     }
@@ -451,9 +434,7 @@ const CategoriesPage = () => {
             code,
             name,
             description: formState.description.trim() || undefined,
-            sortOrder,
-            isActive: formState.isActive,
-            metadata
+            isActive: formState.isActive
           }
         });
       } else if (currentNodeId) {
@@ -465,9 +446,7 @@ const CategoriesPage = () => {
             code,
             name,
             description: formState.description.trim() || undefined,
-            sortOrder,
-            isActive: formState.isActive,
-            metadata
+            isActive: formState.isActive
           }
         });
       }
@@ -531,10 +510,11 @@ const CategoriesPage = () => {
                 <input
                   style={textInputStyle}
                   value={formState.code}
-                  onChange={(event) => handleInputChange('code', event.target.value.toUpperCase())}
-                  required
-                  disabled={mode === 'edit'}
+                  readOnly
+                  disabled
+                  title='Код создаётся автоматически'
                 />
+                <span style={fieldHintStyle}>Значение назначается автоматически и недоступно для изменения</span>
               </label>
               <label style={formControlStyle}>
                 <span style={labelStyle}>Название</span>
@@ -571,14 +551,6 @@ const CategoriesPage = () => {
                   ))}
                 </select>
               </label>
-              <label style={formControlStyle}>
-                <span style={labelStyle}>Сортировка</span>
-                <input
-                  style={textInputStyle}
-                  value={formState.sortOrder}
-                  onChange={(event) => handleInputChange('sortOrder', event.target.value)}
-                />
-              </label>
             </div>
 
             <label style={checkboxRowStyle}>
@@ -588,15 +560,6 @@ const CategoriesPage = () => {
                 onChange={(event) => handleInputChange('isActive', event.target.checked)}
               />
               Категория активна
-            </label>
-
-            <label style={formControlStyle}>
-              <span style={labelStyle}>Метаданные (JSON)</span>
-              <textarea
-                style={textareaStyle}
-                value={formState.metadata}
-                onChange={(event) => handleInputChange('metadata', event.target.value)}
-              />
             </label>
 
             {formError ? <div style={errorStyle}>{formError}</div> : null}

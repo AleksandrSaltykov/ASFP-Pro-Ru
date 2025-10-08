@@ -26,40 +26,14 @@ type FormState = {
   code: string;
   name: string;
   description: string;
-  decimalPlaces: string;
   isActive: boolean;
-  metadata: string;
 };
 
 const emptyState: FormState = {
   code: '',
   name: '',
   description: '',
-  decimalPlaces: '',
-  isActive: true,
-  metadata: '{\n}'
-};
-
-const extractDecimals = (metadata?: Record<string, unknown>) => {
-  if (!metadata) {
-    return '';
-  }
-  const value = metadata.decimalPlaces ?? metadata.decimals;
-  if (typeof value === 'number') {
-    return String(value);
-  }
-  if (typeof value === 'string') {
-    return value;
-  }
-  return '';
-};
-
-const stringifyMetadata = (metadata?: Record<string, unknown>) => {
-  try {
-    return JSON.stringify(metadata ?? {}, null, 2);
-  } catch {
-    return '{\n}';
-  }
+  isActive: true
 };
 
 const buildInitialState = (node: CatalogNode | null, defaultCode?: string): FormState => {
@@ -73,21 +47,8 @@ const buildInitialState = (node: CatalogNode | null, defaultCode?: string): Form
     code: node.code ?? defaultCode ?? '',
     name: node.name ?? '',
     description: node.description ?? '',
-    decimalPlaces: extractDecimals(node.metadata),
-    isActive: node.isActive,
-    metadata: stringifyMetadata(node.metadata)
+    isActive: node.isActive
   };
-};
-
-const parseDecimalPlaces = (value: string) => {
-  if (!value.trim()) {
-    return undefined;
-  }
-  const parsed = Number(value.trim());
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    throw new Error('Дробные знаки: укажите неотрицательное число');
-  }
-  return parsed;
 };
 
 export const UnitEditorDrawer = ({
@@ -127,7 +88,7 @@ export const UnitEditorDrawer = ({
 
   const handleSubmit = async () => {
     if (!state.code.trim()) {
-      setLocalError('Код единицы не сгенерирован');
+      setLocalError('Код не удалось сгенерировать, попробуйте ещё раз');
       return;
     }
     if (!state.name.trim()) {
@@ -135,38 +96,11 @@ export const UnitEditorDrawer = ({
       return;
     }
 
-    let decimalPlaces: number | undefined;
-    try {
-      decimalPlaces = parseDecimalPlaces(state.decimalPlaces);
-    } catch (parseError) {
-      setLocalError((parseError as Error).message);
-      return;
-    }
-
-    let metadata: Record<string, unknown> | undefined;
-    if (state.metadata.trim()) {
-      try {
-        const parsed = JSON.parse(state.metadata);
-        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-          throw new Error('Метаданные: ожидается JSON-объект');
-        }
-        metadata = parsed as Record<string, unknown>;
-      } catch (parseError) {
-        setLocalError((parseError as Error).message);
-        return;
-      }
-    }
-
-    if (decimalPlaces !== undefined) {
-      metadata = { ...(metadata ?? {}), decimalPlaces };
-    }
-
     const payload: CatalogNodePayload = {
       code: state.code.trim(),
       name: state.name.trim(),
       description: state.description.trim() || undefined,
-      isActive: state.isActive,
-      metadata
+      isActive: state.isActive
     };
 
     try {
@@ -193,7 +127,7 @@ export const UnitEditorDrawer = ({
               readOnly
               className='warehouse-input--readonly'
               disabled={isSubmitting}
-              placeholder='Например, PCS'
+              placeholder='Будет создан автоматически'
             />
           </label>
           <label className='warehouse-form__control'>
@@ -218,48 +152,15 @@ export const UnitEditorDrawer = ({
             rows={3}
           />
         </label>
-        <div className='warehouse-form__row'>
-          <label className='warehouse-form__control'>
-            <span className='warehouse-form__label'>Дробные знаки</span>
-            <input
-              name='decimalPlaces'
-              type='number'
-              value={state.decimalPlaces}
-              onChange={handleChange}
-              disabled={isSubmitting}
-              placeholder='Например, 0'
-              min={0}
-            />
-          </label>
-          <label className='warehouse-form__checkbox warehouse-form__checkbox--centered'>
-            <input
-              type='checkbox'
-              name='isActive'
-              checked={state.isActive}
-              onChange={handleChange}
-              disabled={isSubmitting}
-            />
-            <span>Единица активна</span>
-          </label>
-        </div>
-      </div>
-    )
-  };
-
-  const metadataTab: ItemFormTab = {
-    id: 'metadata',
-    label: 'Метаданные',
-    content: (
-      <div className='warehouse-form__section'>
-        <label className='warehouse-form__control'>
-          <span className='warehouse-form__label'>JSON-метаданные</span>
-          <textarea
-            name='metadata'
-            value={state.metadata}
+        <label className='warehouse-form__checkbox warehouse-form__checkbox--centered'>
+          <input
+            type='checkbox'
+            name='isActive'
+            checked={state.isActive}
             onChange={handleChange}
             disabled={isSubmitting}
-            rows={8}
           />
+          <span>Единица активна</span>
         </label>
       </div>
     )
@@ -274,7 +175,7 @@ export const UnitEditorDrawer = ({
   return (
     <ItemForm
       title={mode === 'create' ? 'Новая единица измерения' : 'Редактирование единицы'}
-      tabs={[generalTab, metadataTab]}
+      tabs={[generalTab]}
       onClose={onClose}
       onSave={handleSubmit}
       saveDisabled={isSubmitting}

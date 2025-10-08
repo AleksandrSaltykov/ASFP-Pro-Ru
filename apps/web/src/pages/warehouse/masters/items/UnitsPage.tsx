@@ -9,6 +9,7 @@ import {
 } from '@shared/api';
 import { PageLoader } from '@shared/ui/PageLoader';
 import { palette, typography } from '@shared/ui/theme';
+import { generateUnitCode } from '@shared/utils/identifiers';
 
 import DataTable, { type TableColumn } from '../../components/DataTable';
 import SlideOver from '../../components/SlideOver';
@@ -134,31 +135,14 @@ type UnitFormState = {
   code: string;
   name: string;
   description: string;
-  sortOrder: string;
-  decimalPlaces: string;
   isActive: boolean;
-  metadata: string;
 };
 
 const defaultUnitFormState: UnitFormState = {
   code: '',
   name: '',
   description: '',
-  sortOrder: '',
-  decimalPlaces: '0',
-  isActive: true,
-  metadata: `{
-  "decimalPlaces": 0
-}`
-};
-
-const stringifyMetadata = (metadata: Record<string, unknown> | undefined) => {
-  try {
-    return JSON.stringify(metadata ?? {}, null, 2);
-  } catch {
-    return `{
-}`;
-  }
+  isActive: true
 };
 
 const UnitsPage = () => {
@@ -177,20 +161,9 @@ const UnitsPage = () => {
 
   const columns: TableColumn<CatalogNode>[] = [
     {
-      id: 'code',
-      label: 'Код',
-      render: (unit) => (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <strong>{unit.code}</strong>
-          <span style={{ color: palette.textSecondary, fontSize: 12 }}>{unit.name}</span>
-        </div>
-      )
-    },
-    {
-      id: 'decimal',
-      label: 'Разрядность',
-      render: (unit) => (unit.metadata?.decimalPlaces as number | undefined) ?? '—',
-      width: 140
+      id: 'name',
+      label: 'Наименование',
+      render: (unit) => <strong>{unit.name}</strong>
     },
     {
       id: 'active',
@@ -218,7 +191,7 @@ const UnitsPage = () => {
     setMode('create');
     setCurrentUnit(null);
     setFormError(null);
-    setFormState(defaultUnitFormState);
+    setFormState({ ...defaultUnitFormState, code: generateUnitCode() });
     setIsDrawerOpen(true);
   };
 
@@ -230,11 +203,7 @@ const UnitsPage = () => {
       code: unit.code,
       name: unit.name,
       description: unit.description ?? '',
-      sortOrder: unit.sortOrder != null ? String(unit.sortOrder) : '',
-      decimalPlaces:
-        unit.metadata?.decimalPlaces != null ? String(unit.metadata.decimalPlaces as number) : '',
-      isActive: unit.isActive,
-      metadata: stringifyMetadata(unit.metadata)
+      isActive: unit.isActive
     });
     setIsDrawerOpen(true);
   };
@@ -249,22 +218,6 @@ const UnitsPage = () => {
     setFormState((prev) => ({ ...prev, [field]: value }));
   };
 
-  const parseMetadata = (value: string) => {
-    const trimmed = value.trim();
-    if (!trimmed) {
-      return {} as Record<string, unknown>;
-    }
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        throw new Error('metadata must be an object');
-      }
-      return parsed as Record<string, unknown>;
-    } catch {
-      throw new Error('Некорректный JSON метаданных');
-    }
-  };
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError(null);
@@ -276,28 +229,6 @@ const UnitsPage = () => {
       return;
     }
 
-    let metadata: Record<string, unknown>;
-    try {
-      metadata = parseMetadata(formState.metadata);
-      if (formState.decimalPlaces.trim()) {
-        const decimals = Number(formState.decimalPlaces);
-        if (!Number.isFinite(decimals) || decimals < 0) {
-          throw new Error('Разрядность должна быть неотрицательным числом');
-        }
-        metadata.decimalPlaces = decimals;
-      }
-    } catch (error) {
-      setFormError((error as Error).message);
-      return;
-    }
-
-    const sortOrderValue = formState.sortOrder.trim();
-    const sortOrder = sortOrderValue ? Number(sortOrderValue) : undefined;
-    if (sortOrderValue && !Number.isFinite(Number(sortOrderValue))) {
-      setFormError('Сортировка должна быть числом');
-      return;
-    }
-
     try {
       if (mode === 'create') {
         await createMutation.mutateAsync({
@@ -306,9 +237,7 @@ const UnitsPage = () => {
             code: code.toUpperCase(),
             name,
             description: formState.description.trim() || undefined,
-            sortOrder: sortOrder,
-            isActive: formState.isActive,
-            metadata
+            isActive: formState.isActive
           }
         });
       } else if (currentUnit) {
@@ -319,12 +248,11 @@ const UnitsPage = () => {
             code: currentUnit.code,
             name,
             description: formState.description.trim() || undefined,
-            sortOrder: sortOrder,
-            isActive: formState.isActive,
-            metadata
+            isActive: formState.isActive
           }
         });
       }
+      await unitsQuery.refetch();
       closeDrawer();
     } catch (error) {
       setFormError((error as Error).message ?? 'Не удалось сохранить изменения');
@@ -340,6 +268,7 @@ const UnitsPage = () => {
     }
     try {
       await deleteMutation.mutateAsync({ catalogType: 'unit', nodeId: currentUnit.id });
+      await unitsQuery.refetch();
       closeDrawer();
     } catch (error) {
       setFormError((error as Error).message ?? 'Не удалось удалить единицу');
@@ -378,7 +307,7 @@ const UnitsPage = () => {
                   value={formState.code}
                   onChange={(event) => handleInputChange('code', event.target.value)}
                   required
-                  disabled={mode === 'edit'}
+                  disabled
                 />
               </label>
               <label style={formControlStyle}>
@@ -401,28 +330,6 @@ const UnitsPage = () => {
               />
             </label>
 
-            <div style={formRowStyle}>
-              <label style={formControlStyle}>
-                <span style={labelStyle}>Сортировка</span>
-                <input
-                  style={textInputStyle}
-                  value={formState.sortOrder}
-                  onChange={(event) => handleInputChange('sortOrder', event.target.value)}
-                />
-              </label>
-              <label style={formControlStyle}>
-                <span style={labelStyle}>Разрядность</span>
-                <input
-                  style={textInputStyle}
-                  type='number'
-                  min='0'
-                  step='1'
-                  value={formState.decimalPlaces}
-                  onChange={(event) => handleInputChange('decimalPlaces', event.target.value)}
-                />
-              </label>
-            </div>
-
             <label style={checkboxRowStyle}>
               <input
                 type='checkbox'
@@ -430,15 +337,6 @@ const UnitsPage = () => {
                 onChange={(event) => handleInputChange('isActive', event.target.checked)}
               />
               Активна
-            </label>
-
-            <label style={formControlStyle}>
-              <span style={labelStyle}>Метаданные (JSON)</span>
-              <textarea
-                style={textareaStyle}
-                value={formState.metadata}
-                onChange={(event) => handleInputChange('metadata', event.target.value)}
-              />
             </label>
 
             {formError ? <div style={errorStyle}>{formError}</div> : null}

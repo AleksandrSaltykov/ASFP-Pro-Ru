@@ -28,6 +28,13 @@ type AppConfig struct {
 	ShutdownTimeout time.Duration
 	MetricsEnable   bool
 	EnablePprof     bool
+	CORS            struct {
+		AllowOrigins     string
+		AllowMethods     string
+		AllowHeaders     string
+		ExposeHeaders    string
+		AllowCredentials bool
+	}
 }
 
 // Load reads configuration values using the provided prefix. Unknown values fall back to safe defaults.
@@ -57,6 +64,12 @@ func Load(prefix string) (AppConfig, error) {
 		MetricsEnable:   getBool(p("METRICS"), true),
 		EnablePprof:     getBool(p("PPROF"), false),
 	}
+
+	cfg.CORS.AllowOrigins = getEnv(p("CORS_ALLOW_ORIGINS"), "http://localhost:5173")
+	cfg.CORS.AllowMethods = getEnv(p("CORS_ALLOW_METHODS"), "GET,POST,PUT,PATCH,DELETE,OPTIONS")
+	cfg.CORS.AllowHeaders = getEnv(p("CORS_ALLOW_HEADERS"), "Content-Type, Authorization, X-Requested-With")
+	cfg.CORS.ExposeHeaders = getEnv(p("CORS_EXPOSE_HEADERS"), "")
+	cfg.CORS.AllowCredentials = getBool(p("CORS_ALLOW_CREDENTIALS"), true)
 
 	useSSL, err := parseBool(os.Getenv(p("S3_USE_SSL")), false)
 	if err != nil {

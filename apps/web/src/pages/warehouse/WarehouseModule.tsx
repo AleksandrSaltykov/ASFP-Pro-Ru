@@ -121,15 +121,17 @@ const noticeTitleStyle: CSSProperties = {
 
 const stripLeadingIndex = (label: string) => label.replace(/^(?:\d+(?:\.\d+)*)\.?\s*/, "").trim();
 
-const collectTrail = (items: WarehouseNavItem[], target: string, trail: WarehouseNavItem[] = []):
-  | WarehouseNavItem[]
-  | null => {
+const collectTrail = (
+  items: WarehouseNavItem[],
+  target: string,
+  trail: WarehouseNavItem[] = []
+): WarehouseNavItem[] | null => {
   for (const item of items) {
     const nextTrail = [...trail, item];
-    if (target === item.path || target.startsWith(`${item.path}/`)) {
+    if (target === item.path) {
       return nextTrail;
     }
-    if (item.children?.length) {
+    if (item.children?.length && target.startsWith(`${item.path}/`)) {
       const nested = collectTrail(item.children, target, nextTrail);
       if (nested) {
         return nested;
@@ -201,7 +203,8 @@ export const WarehouseModule = () => {
         const expanded = expandedPaths.has(item.path);
         const fullPath = `/warehouse/${item.path}`;
         const isActive =
-          relativePath === item.path || relativePath.startsWith(`${item.path}/`);
+          relativePath === item.path ||
+          (hasChildren && relativePath.startsWith(`${item.path}/`));
         const label = stripLeadingIndex(item.label);
 
         return (
@@ -222,6 +225,7 @@ export const WarehouseModule = () => {
               )}
               <NavLink
                 to={fullPath}
+                end={!hasChildren}
                 style={({ isActive: linkActive }) => ({
                   ...navLinkStyle,
                   color: linkActive || isActive ? palette.primary : "inherit"

@@ -799,7 +799,7 @@
 }
 
 .item-form__dialog {
-  width: min(760px, 92vw);
+  width: min(1024px, 92vw);
   max-height: 88vh;
   background: var(--wh-bg-panel);
   border: 1px solid var(--wh-border);

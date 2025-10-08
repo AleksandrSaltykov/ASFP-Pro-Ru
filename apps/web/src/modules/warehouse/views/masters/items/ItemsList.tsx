@@ -591,6 +591,7 @@ export const ItemsList = () => {
       title='Номенклатура'
       menu={warehouseMenu}
       activePath='/warehouse/masters/items'
+
       commands={[]}
       status={itemsQuery.isLoading ? 'Загрузка…' : `Записей: ${filteredItems.length}`}
       renderFilters={renderFilters}

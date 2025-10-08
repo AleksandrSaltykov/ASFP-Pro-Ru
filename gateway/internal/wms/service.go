@@ -12,6 +12,7 @@ import (
 
 	corepkg "asfppro/gateway/internal/core"
 	"asfppro/pkg/audit"
+	"asfppro/pkg/identifier"
 )
 
 // ErrForbidden is returned when subject has no access to resource scope.
@@ -43,8 +44,21 @@ func (s *Service) CreateCatalogNode(ctx context.Context, actor uuid.UUID, input 
 	input.Type = strings.TrimSpace(strings.ToLower(input.Type))
 	input.Code = strings.TrimSpace(strings.ToUpper(input.Code))
 	input.Name = strings.TrimSpace(input.Name)
-	if input.Type == "" || input.Code == "" || input.Name == "" {
-		return CatalogNode{}, fmt.Errorf("type, code and name are required")
+	if input.Type == "" {
+		return CatalogNode{}, fmt.Errorf("type is required")
+	}
+	if input.Name == "" {
+		return CatalogNode{}, fmt.Errorf("name is required")
+	}
+	if input.Code == "" {
+		switch input.Type {
+		case "category":
+			input.Code = identifier.CategoryCode()
+		case "unit":
+			input.Code = identifier.UnitCode()
+		default:
+			input.Code = identifier.WithPrefix(input.Type)
+		}
 	}
 
 	node, err := s.repo.CreateCatalogNode(ctx, input)
@@ -95,8 +109,11 @@ func (s *Service) CreateWarehouse(ctx context.Context, actor uuid.UUID, subject 
 	if input.Status == "" {
 		input.Status = "active"
 	}
-	if input.Code == "" || input.Name == "" {
-		return Warehouse{}, fmt.Errorf("code and name are required")
+	if input.Code == "" {
+		input.Code = identifier.WarehouseCode()
+	}
+	if input.Name == "" {
+		return Warehouse{}, fmt.Errorf("name is required")
 	}
 	input.OrgUnitCode = normalizeScopeValue(input.OrgUnitCode)
 	allowAll, scopes := extractScopes(subject)

@@ -18,20 +18,6 @@ import { fallbackUnits } from '../fallbacks';
 import { formatBoolean, formatDateTime, normalizeSearch, shouldUseFallback } from '../utils';
 import { UnitEditorDrawer, type UnitEditorSubmitPayload } from '../components/UnitEditorDrawer';
 
-const extractDecimals = (metadata?: Record<string, unknown>) => {
-  if (!metadata) {
-    return '—';
-  }
-  const value = metadata.decimalPlaces ?? metadata.decimals;
-  if (typeof value === 'number') {
-    return value;
-  }
-  if (typeof value === 'string' && value.trim()) {
-    return value;
-  }
-  return '—';
-};
-
 export const UnitsList = () => {
   const unitsQuery = useCatalogNodesQuery('unit');
   const [search, setSearch] = useState('');
@@ -144,27 +130,14 @@ const handleDeleteRow = useCallback(
   const columns: WarehouseColumn<CatalogNode>[] = useMemo(
     () => [
       {
-        id: 'code',
-        label: 'Код',
-        render: (row) => <code>{row.code}</code>
-      },
-      {
         id: 'name',
         label: 'Наименование',
         render: (row) => (
           <div className='list-form__value'>
             <span className='list-form__title'>{row.name}</span>
-            {row.description ? (
-              <span className='list-form__meta'>{row.description}</span>
-            ) : null}
+            {row.description ? <span className='list-form__meta'>{row.description}</span> : null}
           </div>
         )
-      },
-      {
-        id: 'decimals',
-        label: 'Дробные знаки',
-        align: 'center',
-        render: (row) => extractDecimals(row.metadata)
       },
       {
         id: 'isActive',
