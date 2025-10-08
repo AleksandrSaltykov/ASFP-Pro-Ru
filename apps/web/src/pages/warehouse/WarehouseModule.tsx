@@ -1,13 +1,5 @@
-import {
-  Suspense,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode
-} from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Suspense, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { useAppSelector } from "@app/hooks";
 import { PageLoader } from "@shared/ui/PageLoader";
@@ -17,108 +9,92 @@ import { WAREHOUSE_NAV, type WarehouseNavItem } from "./structure";
 
 const layoutStyle: CSSProperties = {
   display: "flex",
-  flexDirection: "column",
-  gap: 24
+  gap: 24,
+  alignItems: "stretch",
+  minHeight: 0
 };
 
-const topBarStyle: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-  gap: 12,
-  alignItems: "stretch"
-};
-
-const menuItemWrapperStyle: CSSProperties = {
-  position: "relative",
-  display: "flex",
-  flexDirection: "column",
-  paddingBottom: 18
-};
-
-const menuButtonStyle: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 6,
-  padding: "10px 12px",
-  border: "none",
-  background: "transparent",
-  color: palette.textPrimary,
-  fontFamily: typography.fontFamily,
-  fontSize: 14,
-  fontWeight: 600,
-  cursor: "pointer",
-  borderRadius: 14,
-  transition: "color 0.15s ease, background-color 0.15s ease",
-  textDecoration: "none"
-};
-
-const menuButtonActiveStyle: CSSProperties = {
-  color: palette.primary,
-  background: palette.accentSoft
-};
-
-const caretStyle: CSSProperties = {
-  fontSize: 11,
-  transition: "transform 0.15s ease"
-};
-
-const dropdownStyle: CSSProperties = {
-  position: "fixed",
-  top: 0,
-  left: 0,
-  display: "flex",
-  flexDirection: "column",
-  gap: 16,
-  minWidth: 260,
-  maxWidth: 360,
-  padding: 18,
+const secondarySidebarStyle: CSSProperties = {
+  width: "clamp(220px, 22vw, 280px)",
   borderRadius: 18,
   border: `1px solid ${palette.border}`,
-  boxShadow: palette.shadowElevated,
-  zIndex: 2000
-};
-
-const dropdownSectionStyle: CSSProperties = {
+  background: palette.surfaceMuted,
+  padding: "20px 16px",
+  boxSizing: "border-box",
   display: "flex",
   flexDirection: "column",
-  gap: 10
+  gap: 18,
+  minHeight: 0
 };
 
-const dropdownHeaderStyle: CSSProperties = {
+const sidebarTitleStyle: CSSProperties = {
   margin: 0,
-  fontSize: 13,
+  fontSize: 16,
   fontWeight: 600,
   color: palette.textPrimary
 };
 
-const dropdownLinkStyle: CSSProperties = {
-  display: "block",
-  textDecoration: "none",
-  color: palette.textSecondary,
-  fontSize: 13,
-  padding: "2px 0"
-};
-
-const dropdownPrimaryLinkStyle: CSSProperties = {
-  ...dropdownLinkStyle,
-  color: palette.primary,
-  fontWeight: 600
-};
-
-const nestedListStyle: CSSProperties = {
+const navListStyle: CSSProperties = {
+  listStyle: "none",
+  margin: 0,
+  padding: 0,
   display: "flex",
   flexDirection: "column",
-  gap: 6,
-  paddingLeft: 12
+  gap: 4,
+  fontFamily: typography.fontFamily,
+  fontSize: 13
 };
 
-const nestedLinkStyle: CSSProperties = {
-  ...dropdownLinkStyle,
-  color: palette.textPrimary
+const navRowStyle = (depth: number, active: boolean): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  padding: "8px 10px",
+  borderRadius: 12,
+  color: active ? palette.primary : palette.textSecondary,
+  background: active ? palette.accentSoft : "transparent",
+  transition: "background-color 0.15s ease, color 0.15s ease",
+  marginLeft: depth > 0 ? depth * 12 : 0
+});
+
+const navLinkStyle: CSSProperties = {
+  flex: 1,
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  color: "inherit",
+  textDecoration: "none",
+  fontWeight: 500,
+  minWidth: 0
+};
+
+const toggleButtonStyle: CSSProperties = {
+  border: "none",
+  background: "transparent",
+  padding: 0,
+  width: 20,
+  height: 20,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: palette.textSecondary,
+  cursor: "pointer"
+};
+
+const caretStyle = (expanded: boolean): CSSProperties => ({
+  display: "inline-block",
+  transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+  transition: "transform 0.15s ease"
+});
+
+const emptyCaretPlaceholderStyle: CSSProperties = {
+  width: 20,
+  height: 20
 };
 
 const contentStyle: CSSProperties = {
+  flex: 1,
+  minWidth: 0,
   display: "flex",
   flexDirection: "column",
   gap: 24
@@ -145,122 +121,51 @@ const noticeTitleStyle: CSSProperties = {
 
 const stripLeadingIndex = (label: string) => label.replace(/^(?:\d+(?:\.\d+)*)\.?\s*/, "").trim();
 
-const resolveDropdownBackground = () => {
-  if (typeof document === "undefined") {
-    return "#ffffff";
+const collectTrail = (items: WarehouseNavItem[], target: string, trail: WarehouseNavItem[] = []):
+  | WarehouseNavItem[]
+  | null => {
+  for (const item of items) {
+    const nextTrail = [...trail, item];
+    if (target === item.path || target.startsWith(`${item.path}/`)) {
+      return nextTrail;
+    }
+    if (item.children?.length) {
+      const nested = collectTrail(item.children, target, nextTrail);
+      if (nested) {
+        return nested;
+      }
+    }
   }
-  const theme = document.documentElement.getAttribute("data-theme");
-  if (theme === "dark") {
-    return "rgba(15, 23, 42, 0.95)";
-  }
-  return "#ffffff";
+  return null;
 };
-
-const DropdownCaret = ({ open }: { open: boolean }) => (
-  <span aria-hidden style={{ ...caretStyle, transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
-);
-
-const MenuLink = ({
-  to,
-  style,
-  children,
-  hovered,
-  onMouseEnter,
-  onMouseLeave
-}: {
-  to: string;
-  style?: CSSProperties;
-  children: ReactNode;
-  hovered?: boolean;
-  onMouseEnter?: () => void;
-  onMouseLeave?: () => void;
-}) => (
-  <NavLink
-    to={to}
-    onMouseEnter={onMouseEnter}
-    onMouseLeave={onMouseLeave}
-    style={({ isActive }) => ({
-      ...style,
-      color: isActive || hovered ? palette.primary : style?.color ?? palette.textSecondary,
-      textDecoration: "none"
-    })}
-  >
-    {children}
-  </NavLink>
-);
 
 export const WarehouseModule = () => {
   const enabled = useAppSelector((state) => selectIsFeatureEnabled(state, "ui.warehouse.rebuild"));
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [hoveredLink, setHoveredLink] = useState<string | null>(null);
-  const [dropdownPosition, setDropdownPosition] = useState<{
-    top: number;
-    left: number;
-    width: number;
-  } | null>(null);
-  const navigate = useNavigate();
   const location = useLocation();
-  const navRef = useRef<HTMLDivElement | null>(null);
-  const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
-  useEffect(() => {
-    setOpenMenu(null);
-    setHoveredLink(null);
+  const relativePath = useMemo(() => {
+    const raw = location.pathname.replace(/^\/warehouse\/?/, "");
+    return raw === "" ? "" : raw;
   }, [location.pathname]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (navRef.current && !navRef.current.contains(event.target as Node)) {
-        setOpenMenu(null);
-        setHoveredLink(null);
-      }
-    };
-
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    if (!openMenu) {
-      setDropdownPosition(null);
-      return undefined;
-    }
-
-    const updatePosition = () => {
-      const button = buttonRefs.current.get(openMenu);
-      if (!button) {
-        return;
-      }
-      const rect = button.getBoundingClientRect();
-      const dropdownWidth = Math.max(rect.width, 260);
-      const maxLeft = Math.max(16, window.innerWidth - dropdownWidth - 16);
-      const left = Math.min(rect.left, maxLeft);
-      const top = rect.bottom + 8;
-
-      setDropdownPosition({ top, left, width: dropdownWidth });
-    };
-
-    updatePosition();
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
-
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
-    };
-  }, [openMenu]);
-
-  const registerButton = useMemo(
-    () =>
-      (path: string) => (element: HTMLButtonElement | null) => {
-        if (!element) {
-          buttonRefs.current.delete(path);
-          return;
-        }
-        buttonRefs.current.set(path, element);
-      },
-    []
+  const activeTrail = useMemo(
+    () => collectTrail(WAREHOUSE_NAV, relativePath) ?? [],
+    [relativePath]
   );
+
+  const activeTrailPaths = useMemo(() => activeTrail.map((item) => item.path), [activeTrail]);
+
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(
+    () => new Set(activeTrailPaths)
+  );
+
+  useEffect(() => {
+    setExpandedPaths((prev) => {
+      const next = new Set(prev);
+      activeTrailPaths.forEach((path) => next.add(path));
+      return next;
+    });
+  }, [activeTrailPaths]);
 
   if (!enabled) {
     return (
@@ -274,143 +179,72 @@ export const WarehouseModule = () => {
     );
   }
 
-  const handlePrimaryClick = (item: WarehouseNavItem) => {
-    const hasChildren = Boolean(item.children?.length);
-    if (hasChildren) {
-      setOpenMenu((prev) => (prev === item.path ? null : item.path));
-      setHoveredLink(null);
-    } else {
-      navigate(item.path);
-      setOpenMenu(null);
-      setHoveredLink(null);
-    }
+  const togglePath = (path: string) => {
+    const isActivePath = relativePath === path || relativePath.startsWith(`${path}/`);
+    setExpandedPaths((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        if (!isActivePath) {
+          next.delete(path);
+        }
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
   };
+
+  const renderNav = (items: WarehouseNavItem[], depth = 0) => (
+    <ul style={{ ...navListStyle, paddingLeft: depth === 0 ? 0 : 6 }}>
+      {items.map((item) => {
+        const hasChildren = Boolean(item.children?.length);
+        const expanded = expandedPaths.has(item.path);
+        const fullPath = `/warehouse/${item.path}`;
+        const isActive =
+          relativePath === item.path || relativePath.startsWith(`${item.path}/`);
+        const label = stripLeadingIndex(item.label);
+
+        return (
+          <li key={item.path}>
+            <div style={navRowStyle(depth, isActive)}>
+              {hasChildren ? (
+                <button
+                  type='button'
+                  style={toggleButtonStyle}
+                  onClick={() => togglePath(item.path)}
+                  aria-expanded={expanded}
+                  aria-label={expanded ? "Свернуть раздел" : "Развернуть раздел"}
+                >
+                  <span aria-hidden style={caretStyle(expanded)}>▸</span>
+                </button>
+              ) : (
+                <span aria-hidden style={emptyCaretPlaceholderStyle} />
+              )}
+              <NavLink
+                to={fullPath}
+                style={({ isActive: linkActive }) => ({
+                  ...navLinkStyle,
+                  color: linkActive || isActive ? palette.primary : "inherit"
+                })}
+              >
+                {label}
+              </NavLink>
+            </div>
+            {hasChildren && expanded ? renderNav(item.children!, depth + 1) : null}
+          </li>
+        );
+      })}
+    </ul>
+  );
 
   return (
     <div style={layoutStyle}>
-      <nav ref={navRef} style={topBarStyle} aria-label='Основные разделы склада'>
-        {WAREHOUSE_NAV.map((item) => {
-          const hasChildren = Boolean(item.children?.length);
-          const isOpen = openMenu === item.path;
-          const isActive = location.pathname.startsWith(`/warehouse/${item.path}`);
-          const displayLabel = stripLeadingIndex(item.label);
-
-          const handleEnter = () => {
-            if (hasChildren) {
-              setOpenMenu(item.path);
-            }
-          };
-
-          const handleLeave = (event: React.MouseEvent<HTMLDivElement>) => {
-            const related = event.relatedTarget as Node | null;
-            if (related && event.currentTarget.contains(related)) {
-              return;
-            }
-            setOpenMenu((prev) => (prev === item.path ? null : prev));
-            setHoveredLink(null);
-          };
-
-          const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-            if (event.key === "Escape") {
-              setOpenMenu(null);
-              setHoveredLink(null);
-            }
-          };
-
-          return (
-            <div
-              key={item.path}
-              style={menuItemWrapperStyle}
-              onMouseEnter={handleEnter}
-              onMouseLeave={handleLeave}
-              onKeyDown={handleKeyDown}
-            >
-              <button
-                type='button'
-                style={{
-                  ...menuButtonStyle,
-                  ...(isActive || isOpen ? menuButtonActiveStyle : {})
-                }}
-                onClick={() => handlePrimaryClick(item)}
-                aria-expanded={hasChildren ? isOpen : undefined}
-                aria-haspopup={hasChildren ? "true" : undefined}
-                ref={registerButton(item.path)}
-              >
-                <span>{displayLabel}</span>
-                {hasChildren ? <DropdownCaret open={isOpen} /> : null}
-              </button>
-
-              {hasChildren && isOpen ? (
-                <div
-                  style={{
-                    ...dropdownStyle,
-                    background: resolveDropdownBackground(),
-                    top: dropdownPosition?.top ?? 0,
-                    left: dropdownPosition?.left ?? 0,
-                    minWidth: dropdownPosition?.width ?? 260
-                  }}
-                  role='menu'
-                  aria-label={displayLabel}
-                  onMouseEnter={() => setOpenMenu(item.path)}
-                  onMouseLeave={(event) => {
-                    const related = event.relatedTarget as Node | null;
-                    if (related && (event.currentTarget.contains(related) || navRef.current?.contains(related))) {
-                      return;
-                    }
-                    setOpenMenu((prev) => (prev === item.path ? null : prev));
-                    setHoveredLink(null);
-                  }}
-                >
-                  <MenuLink
-                    to={item.path}
-                    style={dropdownPrimaryLinkStyle}
-                    hovered={hoveredLink === item.path}
-                    onMouseEnter={() => setHoveredLink(item.path)}
-                    onMouseLeave={() => setHoveredLink(null)}
-                  >
-                    Открыть раздел
-                  </MenuLink>
-                  {item.children?.map((child) => {
-                    const childLabel = stripLeadingIndex(child.label);
-                    return (
-                      <div key={child.path} style={dropdownSectionStyle}>
-                        <MenuLink
-                          to={child.path}
-                          style={dropdownHeaderStyle}
-                          hovered={hoveredLink === child.path}
-                          onMouseEnter={() => setHoveredLink(child.path)}
-                          onMouseLeave={() => setHoveredLink(null)}
-                        >
-                          {childLabel}
-                        </MenuLink>
-                        {child.children?.length ? (
-                          <div style={nestedListStyle}>
-                            {child.children.map((nested) => {
-                              const nestedLabel = stripLeadingIndex(nested.label);
-                              return (
-                                <MenuLink
-                                  key={nested.path}
-                                  to={nested.path}
-                                  style={nestedLinkStyle}
-                                  hovered={hoveredLink === nested.path}
-                                  onMouseEnter={() => setHoveredLink(nested.path)}
-                                  onMouseLeave={() => setHoveredLink(null)}
-                                >
-                                  {nestedLabel}
-                                </MenuLink>
-                              );
-                            })}
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
-      </nav>
+      <aside style={secondarySidebarStyle}>
+        <div>
+          <h2 style={sidebarTitleStyle}>Склад</h2>
+        </div>
+        <nav aria-label='Навигация модуля «Склад»'>{renderNav(WAREHOUSE_NAV)}</nav>
+      </aside>
       <main style={contentStyle}>
         <Suspense fallback={<PageLoader />}>
           <Outlet />

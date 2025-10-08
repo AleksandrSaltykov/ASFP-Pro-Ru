@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useStockAvailability, type StockAvailability } from "@shared/api";
@@ -40,11 +40,11 @@ const labelStyle = {
   color: palette.textSoft
 };
 
-const toolbarStyle = {
+const toolbarStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  flexWrap: "wrap",
+  flexWrap: "wrap" as const,
   gap: 12
 };
 

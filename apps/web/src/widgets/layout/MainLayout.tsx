@@ -43,7 +43,7 @@ const createShellStyle = (collapsed: boolean, compact: boolean): CSSProperties =
   display: "grid",
   gridTemplateColumns: compact
     ? "minmax(0, 1fr)"
-    : `${collapsed ? "96px" : "clamp(240px, 22vw, 280px)"} minmax(0, 1fr)`,
+    : `${collapsed ? "88px" : "clamp(200px, 18vw, 240px)"} minmax(0, 1fr)`,
   gridTemplateRows: compact ? "auto 1fr auto" : "auto 1fr",
   gridTemplateAreas: compact
     ? '"header" "content" "sidebar"'

@@ -43,10 +43,16 @@ jobs:
 
       - name: Verify gofmt
         run: |
-          set -e
-          CHANGED=$(gofmt -l $(find . -name '*.go' -not -path './.tools/*' -not -path './vendor/*'))
+          set -euo pipefail
+          GO_SOURCES=$(git ls-files -z -- '*.go' ':!:vendor/*')
+          if [ -z "$GO_SOURCES" ]; then
+            echo "No Go sources to check"
+            exit 0
+          fi
+          CHANGED=$(printf "%s" "$GO_SOURCES" | xargs -0 gofmt -l)
           if [ -n "$CHANGED" ]; then
-            echo "Go files need formatting:" && echo "$CHANGED"
+            echo "Go files need formatting:"
+            echo "$CHANGED"
             exit 1
           fi
 
@@ -113,14 +119,6 @@ jobs:
           make migrate-wms
           WMS_DOWN_TO=0 make migrate-wms-down
           make migrate-wms
-
-      - name: Refresh demo data
-        env:
-          DATABASE_URL: postgres://asfp:asfp123@localhost:5432/asfp?sslmode=disable
-        run: make refresh-demo
-
-      - name: Validate demo dataset
-        run: make check-demo
 
       - name: Refresh demo data
         env:

@@ -354,7 +354,7 @@ export const useUpdateEndlessPolicy = (
       queryClient.setQueryData<PaginatedResponse<EndlessPolicy>>(endlessKey(), {
         items: endlessPoliciesStore
       });
-      options?.onSuccess?.(updated, variables, context);
+      options?.onSuccess?.(updated, variables, context, undefined as never);
     },
     ...options
   });
@@ -372,7 +372,7 @@ export const useResetEndlessPolicy = (
       queryClient.setQueryData<PaginatedResponse<EndlessPolicy>>(endlessKey(), {
         items: endlessPoliciesStore
       });
-      options?.onSuccess?.(updated, variables, context);
+      options?.onSuccess?.(updated, variables, context, undefined as never);
     },
     ...options
   });

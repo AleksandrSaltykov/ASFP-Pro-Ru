@@ -50,7 +50,7 @@ const infoCardStyle: CSSProperties = {
   borderRadius: 20,
   border: `1px solid ${palette.border}`,
   background: palette.layer,
-  boxShadow: palette.shadowSoft,
+  boxShadow: palette.shadowElevated,
   display: 'flex',
   flexDirection: 'column',
   gap: 12,

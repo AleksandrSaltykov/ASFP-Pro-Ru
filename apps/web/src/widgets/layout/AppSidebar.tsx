@@ -58,23 +58,27 @@ const listStyle: CSSProperties = {
   gap: 6
 };
 
-const navItemContentStyle: CSSProperties = {
+const navItemContentStyle = (collapsed: boolean): CSSProperties => ({
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 10
-};
+  justifyContent: collapsed ? 'center' : 'space-between',
+  gap: collapsed ? 0 : 10,
+  minHeight: 44,
+  width: '100%'
+});
 
-const navLabelWrapperStyle: CSSProperties = {
+const navLabelWrapperStyle = (collapsed: boolean): CSSProperties => ({
   display: 'flex',
   alignItems: 'center',
-  gap: 10,
-  minWidth: 0
-};
+  justifyContent: collapsed ? 'center' : 'flex-start',
+  gap: collapsed ? 0 : 10,
+  minWidth: 0,
+  width: '100%'
+});
 
 const iconWrapperStyle: CSSProperties = {
-  width: 26,
-  height: 26,
+  width: 32,
+  height: 32,
   borderRadius: 12,
   background: palette.surfaceMuted,
   display: 'flex',
@@ -98,6 +102,9 @@ const favoriteButtonStyle: CSSProperties = {
 };
 
 const collapsedNavLinkStyle: CSSProperties = {
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
   justifyContent: 'center'
 };
 
@@ -231,8 +238,8 @@ export const AppSidebar = ({ collapsed = false }: AppSidebarProps) => {
           aria-label={collapsed ? item.label : undefined}
           style={collapsed ? collapsedNavLinkStyle : { width: '100%' }}
         >
-          <span style={navItemContentStyle}>
-            <span style={navLabelWrapperStyle}>
+          <span style={navItemContentStyle(collapsed)}>
+            <span style={navLabelWrapperStyle(collapsed)}>
               <span style={iconWrapperStyle}>{iconMap[item.icon]}</span>
               {collapsed ? null : <span>{item.label}</span>}
             </span>
@@ -272,7 +279,7 @@ export const AppSidebar = ({ collapsed = false }: AppSidebarProps) => {
           aria-label={collapsed ? descriptor.label : undefined}
           style={collapsed ? collapsedNavLinkStyle : { width: '100%' }}
         >
-          <span style={navLabelWrapperStyle}>
+          <span style={navLabelWrapperStyle(collapsed)}>
             <span style={iconWrapperStyle}>{iconMap[descriptor.icon]}</span>
             {collapsed ? null : <span>{descriptor.label}</span>}
           </span>
@@ -299,8 +306,8 @@ export const AppSidebar = ({ collapsed = false }: AppSidebarProps) => {
     <aside
       style={{
         ...sidebarStyleBase,
-        width: collapsed ? 96 : 280,
-        padding: collapsed ? '18px 10px' : sidebarStyleBase.padding,
+        width: collapsed ? 88 : 220,
+        padding: collapsed ? '16px 8px' : sidebarStyleBase.padding,
         alignItems: collapsed ? 'center' : 'stretch'
       }}
     >

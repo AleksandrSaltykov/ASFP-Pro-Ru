@@ -11,6 +11,7 @@ import { API_ENDPOINTS } from '@shared/api/endpoints';
 import { createHttpClient } from '@shared/api/http-client';
 import {
   AttributeTemplate,
+  AttributeTemplatePayload,
   CatalogLink,
   CatalogLinkPayload,
   CatalogNode,

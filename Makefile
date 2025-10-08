@@ -1,4 +1,4 @@
-.PHONY: up up-build restart down stop build lint test migrate-core migrate-core-down migrate-crm migrate-crm-down migrate-wms migrate-wms-down migrate-mes migrate-mes-down migrate-montage migrate-montage-down migrate-docs migrate-docs-down migrate-bpm migrate-bpm-down seed refresh-demo check-demo clean smoke certs mkcert clean-certs env frontend frontend-install
+.PHONY: up up-build restart down stop build lint test migrate-core migrate-core-down migrate-crm migrate-crm-down migrate-wms migrate-wms-down migrate-mes migrate-mes-down migrate-montage migrate-montage-down migrate-docs migrate-docs-down migrate-bpm migrate-bpm-down seed refresh-demo check-demo clean smoke certs mkcert clean-certs env frontend frontend-install ci
 
 GOOSE?=goose
 GOOSE_BIN:=$(shell command -v $(GOOSE) 2>/dev/null)
@@ -174,7 +174,7 @@ clean:
 
 smoke:
 	@mkdir -p tests/smoke/artifacts
-	go test -count=1 -v ./tests/smoke | tee tests/smoke/artifacts/smoke.log
+	go test -count=1 -tags=smoke -v ./tests/smoke | tee tests/smoke/artifacts/smoke.log
 
 certs: mkcert
 
@@ -207,3 +207,6 @@ frontend-install:
 
 frontend:
 	cd apps/web && pnpm dev -- --host 0.0.0.0
+
+ci:
+	./scripts/ci/run-local.sh

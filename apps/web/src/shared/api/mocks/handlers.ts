@@ -1,6 +1,10 @@
 import { http, HttpResponse } from 'msw';
 
+import type { CoreOrgUnit } from '../core';
+import type { CrmCustomer, CrmCustomerBankAccount, CrmCustomerContact } from '../crm/types';
+
 const now = () => new Date().toISOString();
+const emptyRecord: Record<string, unknown> = {};
 
 // WMS sample data
 const wmsWarehouses = [
@@ -14,7 +18,7 @@ const wmsWarehouses = [
     status: 'active',
     operatingHours: { weekdays: { mon: '09:00-21:00', tue: '09:00-21:00' } },
     contact: { manager: 'Ирина Иванова', phone: '+7 495 000-00-00', email: 'warehouse@asfp.pro' },
-    metadata: {},
+    metadata: emptyRecord,
     createdAt: now(),
     updatedAt: now()
   },
@@ -28,7 +32,7 @@ const wmsWarehouses = [
     status: 'active',
     operatingHours: { weekdays: { mon: '08:00-20:00', tue: '08:00-20:00' } },
     contact: { manager: 'Петр Сидоров', phone: '+7 812 000-00-00', email: 'spb@asfp.pro' },
-    metadata: {},
+    metadata: emptyRecord,
     createdAt: now(),
     updatedAt: now()
   }
@@ -47,7 +51,7 @@ const wmsZones = [
     hazardClass: 'none',
     accessRestrictions: ['forklift'],
     layout: { aisles: 5 },
-    metadata: {},
+    metadata: emptyRecord,
     createdBy: null,
     updatedBy: null,
     createdAt: now(),
@@ -65,7 +69,7 @@ const wmsZones = [
     hazardClass: 'none',
     accessRestrictions: ['manual'],
     layout: { aisles: 2 },
-    metadata: {},
+    metadata: emptyRecord,
     createdBy: null,
     updatedBy: null,
     createdAt: now(),
@@ -93,7 +97,7 @@ const wmsCells = [
     temperatureMin: 5,
     temperatureMax: 20,
     hazardClasses: ['none'],
-    metadata: {},
+    metadata: emptyRecord,
     createdBy: null,
     updatedBy: null,
     createdAt: now(),
@@ -118,7 +122,7 @@ const wmsCells = [
     temperatureMin: 2,
     temperatureMax: 18,
     hazardClasses: ['none'],
-    metadata: {},
+    metadata: emptyRecord,
     createdBy: null,
     updatedBy: null,
     createdAt: now(),
@@ -137,7 +141,7 @@ const wmsEquipment = [
     manufacturer: 'Still',
     serialNumber: 'STL-001',
     commissioningDate: '2022-01-15',
-    metadata: {},
+    metadata: emptyRecord,
     createdBy: null,
     updatedBy: null,
     createdAt: now(),
@@ -338,7 +342,7 @@ const wmsAttributeTemplates: Record<string, AttributeTemplateMock[]> = {
       targetType: 'item',
       dataType: 'boolean',
       isRequired: false,
-      metadata: {},
+      metadata: emptyRecord,
       uiSchema: { component: 'Switch' },
       position: 30,
       createdAt: now(),
@@ -474,12 +478,17 @@ const buildAttributeValue = (attr: ItemAttributePayload): AttributeValueMock | n
   if (!template) {
     return null;
   }
+  const rawJson = attr.jsonValue;
+  const jsonValue =
+    rawJson && typeof rawJson === 'object' && !Array.isArray(rawJson)
+      ? (rawJson as Record<string, unknown>)
+      : undefined;
   return {
     template,
     stringValue: attr.stringValue,
     numberValue: attr.numberValue,
     booleanValue: attr.booleanValue,
-    jsonValue: attr.jsonValue ?? undefined
+    jsonValue
   };
 };
 
@@ -556,7 +565,7 @@ const coreRoles = [
   { code: 'warehouse', description: 'Склад' }
 ];
 
-const coreOrgUnits = [
+const coreOrgUnits: CoreOrgUnit[] = [
   {
     id: 'org-1',
     parentId: null,
@@ -566,7 +575,7 @@ const coreOrgUnits = [
     path: 'HQ',
     level: 0,
     isActive: true,
-    metadata: {},
+    metadata: emptyRecord,
     createdAt: now(),
     updatedAt: now()
   },
@@ -579,7 +588,7 @@ const coreOrgUnits = [
     path: 'HQ.HQ-SALES',
     level: 1,
     isActive: true,
-    metadata: {},
+    metadata: emptyRecord,
     createdAt: now(),
     updatedAt: now()
   }
@@ -592,7 +601,7 @@ const coreRolePermissions = [
     action: '*',
     scope: '*',
     effect: 'allow',
-    metadata: {},
+    metadata: emptyRecord,
     createdAt: now(),
     updatedAt: now()
   },
@@ -602,7 +611,7 @@ const coreRolePermissions = [
     action: 'write',
     scope: 'HQ-SALES',
     effect: 'allow',
-    metadata: {},
+    metadata: emptyRecord,
     createdAt: now(),
     updatedAt: now()
   }
@@ -647,7 +656,7 @@ const getWarehouseDetails = (warehouseId: string) => {
 };
 
 // CRM sample data
-const crmCustomers = [
+const crmCustomers: CrmCustomer[] = [
   {
     id: 'cust-1',
     name: 'ООО «Интеграция»',
@@ -734,7 +743,9 @@ const trimOrUndefined = (value: unknown): string | undefined => {
   return trimmed.length ? trimmed : undefined;
 };
 
-const normalizeBankAccountsInput = (accounts: CrmCustomerPayloadInput['bankAccounts'] | undefined) => {
+const normalizeBankAccountsInput = (
+  accounts: CrmCustomerPayloadInput['bankAccounts'] | undefined
+): CrmCustomerBankAccount[] => {
   if (!Array.isArray(accounts)) {
     return [];
   }
@@ -758,7 +769,9 @@ const normalizeBankAccountsInput = (accounts: CrmCustomerPayloadInput['bankAccou
     .filter((account): account is NonNullable<typeof account> => Boolean(account));
 };
 
-const normalizeContactsInput = (contacts: CrmCustomerPayloadInput['contacts'] | undefined) => {
+const normalizeContactsInput = (
+  contacts: CrmCustomerPayloadInput['contacts'] | undefined
+): CrmCustomerContact[] => {
   if (!Array.isArray(contacts)) {
     return [];
   }
@@ -1431,17 +1444,17 @@ export const handlers = [
       return HttpResponse.json({ message: 'name is required' }, { status: 400 });
     }
     const nowTs = now();
-    const customer = {
+    const customer: CrmCustomer = {
       id: nextCustomerId(),
       name,
-      inn: trimOrUndefined(payload?.inn ?? '') ?? undefined,
-      kpp: trimOrUndefined(payload?.kpp ?? '') ?? undefined,
+      inn: trimOrUndefined(payload?.inn ?? '') ?? null,
+      kpp: trimOrUndefined(payload?.kpp ?? '') ?? null,
       comment: trimOrUndefined(payload?.comment) ?? 'Поставщик',
-      phone: trimOrUndefined(payload?.phone),
-      email: trimOrUndefined(payload?.email),
-      website: trimOrUndefined(payload?.website),
-      legalAddress: trimOrUndefined(payload?.legalAddress),
-      actualAddress: trimOrUndefined(payload?.actualAddress),
+      phone: trimOrUndefined(payload?.phone) ?? null,
+      email: trimOrUndefined(payload?.email) ?? null,
+      website: trimOrUndefined(payload?.website) ?? null,
+      legalAddress: trimOrUndefined(payload?.legalAddress) ?? null,
+      actualAddress: trimOrUndefined(payload?.actualAddress) ?? null,
       bankAccounts: normalizeBankAccountsInput(payload?.bankAccounts),
       contacts: normalizeContactsInput(payload?.contacts),
       createdAt: nowTs,
@@ -1462,17 +1475,17 @@ export const handlers = [
       return HttpResponse.json({ message: 'name is required' }, { status: 400 });
     }
     const existing = crmCustomers[index];
-    const updated = {
+    const updated: CrmCustomer = {
       ...existing,
       name,
-      inn: trimOrUndefined(payload?.inn ?? '') ?? undefined,
-      kpp: trimOrUndefined(payload?.kpp ?? '') ?? undefined,
-      comment: trimOrUndefined(payload?.comment) ?? trimOrUndefined(existing.comment) ?? 'Поставщик',
-      phone: trimOrUndefined(payload?.phone),
-      email: trimOrUndefined(payload?.email),
-      website: trimOrUndefined(payload?.website),
-      legalAddress: trimOrUndefined(payload?.legalAddress),
-      actualAddress: trimOrUndefined(payload?.actualAddress),
+      inn: trimOrUndefined(payload?.inn ?? '') ?? null,
+      kpp: trimOrUndefined(payload?.kpp ?? '') ?? null,
+      comment: trimOrUndefined(payload?.comment) ?? trimOrUndefined(existing.comment ?? undefined) ?? 'Поставщик',
+      phone: trimOrUndefined(payload?.phone) ?? null,
+      email: trimOrUndefined(payload?.email) ?? null,
+      website: trimOrUndefined(payload?.website) ?? null,
+      legalAddress: trimOrUndefined(payload?.legalAddress) ?? null,
+      actualAddress: trimOrUndefined(payload?.actualAddress) ?? null,
       bankAccounts: normalizeBankAccountsInput(payload?.bankAccounts),
       contacts: normalizeContactsInput(payload?.contacts),
       updatedAt: now()
@@ -1559,10 +1572,15 @@ export const handlers = [
   }),
   http.get('*/api/v1/org-units', () => HttpResponse.json({ items: coreOrgUnits })),
   http.post('*/api/v1/org-units', async ({ request }) => {
-    const payload = (await request.json()) as { code: string; name: string; parentCode?: string };
+    const payload = (await request.json()) as {
+      code: string;
+      name: string;
+      parentCode?: string;
+      description?: string;
+    };
     const code = payload.code?.toUpperCase();
     const parent = coreOrgUnits.find((unit) => unit.code === (payload.parentCode ?? '').toUpperCase());
-    const unit = {
+    const unit: CoreOrgUnit = {
       id: `org-${Date.now()}`,
       parentId: parent?.id ?? null,
       code,
@@ -1571,7 +1589,7 @@ export const handlers = [
       path: parent ? `${parent.path}.${code}` : code,
       level: parent ? parent.level + 1 : 0,
       isActive: true,
-      metadata: {},
+      metadata: emptyRecord,
       createdAt: now(),
       updatedAt: now()
     };

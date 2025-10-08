@@ -114,10 +114,14 @@ export const UnitEditorDrawer = ({
   }, [open, node, mode, onErrorDismiss]);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = event.target;
+    const { name, value, type } = event.currentTarget;
+    const nextValue =
+      type === 'checkbox' && event.currentTarget instanceof HTMLInputElement
+        ? event.currentTarget.checked
+        : value;
     setState((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: nextValue
     }));
   };
 

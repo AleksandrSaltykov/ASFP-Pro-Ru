@@ -56,7 +56,7 @@ const cardStyle: CSSProperties = {
   borderRadius: 20,
   border: `1px solid ${palette.border}`,
   background: palette.layer,
-  boxShadow: palette.shadowSoft
+  boxShadow: palette.shadowElevated
 };
 
 const formStyle: CSSProperties = {

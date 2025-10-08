@@ -1,5 +1,5 @@
-import { warehouseMenu } from "@modules/warehouse/menu/warehouse.menu";
-import type { WarehouseMenuNode } from "@modules/warehouse/layout/types";
+import { warehouseMenu } from "modules/warehouse/menu/warehouse.menu";
+import type { WarehouseMenuNode } from "modules/warehouse/layout/types";
 import { iconMap } from "@shared/ui/icons";
 
 export type IconName = keyof typeof iconMap;
@@ -48,7 +48,7 @@ const mapWarehouseSections = (nodes: WarehouseMenuNode[]): ModuleMenuSection[] =
         .map((child) => ({
           id: child.id,
           label: child.label,
-          to: child.path!,
+          to: child.path,
           icon: "warehouse"
         }))
     }))

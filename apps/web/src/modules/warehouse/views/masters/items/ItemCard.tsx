@@ -1,4 +1,4 @@
-import { ItemForm, type ItemFormTab } from '../../layout/ItemForm/ItemForm';
+import { ItemForm, type ItemFormTab } from '../../../layout/ItemForm/ItemForm';
 
 export type ItemCardProps = {
   open: boolean;

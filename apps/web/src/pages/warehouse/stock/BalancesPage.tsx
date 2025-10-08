@@ -38,7 +38,7 @@ const toolbarStyle = {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  flexWrap: "wrap",
+  flexWrap: "wrap" as const,
   gap: 12
 };
 
@@ -195,7 +195,7 @@ export const BalancesPage = () => {
       id: "actions",
       label: "Действия",
       render: (row) => (
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" as const }}>
           <button
             type='button'
             style={exportButtonStyle}

@@ -14,13 +14,18 @@ const collectGroupIds = (nodes: WarehouseMenuNode[], acc: string[] = []) => {
   return acc;
 };
 
-const collectExpanded = (nodes: WarehouseMenuNode[], activePath: string, trail: string[] = [], expanded = new Set<string>()) => {
+const collectExpanded = (
+  nodes: WarehouseMenuNode[],
+  activePath: string,
+  trail: string[] = [],
+  expanded = new Set<string>()
+): Set<string> | undefined => {
   for (const node of nodes) {
     const currentTrail = [...trail, node.id];
     const matches = node.path ? activePath.startsWith(node.path) : false;
     let childMatch = false;
     if (node.children?.length) {
-      childMatch = collectExpanded(node.children, activePath, currentTrail, expanded);
+      childMatch = collectExpanded(node.children, activePath, currentTrail, expanded) !== undefined;
     }
     if (matches || childMatch) {
       currentTrail.forEach((id) => expanded.add(id));
@@ -29,7 +34,7 @@ const collectExpanded = (nodes: WarehouseMenuNode[], activePath: string, trail: 
       expanded.add(node.id);
     }
   }
-  return expanded.size > 0 && expanded;
+  return expanded.size > 0 ? expanded : undefined;
 };
 
 export type LeftNavPanelProps = {
@@ -60,7 +65,7 @@ export const LeftNavPanel = ({ items, activePath }: LeftNavPanelProps) => {
     });
   };
 
-const renderItems = (nodes: WarehouseMenuNode[], depth = 0): ReactNode =>
+  const renderItems = (nodes: WarehouseMenuNode[], depth = 0): ReactNode =>
     nodes.map((node) => {
       const hasChildren = Boolean(node.children?.length);
       const isCollapsed = hasChildren && collapsed.has(node.id);

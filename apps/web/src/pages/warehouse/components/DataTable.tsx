@@ -22,7 +22,7 @@ const tableWrapperStyle: CSSProperties = {
   border: `1px solid ${palette.border}`,
   overflow: "hidden",
   background: palette.surface,
-  boxShadow: palette.shadowSoft
+  boxShadow: palette.shadowElevated
 };
 
 const tableStyle: CSSProperties = {

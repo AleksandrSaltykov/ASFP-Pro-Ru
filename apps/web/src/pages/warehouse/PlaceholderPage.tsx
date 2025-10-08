@@ -10,7 +10,7 @@ const wrapperStyle: CSSProperties = {
   borderRadius: 18,
   border: `1px dashed ${palette.border}`,
   background: palette.surface,
-  boxShadow: palette.shadowSoft
+  boxShadow: palette.shadowElevated
 };
 
 const titleStyle: CSSProperties = {

@@ -69,11 +69,12 @@ export const ItemCategoriesList = () => {
         return true;
       }
       const description = node.description ? normalizeSearch(node.description) : '';
+      const pathValue = node.path ? normalizeSearch(node.path) : '';
       return (
         normalizeSearch(node.name).includes(needle) ||
         normalizeSearch(node.code).includes(needle) ||
         description.includes(needle) ||
-        node.path.toLowerCase().includes(needle)
+        pathValue.includes(needle)
       );
     });
   }, [categories, search, onlyActive]);
@@ -149,7 +150,7 @@ export const ItemCategoriesList = () => {
         render: (row) => (
           <div
             className='catalog-node__name list-form__value'
-            style={{ '--catalog-indent': `${Math.max(row.level - 1, 0) * 16}px` } as CSSProperties}
+            style={{ '--catalog-indent': `${Math.max((row.level ?? 1) - 1, 0) * 16}px` } as CSSProperties}
           >
             <span className='list-form__title'>{row.name}</span>
             {row.description ? (
@@ -166,7 +167,7 @@ export const ItemCategoriesList = () => {
       {
         id: 'path',
         label: 'Путь',
-        render: (row) => row.path
+        render: (row) => row.path ?? '—'
       },
       {
         id: 'isActive',

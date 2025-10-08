@@ -10,24 +10,10 @@ export const WAREHOUSE_NAV: WarehouseNavItem[] = [
     label: "1. Справочники",
     path: "masters",
     children: [
-      {
-        label: "1.1 Номенклатура",
-        path: "masters/items",
-        children: [
-          { label: "Категории / группы", path: "masters/items/categories" },
-          { label: "Единицы измерения", path: "masters/items/units" },
-          { label: "Пересчёты", path: "masters/items/conversions" },
-          { label: "Атрибуты", path: "masters/items/attributes" },
-          { label: "Состав изделия", path: "masters/items/bom" },
-          { label: "Файлы / изображения", path: "masters/items/attachments" }
-        ]
-      },
-      {
-        label: "1.2 Склады / локации / зоны / ячейки",
-        path: "masters/locations"
-      },
+      { label: "1.1 Номенклатура", path: "masters/items" },
+      { label: "1.2 Склады", path: "masters/locations/warehouses" },
       { label: "1.3 Поставщики", path: "masters/partners" },
-      { label: "1.4 Сотрудники / роли", path: "masters/roles" },
+      { label: "1.4 Единицы измерения", path: "masters/items/units" },
       { label: "1.5 Типы операций", path: "masters/op-statuses" },
       { label: "1.6 Упаковки", path: "masters/packages" }
     ]

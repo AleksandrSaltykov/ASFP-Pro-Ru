@@ -96,6 +96,7 @@ make up
 ## CI и smoke
 
 - GitHub Actions выполняет gofmt/go test для каждого push/PR (используется GOTOOLCHAIN=auto, кешируются `~/go/pkg/mod`, `~/.cache/go-build` и слои buildx).
+- Для локальной проверки перед пушем используйте `make ci` — таргет повторяет быстрые проверки CI (gofmt, golangci-lint, `go test ./...`, `pnpm --filter web build`).
 - job `smoke` разворачивает Docker Compose стенд, сбрасывает MinIO через `scripts/minio-reset.sh`, прогоняет smoke-сценарии и сохраняет артефакты в `tests/smoke/artifacts`.
 - По состоянию на 2025-09-27 smoke остаётся нестабильным из-за доработок WMS (см. PROGRESS.md), поэтому результаты job стоит проверять вручную.
 - Smoke-тесты покрывают CRUD-операции мастер-данных WMS (склады, зоны, ячейки, техника).
@@ -129,4 +130,3 @@ make up
 
 ### Правила фиксации прогресса
 - После каждого завершенного шага обязательно добавляйте запись в файл PROGRESS.md.
-
