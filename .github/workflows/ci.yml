@@ -157,4 +157,9 @@ jobs:
 
       - name: Tear down stack
         if: always()
-        run: docker compose --env-file deploy/.env -f deploy/docker-compose.yml down -v
+        run: |
+          if [ -f deploy/.env ]; then
+            docker compose --env-file deploy/.env -f deploy/docker-compose.yml down -v
+          else
+            echo "deploy/.env not found, skipping docker compose down"
+          fi
