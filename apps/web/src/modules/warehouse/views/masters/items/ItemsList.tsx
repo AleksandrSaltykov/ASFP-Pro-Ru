@@ -371,21 +371,9 @@ export const ItemsList = () => {
   const columns: WarehouseColumn<Item>[] = useMemo(
     () => [
       {
-        id: 'sku',
-        label: 'Артикул',
-        render: (row) => <code>{row.sku}</code>
-      },
-      {
         id: 'name',
-        label: 'Наименование',
-        render: (row) => (
-          <div className='list-form__value'>
-            <span className='list-form__title'>{row.name}</span>
-            {row.description ? (
-              <span className='list-form__meta'>{row.description}</span>
-            ) : null}
-          </div>
-        )
+        label: 'Название',
+        render: (row) => <span className='list-form__title list-form__title--strong'>{row.name}</span>
       },
       {
         id: 'category',

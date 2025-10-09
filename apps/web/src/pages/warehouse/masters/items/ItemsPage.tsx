@@ -245,14 +245,9 @@ const ItemsPage = () => {
 
   const columns: TableColumn<Item>[] = [
     {
-      id: 'sku',
-      label: 'SKU',
-      render: (item) => (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <strong>{item.sku}</strong>
-          <span style={{ color: palette.textSecondary, fontSize: 12 }}>{item.name}</span>
-        </div>
-      )
+      id: 'name',
+      label: 'Название',
+      render: (item) => <strong style={{ fontWeight: 700 }}>{item.name}</strong>
     },
     {
       id: 'category',

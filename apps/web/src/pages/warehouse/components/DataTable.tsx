@@ -28,6 +28,7 @@ const tableWrapperStyle: CSSProperties = {
 const tableStyle: CSSProperties = {
   width: "100%",
   borderCollapse: "collapse",
+  tableLayout: "fixed",
   fontFamily: typography.fontFamily,
   fontSize: 14
 };
@@ -49,7 +50,9 @@ const rowStyle: CSSProperties = {
 const cellStyle: CSSProperties = {
   padding: "14px 16px",
   color: palette.textPrimary,
-  verticalAlign: "middle"
+  verticalAlign: "middle",
+  whiteSpace: "normal",
+  wordBreak: "break-word"
 };
 
 const emptyStateStyle: CSSProperties = {

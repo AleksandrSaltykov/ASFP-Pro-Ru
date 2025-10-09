@@ -15,7 +15,7 @@ import type { WarehouseColumn } from '../../../layout/types';
 import { warehouseMenu } from '../../../menu/warehouse.menu';
 import { EmptyState, QueryErrorState } from '../../components/QueryState';
 import { fallbackWarehouses } from '../fallbacks';
-import { formatBoolean, formatDateTime, normalizeSearch, shouldUseFallback } from '../utils';
+import { formatDateTime, normalizeSearch, shouldUseFallback } from '../utils';
 import { WarehouseEditorDrawer, type WarehouseEditorSubmitPayload } from './WarehouseEditorDrawer';
 
 const cloneWarehouse = (warehouse: Warehouse): Warehouse => ({
@@ -141,16 +141,11 @@ export const WarehousesList = () => {
   const columns: WarehouseColumn<Warehouse>[] = useMemo(
     () => [
       {
-        id: 'code',
-        label: 'Код',
-        render: (row) => <code>{row.code}</code>
-      },
-      {
         id: 'name',
-        label: 'Наименование',
+        label: 'Название',
         render: (row) => (
           <div className='list-form__value'>
-            <span className='list-form__title'>{row.name}</span>
+            <span className='list-form__title list-form__title--strong'>{row.name}</span>
             {row.description ? (
               <span className='list-form__meta'>{row.description}</span>
             ) : null}
@@ -158,14 +153,15 @@ export const WarehousesList = () => {
         )
       },
       {
+        id: 'status',
+        label: 'Статус',
+        align: 'center',
+        render: (row) => row.status?.toUpperCase() ?? 'UNKNOWN'
+      },
+      {
         id: 'address',
         label: 'Адрес',
         render: (row) => formatAddress(row.address)
-      },
-      {
-        id: 'status',
-        label: 'Статус',
-        render: (row) => row.status?.toUpperCase() ?? 'UNKNOWN'
       },
       {
         id: 'contact',
@@ -176,14 +172,19 @@ export const WarehousesList = () => {
             return '—';
           }
           const info = [contact.manager, contact.phone, contact.email].filter(Boolean);
-          return info.length ? info.join(' · ') : '—';
+          if (!info.length) {
+            return '—';
+          }
+          return (
+            <div className='list-form__value'>
+              {info.map((entry) => (
+                <span key={entry} className='list-form__meta'>
+                  {entry}
+                </span>
+              ))}
+            </div>
+          );
         }
-      },
-      {
-        id: 'active',
-        label: 'Активен',
-        align: 'center',
-        render: (row) => formatBoolean(row.status ? row.status !== 'archived' : true)
       },
       {
         id: 'updatedAt',

@@ -495,6 +495,7 @@
 .list-form__table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   font-size: 13px;
   color: var(--wh-text-strong);
 }
@@ -522,6 +523,8 @@
 .list-form__cell {
   text-align: left;
   color: var(--wh-text-normal);
+  white-space: normal;
+  word-break: break-word;
 }
 
 .list-form__cell--align-center {
@@ -549,6 +552,10 @@
   font-weight: 600;
   color: var(--wh-text-strong);
   line-height: 1.4;
+}
+
+.list-form__title--strong {
+  font-weight: 700;
 }
 
 .list-form__actions {
@@ -1233,6 +1240,43 @@
 
 .category-hierarchy__item {
   margin-left: calc(var(--category-depth, 0) * 6px);
+}
+
+.warehouse-report__section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.warehouse-report__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.warehouse-report__card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 1px solid var(--wh-border-soft);
+  background: var(--wh-bg-panel);
+  box-shadow: var(--wh-shadow-panel);
+}
+
+.warehouse-report__card-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wh-text-soft);
+}
+
+.warehouse-report__card-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--wh-text-strong);
 }
 @media (max-width: 1200px) {
   .warehouse-shell {

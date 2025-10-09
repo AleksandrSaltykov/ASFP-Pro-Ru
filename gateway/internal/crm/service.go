@@ -13,6 +13,8 @@ import (
 	"asfppro/pkg/audit"
 )
 
+const defaultCustomerComment = "Поставщик"
+
 // Service handles CRM operations.
 type Service struct {
 	repo    *Repository
@@ -33,12 +35,33 @@ func (s *Service) ListCustomers(ctx context.Context) ([]Customer, error) {
 // CreateCustomer validates and inserts customer.
 func (s *Service) CreateCustomer(ctx context.Context, actor uuid.UUID, input CreateCustomerInput) (Customer, error) {
 	input.Name = strings.TrimSpace(input.Name)
+	input.Comment = strings.TrimSpace(input.Comment)
 	input.INN = strings.TrimSpace(input.INN)
 	input.KPP = strings.TrimSpace(input.KPP)
+	input.Phone = strings.TrimSpace(input.Phone)
+	input.Email = strings.TrimSpace(input.Email)
+	input.Website = strings.TrimSpace(input.Website)
+	input.LegalAddress = strings.TrimSpace(input.LegalAddress)
+	input.ActualAddress = strings.TrimSpace(input.ActualAddress)
 
 	if input.Name == "" {
 		return Customer{}, fmt.Errorf("name is required")
 	}
+	if input.Comment == "" {
+		input.Comment = defaultCustomerComment
+	}
+
+	accounts, err := sanitizeBankAccountInputs(input.BankAccounts)
+	if err != nil {
+		return Customer{}, err
+	}
+	input.BankAccounts = accounts
+
+	contacts, err := sanitizeContactInputs(input.Contacts)
+	if err != nil {
+		return Customer{}, err
+	}
+	input.Contacts = contacts
 
 	customer, err := s.repo.CreateCustomer(ctx, input)
 	if err != nil {
@@ -58,6 +81,13 @@ func (s *Service) UpdateCustomer(ctx context.Context, actor uuid.UUID, id uuid.U
 		}
 		input.Name = &trimmed
 	}
+	if input.Comment != nil {
+		trimmed := strings.TrimSpace(*input.Comment)
+		if trimmed == "" {
+			trimmed = defaultCustomerComment
+		}
+		input.Comment = &trimmed
+	}
 	if input.INN != nil {
 		trimmed := strings.TrimSpace(*input.INN)
 		input.INN = &trimmed
@@ -65,6 +95,40 @@ func (s *Service) UpdateCustomer(ctx context.Context, actor uuid.UUID, id uuid.U
 	if input.KPP != nil {
 		trimmed := strings.TrimSpace(*input.KPP)
 		input.KPP = &trimmed
+	}
+	if input.Phone != nil {
+		trimmed := strings.TrimSpace(*input.Phone)
+		input.Phone = &trimmed
+	}
+	if input.Email != nil {
+		trimmed := strings.TrimSpace(*input.Email)
+		input.Email = &trimmed
+	}
+	if input.Website != nil {
+		trimmed := strings.TrimSpace(*input.Website)
+		input.Website = &trimmed
+	}
+	if input.LegalAddress != nil {
+		trimmed := strings.TrimSpace(*input.LegalAddress)
+		input.LegalAddress = &trimmed
+	}
+	if input.ActualAddress != nil {
+		trimmed := strings.TrimSpace(*input.ActualAddress)
+		input.ActualAddress = &trimmed
+	}
+	if input.BankAccounts != nil {
+		accounts, err := sanitizeBankAccountInputs(input.BankAccounts)
+		if err != nil {
+			return Customer{}, err
+		}
+		input.BankAccounts = accounts
+	}
+	if input.Contacts != nil {
+		contacts, err := sanitizeContactInputs(input.Contacts)
+		if err != nil {
+			return Customer{}, err
+		}
+		input.Contacts = contacts
 	}
 
 	customer, err := s.repo.UpdateCustomer(ctx, id, input)
@@ -197,6 +261,63 @@ func (s *Service) ListDealEvents(ctx context.Context, subject corepkg.Subject, d
 		return nil, ErrForbidden
 	}
 	return s.repo.ListDealEvents(ctx, dealID, limit)
+}
+
+func sanitizeBankAccountInputs(records []CustomerBankAccountInput) ([]CustomerBankAccountInput, error) {
+	if records == nil {
+		return nil, nil
+	}
+	if len(records) == 0 {
+		return []CustomerBankAccountInput{}, nil
+	}
+
+	result := make([]CustomerBankAccountInput, 0, len(records))
+	for _, record := range records {
+		accountNumber := strings.TrimSpace(record.AccountNumber)
+		if accountNumber == "" {
+			return nil, fmt.Errorf("account number is required")
+		}
+
+		result = append(result, CustomerBankAccountInput{
+			ID:            record.ID,
+			AccountName:   strings.TrimSpace(record.AccountName),
+			BankName:      strings.TrimSpace(record.BankName),
+			AccountNumber: accountNumber,
+			BIK:           strings.TrimSpace(record.BIK),
+			CorrAccount:   strings.TrimSpace(record.CorrAccount),
+			Comment:       strings.TrimSpace(record.Comment),
+			IsDefault:     record.IsDefault,
+		})
+	}
+
+	return result, nil
+}
+
+func sanitizeContactInputs(records []CustomerContactInput) ([]CustomerContactInput, error) {
+	if records == nil {
+		return nil, nil
+	}
+	if len(records) == 0 {
+		return []CustomerContactInput{}, nil
+	}
+
+	result := make([]CustomerContactInput, 0, len(records))
+	for _, record := range records {
+		name := strings.TrimSpace(record.Name)
+		if name == "" {
+			return nil, fmt.Errorf("contact name is required")
+		}
+		result = append(result, CustomerContactInput{
+			ID:       record.ID,
+			Name:     name,
+			Position: strings.TrimSpace(record.Position),
+			Phone:    strings.TrimSpace(record.Phone),
+			Email:    strings.TrimSpace(record.Email),
+			Comment:  strings.TrimSpace(record.Comment),
+		})
+	}
+
+	return result, nil
 }
 
 func (s *Service) recordAudit(ctx context.Context, actor uuid.UUID, action, entityID string, payload any) {

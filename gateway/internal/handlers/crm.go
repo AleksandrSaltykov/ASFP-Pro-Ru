@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -34,10 +35,38 @@ func RegisterCRMRoutes(router fiber.Router, svc *crm.Service, guard func(resourc
 	router.Get("/api/v1/crm/deals/:id/history", guard("crm.deal", "read"), dealHistoryHandler(svc))
 }
 
+type bankAccountRequest struct {
+	ID            *string `json:"id"`
+	AccountName   *string `json:"accountName"`
+	BankName      *string `json:"bankName"`
+	AccountNumber string  `json:"accountNumber"`
+	BIK           *string `json:"bik"`
+	CorrAccount   *string `json:"corrAccount"`
+	Comment       *string `json:"comment"`
+	IsDefault     bool    `json:"isDefault"`
+}
+
+type contactRequest struct {
+	ID       *string `json:"id"`
+	Name     string  `json:"name"`
+	Position *string `json:"position"`
+	Phone    *string `json:"phone"`
+	Email    *string `json:"email"`
+	Comment  *string `json:"comment"`
+}
+
 type customerRequest struct {
-	Name string `json:"name"`
-	INN  string `json:"inn"`
-	KPP  string `json:"kpp"`
+	Name          string                `json:"name"`
+	Comment       *string               `json:"comment"`
+	INN           *string               `json:"inn"`
+	KPP           *string               `json:"kpp"`
+	Phone         *string               `json:"phone"`
+	Email         *string               `json:"email"`
+	Website       *string               `json:"website"`
+	LegalAddress  *string               `json:"legalAddress"`
+	ActualAddress *string               `json:"actualAddress"`
+	BankAccounts  *[]bankAccountRequest `json:"bankAccounts"`
+	Contacts      *[]contactRequest     `json:"contacts"`
 }
 
 type dealRequest struct {
@@ -67,10 +96,27 @@ func createCustomerHandler(svc *crm.Service, logger zerolog.Logger) fiber.Handle
 			return fiber.NewError(fiber.StatusBadRequest, "invalid payload")
 		}
 
+		accounts, err := buildBankAccountInputs(req.BankAccounts)
+		if err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+		contacts, err := buildContactInputs(req.Contacts)
+		if err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+
 		input := crm.CreateCustomerInput{
-			Name: req.Name,
-			INN:  req.INN,
-			KPP:  req.KPP,
+			Name:          req.Name,
+			Comment:       valueOrEmpty(req.Comment),
+			INN:           valueOrEmpty(req.INN),
+			KPP:           valueOrEmpty(req.KPP),
+			Phone:         valueOrEmpty(req.Phone),
+			Email:         valueOrEmpty(req.Email),
+			Website:       valueOrEmpty(req.Website),
+			LegalAddress:  valueOrEmpty(req.LegalAddress),
+			ActualAddress: valueOrEmpty(req.ActualAddress),
+			BankAccounts:  accounts,
+			Contacts:      contacts,
 		}
 
 		customer, err := svc.CreateCustomer(c.Context(), extractActorID(c), input)
@@ -100,13 +146,51 @@ func updateCustomerHandler(svc *crm.Service, logger zerolog.Logger) fiber.Handle
 			name := req.Name
 			input.Name = &name
 		}
-		if req.INN != "" {
-			inn := req.INN
+		if req.Comment != nil {
+			comment := valueOrEmpty(req.Comment)
+			input.Comment = &comment
+		}
+		if req.INN != nil {
+			inn := valueOrEmpty(req.INN)
 			input.INN = &inn
 		}
-		if req.KPP != "" {
-			kpp := req.KPP
+		if req.KPP != nil {
+			kpp := valueOrEmpty(req.KPP)
 			input.KPP = &kpp
+		}
+		if req.Phone != nil {
+			phone := valueOrEmpty(req.Phone)
+			input.Phone = &phone
+		}
+		if req.Email != nil {
+			email := valueOrEmpty(req.Email)
+			input.Email = &email
+		}
+		if req.Website != nil {
+			website := valueOrEmpty(req.Website)
+			input.Website = &website
+		}
+		if req.LegalAddress != nil {
+			value := valueOrEmpty(req.LegalAddress)
+			input.LegalAddress = &value
+		}
+		if req.ActualAddress != nil {
+			value := valueOrEmpty(req.ActualAddress)
+			input.ActualAddress = &value
+		}
+		if req.BankAccounts != nil {
+			accounts, err := buildBankAccountInputs(req.BankAccounts)
+			if err != nil {
+				return fiber.NewError(fiber.StatusBadRequest, err.Error())
+			}
+			input.BankAccounts = accounts
+		}
+		if req.Contacts != nil {
+			contacts, err := buildContactInputs(req.Contacts)
+			if err != nil {
+				return fiber.NewError(fiber.StatusBadRequest, err.Error())
+			}
+			input.Contacts = contacts
 		}
 
 		customer, err := svc.UpdateCustomer(c.Context(), extractActorID(c), id, input)
@@ -117,6 +201,87 @@ func updateCustomerHandler(svc *crm.Service, logger zerolog.Logger) fiber.Handle
 		logger.Info().Str("customerId", customer.ID.String()).Msg("crm customer updated")
 		return c.JSON(customer)
 	}
+}
+
+func valueOrEmpty(input *string) string {
+	if input == nil {
+		return ""
+	}
+	return *input
+}
+
+func buildBankAccountInputs(requests *[]bankAccountRequest) ([]crm.CustomerBankAccountInput, error) {
+	if requests == nil {
+		return nil, nil
+	}
+	if len(*requests) == 0 {
+		return []crm.CustomerBankAccountInput{}, nil
+	}
+
+	accounts := make([]crm.CustomerBankAccountInput, 0, len(*requests))
+	for _, req := range *requests {
+		var accountID uuid.UUID
+		if req.ID != nil {
+			idValue := strings.TrimSpace(*req.ID)
+			if idValue != "" {
+				parsed, err := uuid.Parse(idValue)
+				if err != nil {
+					return nil, fmt.Errorf("invalid bank account id: %s", idValue)
+				}
+				accountID = parsed
+			}
+		}
+
+		account := crm.CustomerBankAccountInput{
+			ID:            accountID,
+			AccountName:   valueOrEmpty(req.AccountName),
+			BankName:      valueOrEmpty(req.BankName),
+			AccountNumber: req.AccountNumber,
+			BIK:           valueOrEmpty(req.BIK),
+			CorrAccount:   valueOrEmpty(req.CorrAccount),
+			Comment:       valueOrEmpty(req.Comment),
+			IsDefault:     req.IsDefault,
+		}
+		accounts = append(accounts, account)
+	}
+
+	return accounts, nil
+}
+
+func buildContactInputs(requests *[]contactRequest) ([]crm.CustomerContactInput, error) {
+	if requests == nil {
+		return nil, nil
+	}
+	if len(*requests) == 0 {
+		return []crm.CustomerContactInput{}, nil
+	}
+
+	contacts := make([]crm.CustomerContactInput, 0, len(*requests))
+	for _, req := range *requests {
+		var contactID uuid.UUID
+		if req.ID != nil {
+			idValue := strings.TrimSpace(*req.ID)
+			if idValue != "" {
+				parsed, err := uuid.Parse(idValue)
+				if err != nil {
+					return nil, fmt.Errorf("invalid contact id: %s", idValue)
+				}
+				contactID = parsed
+			}
+		}
+
+		contact := crm.CustomerContactInput{
+			ID:       contactID,
+			Name:     req.Name,
+			Position: valueOrEmpty(req.Position),
+			Phone:    valueOrEmpty(req.Phone),
+			Email:    valueOrEmpty(req.Email),
+			Comment:  valueOrEmpty(req.Comment),
+		}
+		contacts = append(contacts, contact)
+	}
+
+	return contacts, nil
 }
 
 func listDealsHandler(svc *crm.Service) fiber.Handler {

@@ -207,14 +207,8 @@ export const WarehousesPage = () => {
 
   const columns: TableColumn<Warehouse>[] = [
     {
-      id: "code",
-      label: "Код",
-      width: 100,
-      render: (warehouse) => <code>{warehouse.code}</code>
-    },
-    {
       id: "name",
-      label: "Наименование",
+      label: "Название",
       render: (warehouse) => (
         <div style={tableNameCellStyle}>
           <strong>{warehouse.name}</strong>
