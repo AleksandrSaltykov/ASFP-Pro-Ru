@@ -52,7 +52,8 @@ const cellStyle: CSSProperties = {
   color: palette.textPrimary,
   verticalAlign: "middle",
   whiteSpace: "normal",
-  wordBreak: "break-word"
+  wordBreak: "break-word",
+  lineHeight: 1.4
 };
 
 const emptyStateStyle: CSSProperties = {

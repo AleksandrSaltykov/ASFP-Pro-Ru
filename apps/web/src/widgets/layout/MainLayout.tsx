@@ -87,7 +87,7 @@ const contentSurfaceStyle: CSSProperties = {
 };
 
 const RevampLayout = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const isCompact = useMediaQuery("(max-width: 1200px)");
   const shellStyle = useMemo(() => createShellStyle(collapsed, isCompact), [collapsed, isCompact]);
   const sidebarStyle = useMemo(() => sidebarAreaStyle(isCompact, collapsed), [isCompact, collapsed]);

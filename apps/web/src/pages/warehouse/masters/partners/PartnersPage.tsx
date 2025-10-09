@@ -9,6 +9,7 @@ import {
 } from "@shared/api";
 import { PageLoader } from "@shared/ui/PageLoader";
 import { palette, typography } from "@shared/ui/theme";
+import { iconMap } from "@shared/ui/icons";
 
 import DataTable, { type TableColumn } from "../../components/DataTable";
 import { PartnerEditorDrawer, type PartnerEditorSubmitPayload } from "../../../../modules/warehouse/views/masters/components/PartnerEditorDrawer";
@@ -51,6 +52,19 @@ const primaryButtonStyle: CSSProperties = {
   background: palette.primary,
   color: "#fff",
   fontWeight: 600,
+  cursor: "pointer"
+};
+
+const iconButtonStyle: CSSProperties = {
+  width: 32,
+  height: 32,
+  borderRadius: 14,
+  border: "none",
+  background: "transparent",
+  color: palette.primary,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
   cursor: "pointer"
 };
 
@@ -133,10 +147,7 @@ const cloneCustomer = (partner: CrmCustomer): CrmCustomer => ({
   contacts: partner.contacts?.map((contact) => ({ ...contact }))
 });
 
-const getTaxLines = (partner: CrmCustomer) => {
-  const inn = partner.inn ? `ИНН ${partner.inn}` : undefined;
-  return inn ? [inn] : [];
-};
+const getTaxLines = (partner: CrmCustomer) => (partner.inn ? [partner.inn] : []);
 
 const mapBankAccountsFromPayload = (accounts: CrmCustomerPayload["bankAccounts"] | undefined) => {
   if (!accounts?.length) {
@@ -348,7 +359,7 @@ const PartnersPage = () => {
         id: "name",
         label: "Наименование",
         render: (partner: CrmCustomer) => (
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, maxWidth: 280 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, maxWidth: 360 }}>
             <strong>{partner.name ?? "—"}</strong>
             {partner.comment ? (
               <span style={{ color: palette.textSecondary, fontSize: 12 }}>{partner.comment}</span>
@@ -359,7 +370,7 @@ const PartnersPage = () => {
       {
         id: "taxIds",
         label: "ИНН",
-        width: 220,
+        width: 140,
         render: (partner: CrmCustomer) => {
           const taxLines = getTaxLines(partner);
           return taxLines.length ? (
@@ -402,15 +413,17 @@ const PartnersPage = () => {
       {
         id: "actions",
         label: "",
-        width: 120,
+        width: 80,
         align: "right",
         render: (partner: CrmCustomer) => (
           <button
             type="button"
-            style={{ ...primaryButtonStyle, padding: "8px 14px" }}
+            style={iconButtonStyle}
             onClick={() => handleEditClick(partner)}
+            title="Редактировать"
+            aria-label={`Редактировать «${partner.name ?? ''}»`}
           >
-            Изменить
+            {iconMap.gear}
           </button>
         )
       }

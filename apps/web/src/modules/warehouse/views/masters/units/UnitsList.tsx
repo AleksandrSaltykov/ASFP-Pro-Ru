@@ -8,6 +8,7 @@ import {
   useUpdateCatalogNodeMutation
 } from '@shared/api';
 import { PageLoader } from '@shared/ui/PageLoader';
+import { iconMap } from '@shared/ui/icons';
 
 import { WarehouseShell } from '../../../layout/WarehouseShell';
 import { ListForm } from '../../../layout/ListForm/ListForm';
@@ -134,7 +135,7 @@ const handleDeleteRow = useCallback(
         label: 'Наименование',
         render: (row) => (
           <div className='list-form__value'>
-            <span className='list-form__title'>{row.name}</span>
+            <span className='list-form__title list-form__title--strong'>{row.name}</span>
             {row.description ? <span className='list-form__meta'>{row.description}</span> : null}
           </div>
         )
@@ -166,7 +167,7 @@ const handleDeleteRow = useCallback(
               aria-label={`Редактировать «${row.name}»`}
               title='Редактировать'
             >
-              ✶
+              <span className='list-form__icon'>{iconMap.gear}</span>
             </button>
             <button
               type='button'
@@ -178,7 +179,7 @@ const handleDeleteRow = useCallback(
               aria-label={`Удалить «${row.name}»`}
               title='Удалить'
             >
-              ✶
+              <span className='list-form__icon'>×</span>
             </button>
           </div>
         )

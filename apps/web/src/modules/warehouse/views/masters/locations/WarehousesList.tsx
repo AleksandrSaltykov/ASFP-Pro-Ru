@@ -8,6 +8,7 @@ import {
   useWarehousesQuery
 } from '@shared/api';
 import { PageLoader } from '@shared/ui/PageLoader';
+import { iconMap } from '@shared/ui/icons';
 
 import { WarehouseShell } from '../../../layout/WarehouseShell';
 import { ListForm } from '../../../layout/ListForm/ListForm';
@@ -146,9 +147,7 @@ export const WarehousesList = () => {
         render: (row) => (
           <div className='list-form__value'>
             <span className='list-form__title list-form__title--strong'>{row.name}</span>
-            {row.description ? (
-              <span className='list-form__meta'>{row.description}</span>
-            ) : null}
+            {row.description ? <span className='list-form__meta'>{row.description}</span> : null}
           </div>
         )
       },
@@ -172,18 +171,7 @@ export const WarehousesList = () => {
             return '—';
           }
           const info = [contact.manager, contact.phone, contact.email].filter(Boolean);
-          if (!info.length) {
-            return '—';
-          }
-          return (
-            <div className='list-form__value'>
-              {info.map((entry) => (
-                <span key={entry} className='list-form__meta'>
-                  {entry}
-                </span>
-              ))}
-            </div>
-          );
+          return info.length ? info.join(' · ') : '—';
         }
       },
       {
@@ -207,7 +195,7 @@ export const WarehousesList = () => {
               aria-label={`Редактировать «${row.name}»`}
               title='Редактировать'
             >
-              ✶
+              <span className='list-form__icon'>{iconMap.gear}</span>
             </button>
             <button
               type='button'
@@ -219,7 +207,7 @@ export const WarehousesList = () => {
               aria-label={`Удалить «${row.name}»`}
               title='Удалить'
             >
-              ✶
+              <span className='list-form__icon'>×</span>
             </button>
           </div>
         )

@@ -7,6 +7,7 @@ import {
   useUpdateCustomerMutation
 } from '@shared/api';
 import { PageLoader } from '@shared/ui/PageLoader';
+import { iconMap } from '@shared/ui/icons';
 
 import { WarehouseShell } from '../../../layout/WarehouseShell';
 import { ListForm } from '../../../layout/ListForm/ListForm';
@@ -115,11 +116,17 @@ export const PartnersList = () => {
       {
         id: 'name',
         label: 'Контрагент',
-        render: (row) => row.name
+        render: (row) => (
+          <div className='list-form__value'>
+            <span className='list-form__title list-form__title--strong'>{row.name}</span>
+            {row.comment ? <span className='list-form__meta'>{row.comment}</span> : null}
+          </div>
+        )
       },
       {
         id: 'inn',
         label: 'ИНН',
+        width: 140,
         render: (row) => row.inn || '—'
       },
       {
@@ -136,12 +143,7 @@ export const PartnersList = () => {
           if (!primaryEmail && !primaryPhone) {
             return '—';
           }
-          return (
-            <div className='list-form__value'>
-              {primaryEmail ? <span className='list-form__meta'>{primaryEmail}</span> : null}
-              {primaryPhone ? <span className='list-form__meta'>{primaryPhone}</span> : null}
-            </div>
-          );
+          return [primaryEmail, primaryPhone].filter(Boolean).join(' · ');
         }
       },
       {
@@ -165,7 +167,7 @@ export const PartnersList = () => {
               title='Редактировать'
               aria-label={`Редактировать «${row.name}»`}
             >
-              ✶
+              <span className='list-form__icon'>{iconMap.gear}</span>
             </button>
             <button
               type='button'
@@ -177,7 +179,7 @@ export const PartnersList = () => {
               title='Удалить'
               aria-label={`Удалить «${row.name}»`}
             >
-              ✶
+              <span className='list-form__icon'>×</span>
             </button>
           </div>
         )

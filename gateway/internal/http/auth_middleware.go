@@ -18,6 +18,10 @@ func authMiddleware(authSvc *auth.Service, logger zerolog.Logger) fiber.Handler 
 	realmHeader := "Basic realm=\"ASFP-Pro\""
 
 	return func(c *fiber.Ctx) error {
+		if c.Method() == fiber.MethodOptions {
+			return c.Next()
+		}
+
 		username, password, ok := parseBasicAuth(c.Get(fiber.HeaderAuthorization))
 		if !ok {
 			c.Response().Header.Set("WWW-Authenticate", realmHeader)

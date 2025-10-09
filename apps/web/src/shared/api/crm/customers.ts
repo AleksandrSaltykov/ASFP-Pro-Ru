@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-query';
 
 import { type GatewayHttpClient, useGatewayHttpClient } from '../gateway';
+import { useGatewayBasicAuthHeader } from '../basic-auth';
 import type { CrmCustomer, CrmCustomerPayload, CrmListResponse } from './types';
 
 const customersKey = (limit: number) => ['crm', 'customers', limit] as const;
@@ -21,15 +22,19 @@ type CustomersQueryOptions = Omit<
   'queryKey' | 'queryFn'
 >;
 
+const includeAuthHeader = (header?: string) => (header ? { Authorization: header } : undefined);
+
 const buildCustomersQuery = (
   http: GatewayHttpClient,
   params: Required<CustomersQueryParams>,
-  options?: CustomersQueryOptions
+  options: CustomersQueryOptions | undefined,
+  authHeader?: string
 ) => ({
   queryKey: customersKey(params.limit),
   queryFn: () =>
     http.request<CrmListResponse<CrmCustomer>>('/api/v1/crm/customers', {
-      query: { limit: String(params.limit) }
+      query: { limit: String(params.limit) },
+      headers: includeAuthHeader(authHeader)
     }),
   select: (response: CrmListResponse<CrmCustomer>) => response.items,
   ...(options ?? {})
@@ -40,7 +45,11 @@ export const useCustomersQuery = (
   options?: CustomersQueryOptions
 ) => {
   const http = useGatewayHttpClient();
-  const queryConfig = useMemo(() => buildCustomersQuery(http, { limit }, options), [http, limit, options]);
+  const authHeader = useGatewayBasicAuthHeader();
+  const queryConfig = useMemo(
+    () => buildCustomersQuery(http, { limit }, options, authHeader),
+    [http, limit, options, authHeader]
+  );
 
   return useQuery(queryConfig);
 };
@@ -61,13 +70,15 @@ export const useCreateCustomerMutation = (
 ) => {
   const http = useGatewayHttpClient();
   const queryClient = useQueryClient();
+  const authHeader = useGatewayBasicAuthHeader();
   const { onSuccess, ...rest } = options ?? {};
 
   return useMutation({
     mutationFn: ({ payload }: CreateCustomerVariables) =>
       http.request<CrmCustomer>('/api/v1/crm/customers', {
         method: 'POST',
-        body: payload
+        body: payload,
+        headers: includeAuthHeader(authHeader)
       }),
     onSuccess: async (data, variables, context) => {
       const limit = variables?.limit ?? 25;
@@ -83,13 +94,15 @@ export const useUpdateCustomerMutation = (
 ) => {
   const http = useGatewayHttpClient();
   const queryClient = useQueryClient();
+  const authHeader = useGatewayBasicAuthHeader();
   const { onSuccess, ...rest } = options ?? {};
 
   return useMutation({
     mutationFn: ({ id, payload }: UpdateCustomerVariables) =>
       http.request<CrmCustomer>(`/api/v1/crm/customers/${id}`, {
         method: 'PUT',
-        body: payload
+        body: payload,
+        headers: includeAuthHeader(authHeader)
       }),
     onSuccess: async (data, variables, context) => {
       const limit = variables?.limit ?? 25;

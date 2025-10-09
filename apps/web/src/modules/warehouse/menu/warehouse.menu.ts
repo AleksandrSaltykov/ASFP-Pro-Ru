@@ -17,6 +17,7 @@ export const warehouseMenu: WarehouseMenuNode[] = [
     id: 'masters',
     label: 'Справочники',
     children: [
+      { id: 'masters-overview', label: 'Обзор', path: '/warehouse/masters' },
       { id: 'masters-items', label: 'Номенклатура', path: '/warehouse/masters/items' },
       { id: 'masters-units', label: 'Единицы измерения', path: '/warehouse/masters/items/units' },
       { id: 'masters-warehouses', label: 'Склады', path: '/warehouse/masters/locations/warehouses' },

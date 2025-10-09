@@ -10,6 +10,7 @@ import {
 } from "@shared/api";
 import { PageLoader } from "@shared/ui/PageLoader";
 import { palette, typography } from "@shared/ui/theme";
+import { iconMap } from "@shared/ui/icons";
 import { generateWarehouseCode } from "@shared/utils/identifiers";
 
 import DataTable, { type TableColumn } from "../../components/DataTable";
@@ -80,6 +81,19 @@ const secondaryButtonStyle: CSSProperties = {
   background: palette.surface,
   color: palette.textPrimary,
   fontWeight: 600,
+  cursor: "pointer"
+};
+
+const iconButtonStyle: CSSProperties = {
+  width: 32,
+  height: 32,
+  borderRadius: 14,
+  border: 'none',
+  background: 'transparent',
+  color: palette.primary,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
   cursor: "pointer"
 };
 
@@ -239,14 +253,16 @@ export const WarehousesPage = () => {
     {
       id: "actions",
       label: "Действия",
-      width: 140,
+      width: 90,
       render: (warehouse) => (
         <button
           type="button"
-          style={{ ...secondaryButtonStyle, padding: "8px 14px", whiteSpace: "nowrap" }}
+          style={iconButtonStyle}
           onClick={() => openEditDrawer(warehouse)}
+          title="Редактировать"
+          aria-label={`Редактировать «${warehouse.name}»`}
         >
-          Изменить
+          {iconMap.gear}
         </button>
       )
     }

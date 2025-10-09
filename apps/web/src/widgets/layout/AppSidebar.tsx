@@ -236,6 +236,7 @@ export const AppSidebar = ({ collapsed = false }: AppSidebarProps) => {
           variant='vertical'
           onClick={() => handleClick(item.to)}
           aria-label={collapsed ? item.label : undefined}
+          title={collapsed ? item.label : undefined}
           style={collapsed ? collapsedNavLinkStyle : { width: '100%' }}
         >
           <span style={navItemContentStyle(collapsed)}>
@@ -277,6 +278,7 @@ export const AppSidebar = ({ collapsed = false }: AppSidebarProps) => {
           variant='vertical'
           onClick={() => handleClick(path)}
           aria-label={collapsed ? descriptor.label : undefined}
+          title={collapsed ? descriptor.label : undefined}
           style={collapsed ? collapsedNavLinkStyle : { width: '100%' }}
         >
           <span style={navLabelWrapperStyle(collapsed)}>

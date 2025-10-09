@@ -15,6 +15,7 @@ import {
   useWarehousesQuery
 } from '@shared/api';
 import { PageLoader } from '@shared/ui/PageLoader';
+import { iconMap } from '@shared/ui/icons';
 
 import { WarehouseShell } from '../../../layout/WarehouseShell';
 import { ListForm } from '../../../layout/ListForm/ListForm';
@@ -373,7 +374,9 @@ export const ItemsList = () => {
       {
         id: 'name',
         label: 'Название',
-        render: (row) => <span className='list-form__title list-form__title--strong'>{row.name}</span>
+        render: (row) => (
+          <div className='list-form__value'><span className='list-form__title list-form__title--strong'>{row.name}</span></div>
+        )
       },
       {
         id: 'category',
@@ -419,7 +422,7 @@ export const ItemsList = () => {
               aria-label={`Редактировать «${row.name}»`}
               title='Редактировать'
             >
-              ✶
+              <span className='list-form__icon'>{iconMap.gear}</span>
             </button>
             <button
               type='button'
@@ -431,7 +434,7 @@ export const ItemsList = () => {
               aria-label={`Удалить «${row.name}»`}
               title='Удалить'
             >
-              ✶
+              <span className='list-form__icon'>×</span>
             </button>
           </div>
         )

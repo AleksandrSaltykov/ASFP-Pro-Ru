@@ -85,6 +85,7 @@ const collectNav = (items: WarehouseNavItem[], acc: WarehouseNavItem[] = []) => 
 
 const PLACEHOLDER_EXCLUDED_PREFIXES = ['stock'];
 const PLACEHOLDER_EXCLUDED_PATHS = new Set<string>([
+  'masters',
   'masters/items',
   'masters/locations/warehouses',
   'masters/partners',

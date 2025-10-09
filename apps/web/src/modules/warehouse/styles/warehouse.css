@@ -510,7 +510,7 @@
 
 .list-form__table th,
 .list-form__table td {
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--wh-border);
   text-align: left;
   color: var(--wh-text-normal);
@@ -523,6 +523,7 @@
 .list-form__cell {
   text-align: left;
   color: var(--wh-text-normal);
+  vertical-align: middle;
   white-space: normal;
   word-break: break-word;
 }
@@ -538,11 +539,17 @@
 .list-form__value {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   align-items: flex-start;
+  gap: 2px;
+  max-width: 100%;
 }
 
 .list-form__meta {
+  font-size: 12px;
+  color: var(--wh-text-soft);
+}
+
+.list-form__meta-inline {
   font-size: 12px;
   color: var(--wh-text-soft);
 }
@@ -562,7 +569,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
 }
 
 .list-form__icon-button {
@@ -572,19 +579,24 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 1px solid transparent;
+  border: none;
   background: transparent;
-  font-size: 15px;
-  line-height: 1;
   color: var(--wh-text-soft);
   cursor: pointer;
-  transition: transform 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.list-form__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
 }
 
 .list-form__icon-button:hover {
   color: var(--wh-accent-light);
-  border-color: rgba(28, 109, 208, 0.25);
-  transform: scale(1.08);
+  transform: translateY(-1px);
 }
 
 .list-form__icon-button:focus-visible {
@@ -594,7 +606,6 @@
 
 .list-form__icon-button--delete:hover {
   color: var(--wh-danger-text);
-  border-color: var(--wh-danger-border);
 }
 
 .list-form__table tr:hover {

@@ -10,6 +10,7 @@ import {
 } from '@shared/api';
 import { PageLoader } from '@shared/ui/PageLoader';
 import { palette, typography } from '@shared/ui/theme';
+import { iconMap } from '@shared/ui/icons';
 
 import DataTable, { type TableColumn } from '../../components/DataTable';
 import SlideOver from '../../components/SlideOver';
@@ -116,6 +117,19 @@ const secondaryButtonStyle: CSSProperties = {
   cursor: 'pointer'
 };
 
+const iconButtonStyle: CSSProperties = {
+  width: 32,
+  height: 32,
+  borderRadius: 14,
+  border: 'none',
+  background: 'transparent',
+  color: palette.primary,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer'
+};
+
 const dangerButtonStyle: CSSProperties = {
   padding: '10px 16px',
   borderRadius: 12,
@@ -215,13 +229,15 @@ const AttributesPage = () => {
       render: (template) => (
         <button
           type='button'
-          style={{ ...secondaryButtonStyle, padding: '8px 14px' }}
+          style={iconButtonStyle}
           onClick={() => openEditDrawer(template)}
+          title='Редактировать'
+          aria-label={`Редактировать «${template.name}»`}
         >
-          Редактировать
+          {iconMap.gear}
         </button>
       ),
-      width: 160
+      width: 90
     }
   ];
 

@@ -18,6 +18,10 @@ const subjectContextKey = "rbac.subject"
 func permissionGuard(coreSvc *corepkg.Service, logger zerolog.Logger) PermissionGuard {
 	return func(resource, action string) fiber.Handler {
 		return func(c *fiber.Ctx) error {
+			if c.Method() == fiber.MethodOptions {
+				return c.Next()
+			}
+
 			user, ok := CurrentUser(c)
 			if !ok {
 				return fiber.ErrUnauthorized
