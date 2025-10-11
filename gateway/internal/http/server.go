@@ -67,6 +67,7 @@ func NewServer(cfg config.AppConfig, logger zerolog.Logger, pool *pgxpool.Pool, 
 	app.Get("/health", handlers.Health())
 	app.Get("/ready", handlers.Ready(pool, storage, clickhouse))
 	app.Get("/openapi.json", handlers.OpenAPI(openapi))
+	app.Get("/api/v1/system/status", handlers.SystemStatus(cfg, pool, storage, clickhouse, logger))
 
 	protected := app.Group("", authMiddleware(authSvc, logger))
 	coreRepo := corepkg.NewRepository(pool)

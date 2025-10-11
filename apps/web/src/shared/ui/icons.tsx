@@ -132,6 +132,14 @@ const iconWarning = (
   </svg>
 );
 
+const iconPlus = (
+  <svg {...baseProps}>
+    <circle cx="16" cy="16" r="7.5" {...strokePropsBase} fill={fillAccent} fillOpacity={fillOpacity} />
+    <path d="M16 12v8" {...strokePropsAccent} />
+    <path d="M12 16h8" {...strokePropsAccent} />
+  </svg>
+);
+
 const iconCalendar = (
   <svg {...baseProps}>
     <rect x="6" y="9" width="20" height="17" rx="2" {...strokePropsBase} />
@@ -298,6 +306,8 @@ export const iconMap: Record<string, ReactElement> = {
   worker: iconWorker,
   gear: iconCog,
   system: iconCog,
+  add: iconPlus,
+  plus: iconPlus,
   warning: iconWarning,
   calendar: iconCalendar,
   schedule: iconSchedule,

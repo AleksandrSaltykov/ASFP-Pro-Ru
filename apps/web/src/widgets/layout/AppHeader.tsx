@@ -1,6 +1,7 @@
 import type { CSSProperties, SVGProps } from 'react';
 
 import { useAppSelector } from '@app/hooks';
+import { useSystemStatus } from '@shared/api/system-status';
 import { useThemeMode } from '@shared/ui/ThemeProvider';
 import { palette, typography } from '@shared/ui/theme';
 
@@ -53,12 +54,18 @@ const subtitleStyle: CSSProperties = {
   letterSpacing: '0.05em'
 };
 
+const centerSectionStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 12,
+  flex: 1
+};
+
 const searchWrapperStyle: CSSProperties = {
   position: 'relative',
   display: 'flex',
   alignItems: 'center',
-  flex: 1,
-  maxWidth: 420
+  width: '100%'
 };
 
 const searchInputStyle: CSSProperties = {
@@ -88,6 +95,69 @@ const hotkeyHintStyle: CSSProperties = {
   fontSize: 11,
   color: palette.textSecondary
 };
+
+const statusRowStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  flexWrap: 'wrap'
+};
+
+const statusLegendStyle: CSSProperties = {
+  fontSize: 11,
+  color: palette.textSecondary,
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em'
+};
+
+const statusBadgeBase: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '6px 12px',
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 600,
+  letterSpacing: '0.04em',
+  cursor: 'default',
+  transition: 'background-color 0.2s ease, border-color 0.2s ease'
+};
+
+const statusDotBase: CSSProperties = {
+  width: 8,
+  height: 8,
+  borderRadius: '50%',
+  flexShrink: 0
+};
+
+const statusMetaStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  fontSize: 11,
+  color: palette.textSecondary
+};
+
+const statusColors = {
+  online: {
+    background: 'rgba(24, 164, 93, 0.15)',
+    border: 'rgba(24, 164, 93, 0.4)',
+    text: '#17894f',
+    dot: '#18a45d'
+  },
+  degraded: {
+    background: 'rgba(255, 171, 0, 0.18)',
+    border: 'rgba(255, 171, 0, 0.45)',
+    text: '#a15c01',
+    dot: '#ffab00'
+  },
+  offline: {
+    background: 'rgba(211, 32, 41, 0.15)',
+    border: 'rgba(211, 32, 41, 0.45)',
+    text: '#aa1f24',
+    dot: '#d32029'
+  }
+} as const;
 
 const iconButtonStyle: CSSProperties = {
   width: 40,
@@ -196,6 +266,62 @@ const getInitials = (name?: string) => {
   return initials || 'UX';
 };
 
+const SystemStatusBar = () => {
+  const { grouped, isLoading, isRefetching, updatedAt, error } = useSystemStatus();
+  const statuses = [...grouped.services, ...grouped.dependencies];
+  const lastUpdate = updatedAt ? updatedAt.toLocaleTimeString() : null;
+
+  if (error) {
+    const message = error instanceof Error ? error.message : 'Неизвестная ошибка';
+    return (
+      <div style={statusRowStyle} role='status' aria-live='polite'>
+        <span style={{ ...statusLegendStyle, color: statusColors.offline.text }}>
+          Не удалось получить статусы: {message}
+        </span>
+      </div>
+    );
+  }
+
+  if (isLoading && statuses.length === 0) {
+    return (
+      <div style={statusRowStyle} role='status' aria-live='polite'>
+        <span style={statusLegendStyle}>Проверяем статус сервисов…</span>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={statusRowStyle} role='list'>
+        {statuses.map((item) => {
+          const colors = statusColors[item.health];
+          return (
+            <span
+              key={item.id}
+              role='listitem'
+              style={{
+                ...statusBadgeBase,
+                background: colors.background,
+                border: `1px solid ${colors.border}`,
+                color: colors.text
+              }}
+              title={item.details ?? item.label}
+            >
+              <span style={{ ...statusDotBase, background: colors.dot }} aria-hidden />
+              {item.label}
+            </span>
+          );
+        })}
+      </div>
+      <div style={statusMetaStyle} aria-live='polite'>
+        <span style={statusLegendStyle}>Контур</span>
+        <span>{isRefetching ? 'Обновляем…' : lastUpdate ? `Обновлено ${lastUpdate}` : 'Ожидание данных'}</span>
+      </div>
+    </div>
+  );
+};
+
+
 export const AppHeader = ({ onToggleSidebar, isSidebarCollapsed }: AppHeaderProps) => {
   const user = useAppSelector((state) => state.auth.user);
   const { theme, toggleTheme } = useThemeMode();
@@ -219,19 +345,22 @@ export const AppHeader = ({ onToggleSidebar, isSidebarCollapsed }: AppHeaderProp
         </div>
       </div>
 
-      <div style={searchWrapperStyle}>
-        <span style={{ position: 'absolute', left: 14, color: palette.textSecondary }}>
-          <IconSearch />
-        </span>
-        <input
-          type='search'
-          aria-label='Глобальный поиск'
-          placeholder='Поиск по клиентам, заказам, документам'
-          style={searchInputStyle}
-        />
-        <span style={hotkeyHintStyle} aria-hidden>
-          <kbd>Ctrl</kbd> + <kbd>K</kbd>
-        </span>
+      <div style={centerSectionStyle}>
+        <div style={searchWrapperStyle}>
+          <span style={{ position: 'absolute', left: 14, color: palette.textSecondary }}>
+            <IconSearch />
+          </span>
+          <input
+            type='search'
+            aria-label='Глобальный поиск'
+            placeholder='Поиск по клиентам, заказам, документам'
+            style={searchInputStyle}
+          />
+          <span style={hotkeyHintStyle} aria-hidden>
+            <kbd>Ctrl</kbd> + <kbd>K</kbd>
+          </span>
+        </div>
+        <SystemStatusBar />
       </div>
 
       <div style={clusterStyle}>
@@ -266,3 +395,4 @@ export const AppHeader = ({ onToggleSidebar, isSidebarCollapsed }: AppHeaderProp
     </header>
   );
 };
+

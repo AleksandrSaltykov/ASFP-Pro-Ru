@@ -18,6 +18,8 @@ type AppConfig struct {
 	ClickHouseDSN   string
 	TarantoolAddr   string
 	TarantoolQueue  string
+	CRMReadinessURL string
+	WMSReadinessURL string
 	S3Endpoint      string
 	S3Region        string
 	S3AccessKey     string
@@ -54,6 +56,8 @@ func Load(prefix string) (AppConfig, error) {
 		ClickHouseDSN:   getEnv(p("CLICKHOUSE_DSN"), "clickhouse://default:password@clickhouse:9000/analytics"),
 		TarantoolAddr:   getEnv(p("TARANTOOL_ADDR"), "tarantool:3301"),
 		TarantoolQueue:  getEnv(p("TARANTOOL_QUEUE"), "events_queue"),
+		CRMReadinessURL: getEnv(p("CRM_READY_URL"), "http://crm:8081/ready"),
+		WMSReadinessURL: getEnv(p("WMS_READY_URL"), "http://wms:8082/ready"),
 		S3Endpoint:      getEnv(p("S3_ENDPOINT"), "http://ceph:7480"),
 		S3Region:        getEnv(p("S3_REGION"), "ru-central"),
 		S3AccessKey:     getEnv(p("S3_ACCESS_KEY"), "minio"),

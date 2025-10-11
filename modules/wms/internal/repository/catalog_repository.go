@@ -10,9 +10,17 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"asfppro/modules/wms/internal/entity"
+)
+
+var (
+	// ErrCatalogNodeNotFound indicates that catalog node is absent.
+	ErrCatalogNodeNotFound = errors.New("catalog node not found")
+	// ErrCatalogNodeInUse indicates that catalog node has dependent records.
+	ErrCatalogNodeInUse = errors.New("catalog node is in use")
 )
 
 // ListCatalogNodes returns catalog entries for provided type ordered by sort order and name.
@@ -243,8 +251,16 @@ func (r *MasterDataRepository) UpdateCatalogNode(ctx context.Context, node entit
 
 // DeleteCatalogNode removes catalog entry.
 func (r *MasterDataRepository) DeleteCatalogNode(ctx context.Context, catalogType entity.CatalogType, id uuid.UUID) error {
-	if _, err := r.pool.Exec(ctx, `DELETE FROM wms.catalog_node WHERE catalog_type = $1 AND id = $2`, string(catalogType), id); err != nil {
+	tag, err := r.pool.Exec(ctx, `DELETE FROM wms.catalog_node WHERE catalog_type = $1 AND id = $2`, string(catalogType), id)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23503" {
+			return fmt.Errorf("%w: remove related records first", ErrCatalogNodeInUse)
+		}
 		return fmt.Errorf("delete catalog node: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrCatalogNodeNotFound
 	}
 	return nil
 }
@@ -518,6 +534,7 @@ func (r *MasterDataRepository) ReplaceCatalogLinks(ctx context.Context, leftType
 func (r *MasterDataRepository) loadItems(ctx context.Context, where string, args []any) ([]entity.Item, error) {
 	query := `
         SELECT id, sku, name, description, category_id, COALESCE(category_path, '') AS category_path, unit_id,
+               alternative_unit_id, conversion_rate,
                barcode, weight_kg, volume_m3, metadata, created_by, updated_by,
                created_at, updated_at
         FROM wms.item`
@@ -538,16 +555,18 @@ func (r *MasterDataRepository) loadItems(ctx context.Context, where string, args
 
 	for rows.Next() {
 		var (
-			item         entity.Item
-			description  sql.NullString
-			categoryID   pgtype.UUID
-			categoryPath pgtype.Text
-			barcode      sql.NullString
-			weight       sql.NullFloat64
-			volume       sql.NullFloat64
-			metadata     []byte
-			createdBy    pgtype.UUID
-			updatedBy    pgtype.UUID
+			item              entity.Item
+			description       sql.NullString
+			categoryID        pgtype.UUID
+			categoryPath      pgtype.Text
+			alternativeUnitID pgtype.UUID
+			conversionRate    sql.NullFloat64
+			barcode           sql.NullString
+			weight            sql.NullFloat64
+			volume            sql.NullFloat64
+			metadata          []byte
+			createdBy         pgtype.UUID
+			updatedBy         pgtype.UUID
 		)
 
 		if err := rows.Scan(
@@ -558,6 +577,8 @@ func (r *MasterDataRepository) loadItems(ctx context.Context, where string, args
 			&categoryID,
 			&categoryPath,
 			&item.UnitID,
+			&alternativeUnitID,
+			&conversionRate,
 			&barcode,
 			&weight,
 			&volume,
@@ -580,6 +601,15 @@ func (r *MasterDataRepository) loadItems(ctx context.Context, where string, args
 			id := uuid.UUID(categoryID.Bytes)
 			item.CategoryID = &id
 			categoryIDs[id] = struct{}{}
+		}
+		if alternativeUnitID.Valid {
+			id := uuid.UUID(alternativeUnitID.Bytes)
+			item.AlternativeUnitID = &id
+			unitIDs[id] = struct{}{}
+		}
+		if conversionRate.Valid {
+			value := conversionRate.Float64
+			item.ConversionRate = &value
 		}
 		if barcode.Valid {
 			item.Barcode = barcode.String
@@ -644,6 +674,12 @@ func (r *MasterDataRepository) attachUnitsAndCategories(ctx context.Context, ite
 	for idx := range items {
 		if unit, ok := unitMap[items[idx].UnitID]; ok {
 			items[idx].Unit = unit
+		}
+		if items[idx].AlternativeUnitID != nil {
+			if alt, ok := unitMap[*items[idx].AlternativeUnitID]; ok {
+				altCopy := alt
+				items[idx].AlternativeUnit = &altCopy
+			}
 		}
 		if items[idx].CategoryID != nil {
 			if category, ok := categoryMap[*items[idx].CategoryID]; ok {
@@ -834,6 +870,10 @@ func (r *MasterDataRepository) upsertItem(ctx context.Context, tx pgx.Tx, item *
 	if item.VolumeM3 != nil {
 		volume = sql.NullFloat64{Float64: *item.VolumeM3, Valid: true}
 	}
+	var conversionRate sql.NullFloat64
+	if item.ConversionRate != nil {
+		conversionRate = sql.NullFloat64{Float64: *item.ConversionRate, Valid: true}
+	}
 
 	var categoryID any
 	var categoryPath any
@@ -845,6 +885,11 @@ func (r *MasterDataRepository) upsertItem(ctx context.Context, tx pgx.Tx, item *
 			}
 		}
 		categoryPath = item.CategoryPath
+	}
+
+	var alternativeUnitID any
+	if item.AlternativeUnitID != nil && *item.AlternativeUnitID != uuid.Nil {
+		alternativeUnitID = *item.AlternativeUnitID
 	}
 
 	createdBy := uuid.Nil
@@ -859,8 +904,11 @@ func (r *MasterDataRepository) upsertItem(ctx context.Context, tx pgx.Tx, item *
 	row := tx.QueryRow(ctx, `
         INSERT INTO wms.item (
             id, sku, name, description, category_id, category_path, unit_id,
+            alternative_unit_id, conversion_rate,
             barcode, weight_kg, volume_m3, metadata, created_by, updated_by)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        VALUES ($1, $2, $3, $4, $5, $6, $7,
+                $8, $9,
+                $10, $11, $12, $13, $14, $15)
         RETURNING created_at, updated_at`,
 		item.ID,
 		item.SKU,
@@ -869,6 +917,8 @@ func (r *MasterDataRepository) upsertItem(ctx context.Context, tx pgx.Tx, item *
 		categoryID,
 		categoryPath,
 		item.UnitID,
+		alternativeUnitID,
+		conversionRate,
 		barcode,
 		weight,
 		volume,
@@ -894,6 +944,10 @@ func (r *MasterDataRepository) updateItemRow(ctx context.Context, tx pgx.Tx, ite
 	if item.VolumeM3 != nil {
 		volume = sql.NullFloat64{Float64: *item.VolumeM3, Valid: true}
 	}
+	var conversionRate sql.NullFloat64
+	if item.ConversionRate != nil {
+		conversionRate = sql.NullFloat64{Float64: *item.ConversionRate, Valid: true}
+	}
 
 	var categoryID any
 	var categoryPath any
@@ -905,6 +959,11 @@ func (r *MasterDataRepository) updateItemRow(ctx context.Context, tx pgx.Tx, ite
 			}
 		}
 		categoryPath = item.CategoryPath
+	}
+
+	var alternativeUnitID any
+	if item.AlternativeUnitID != nil && *item.AlternativeUnitID != uuid.Nil {
+		alternativeUnitID = *item.AlternativeUnitID
 	}
 
 	updatedBy := uuid.Nil
@@ -920,11 +979,13 @@ func (r *MasterDataRepository) updateItemRow(ctx context.Context, tx pgx.Tx, ite
             category_id = $5,
             category_path = $6,
             unit_id = $7,
-            barcode = $8,
-            weight_kg = $9,
-            volume_m3 = $10,
-            metadata = $11,
-            updated_by = $12,
+            alternative_unit_id = $8,
+            conversion_rate = $9,
+            barcode = $10,
+            weight_kg = $11,
+            volume_m3 = $12,
+            metadata = $13,
+            updated_by = $14,
             updated_at = NOW()
         WHERE id = $1
         RETURNING created_at, updated_at`,
@@ -935,6 +996,8 @@ func (r *MasterDataRepository) updateItemRow(ctx context.Context, tx pgx.Tx, ite
 		categoryID,
 		categoryPath,
 		item.UnitID,
+		alternativeUnitID,
+		conversionRate,
 		barcode,
 		weight,
 		volume,

@@ -460,7 +460,17 @@ func (s *MasterDataService) DeleteCatalogNode(ctx context.Context, catalogType s
 	if err != nil {
 		return err
 	}
-	return s.repo.DeleteCatalogNode(ctx, typ, id)
+	if err := s.repo.DeleteCatalogNode(ctx, typ, id); err != nil {
+		switch {
+		case errors.Is(err, repository.ErrCatalogNodeNotFound):
+			return fmt.Errorf("%w", repository.ErrCatalogNodeNotFound)
+		case errors.Is(err, repository.ErrCatalogNodeInUse):
+			return fmt.Errorf("%w: %s", repository.ErrCatalogNodeInUse, catalogTypeUsageHint(typ))
+		default:
+			return err
+		}
+	}
+	return nil
 }
 
 // ListAttributeTemplates returns dynamic attribute templates for target type.
@@ -591,6 +601,27 @@ func (s *MasterDataService) CreateItem(ctx context.Context, payload entity.Item,
 	}
 	payload.Unit = unit
 
+	if payload.AlternativeUnitID != nil && *payload.AlternativeUnitID != uuid.Nil {
+		if payload.ConversionRate == nil || *payload.ConversionRate <= 0 {
+			return entity.Item{}, fmt.Errorf("conversionRate must be positive when alternativeUnitId is provided")
+		}
+		if *payload.AlternativeUnitID == payload.UnitID {
+			return entity.Item{}, fmt.Errorf("alternativeUnitId must differ from unitId")
+		}
+		altNode, err := s.repo.GetCatalogNode(ctx, entity.CatalogTypeUnit, *payload.AlternativeUnitID)
+		if err != nil {
+			return entity.Item{}, err
+		}
+		payload.AlternativeUnit = &altNode
+	} else {
+		payload.AlternativeUnitID = nil
+		payload.AlternativeUnit = nil
+		payload.ConversionRate = nil
+	}
+	if payload.ConversionRate != nil && *payload.ConversionRate <= 0 {
+		return entity.Item{}, fmt.Errorf("conversionRate must be positive")
+	}
+
 	if payload.CategoryID != nil && *payload.CategoryID != uuid.Nil {
 		category, err := s.repo.GetCatalogNode(ctx, entity.CatalogTypeCategory, *payload.CategoryID)
 		if err != nil {
@@ -633,6 +664,27 @@ func (s *MasterDataService) UpdateItem(ctx context.Context, id uuid.UUID, payloa
 		return entity.Item{}, err
 	}
 	payload.Unit = unit
+
+	if payload.AlternativeUnitID != nil && *payload.AlternativeUnitID != uuid.Nil {
+		if payload.ConversionRate == nil || *payload.ConversionRate <= 0 {
+			return entity.Item{}, fmt.Errorf("conversionRate must be positive when alternativeUnitId is provided")
+		}
+		if *payload.AlternativeUnitID == payload.UnitID {
+			return entity.Item{}, fmt.Errorf("alternativeUnitId must differ from unitId")
+		}
+		altNode, err := s.repo.GetCatalogNode(ctx, entity.CatalogTypeUnit, *payload.AlternativeUnitID)
+		if err != nil {
+			return entity.Item{}, err
+		}
+		payload.AlternativeUnit = &altNode
+	} else {
+		payload.AlternativeUnitID = nil
+		payload.AlternativeUnit = nil
+		payload.ConversionRate = nil
+	}
+	if payload.ConversionRate != nil && *payload.ConversionRate <= 0 {
+		return entity.Item{}, fmt.Errorf("conversionRate must be positive")
+	}
 
 	if payload.CategoryID != nil && *payload.CategoryID != uuid.Nil {
 		category, err := s.repo.GetCatalogNode(ctx, entity.CatalogTypeCategory, *payload.CategoryID)
@@ -760,6 +812,17 @@ func normalizeCatalogType(raw string) (entity.CatalogType, error) {
 		return entity.CatalogTypeUnit, nil
 	default:
 		return entity.CatalogType(value), nil
+	}
+}
+
+func catalogTypeUsageHint(typ entity.CatalogType) string {
+	switch typ {
+	case entity.CatalogTypeUnit:
+		return "единица измерения используется в карточках товаров"
+	case entity.CatalogTypeCategory:
+		return "категория привязана к номенклатуре"
+	default:
+		return "каталожный узел используется в связанных объектах"
 	}
 }
 

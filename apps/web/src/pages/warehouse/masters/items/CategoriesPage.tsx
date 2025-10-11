@@ -8,12 +8,14 @@ import {
   type CatalogNode
 } from '@shared/api';
 import { PageLoader } from '@shared/ui/PageLoader';
+import { iconMap } from '@shared/ui/icons';
 import { palette, typography } from '@shared/ui/theme';
 
 import DataTable, { type TableColumn } from '../../components/DataTable';
 import SlideOver from '../../components/SlideOver';
 import { generateCategoryCode } from '@shared/utils/identifiers';
 import { fallbackCategories } from '../../../../modules/warehouse/views/masters/fallbacks';
+import { shouldUseFallback } from '../../../../modules/warehouse/views/masters/utils';
 
 const layoutStyle: CSSProperties = {
   display: 'flex',
@@ -242,6 +244,11 @@ const CategoriesPage = () => {
   const updateMutation = useUpdateCatalogNodeMutation();
   const deleteMutation = useDeleteCatalogNodeMutation();
 
+  const useFallback = shouldUseFallback(catalogQuery.error);
+  const operationsDisabled = useFallback;
+  const offlineMessage =
+    'Операции с категориями доступны только при подключении к WMS. Проверьте соединение или права доступа.';
+
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [mode, setMode] = useState<'create' | 'edit'>('create');
   const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
@@ -249,12 +256,16 @@ const CategoriesPage = () => {
   const [formError, setFormError] = useState<string | null>(null);
 
   const rawNodes = useMemo(() => {
-    if (catalogQuery.data && catalogQuery.data.length) {
-      return catalogQuery.data;
+    if (useFallback) {
+      return fallbackCategories;
     }
-    return fallbackCategories;
-  }, [catalogQuery.data]);
+    return catalogQuery.data ?? [];
+  }, [catalogQuery.data, useFallback]);
   const { rootId, tree, map } = useMemo(() => buildTree(rawNodes), [rawNodes]);
+
+  const notifyOffline = () => {
+    window.alert(offlineMessage);
+  };
 
   const orderedNodes = useMemo<TreeRow[]>(() => {
     const result: TreeRow[] = [];
@@ -322,22 +333,32 @@ const CategoriesPage = () => {
     {
       id: 'actions',
       label: 'Действия',
-      width: 180,
+      width: 140,
       render: (node) => (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'nowrap' }}>
+        <div className='list-form__actions'>
           <button
             type='button'
-            style={{ ...secondaryButtonStyle, padding: '6px 12px', whiteSpace: 'nowrap' }}
-            onClick={() => openEditDrawer(node.id)}
+            className='list-form__icon-button list-form__icon-button--edit'
+            onClick={(event) => {
+              event.stopPropagation();
+              openEditDrawer(node.id);
+            }}
+            aria-label={`Редактировать «${node.name}»`}
+            title='Редактировать'
           >
-            Изменить
+            <span className='list-form__icon'>{iconMap.gear}</span>
           </button>
           <button
             type='button'
-            style={{ ...secondaryButtonStyle, padding: '6px 12px', whiteSpace: 'nowrap' }}
-            onClick={() => openCreateDrawer(node.id)}
+            className='list-form__icon-button'
+            onClick={(event) => {
+              event.stopPropagation();
+              openCreateDrawer(node.id);
+            }}
+            aria-label={`Добавить подкатегорию для «${node.name}»`}
+            title='Добавить подкатегорию'
           >
-            Добавить
+            <span className='list-form__icon'>{iconMap.plus}</span>
           </button>
         </div>
       )
@@ -345,6 +366,10 @@ const CategoriesPage = () => {
   ];
 
   const openCreateDrawer = (parentId?: string) => {
+    if (operationsDisabled) {
+      notifyOffline();
+      return;
+    }
     setMode('create');
     setCurrentNodeId(null);
     setFormError(null);
@@ -358,6 +383,10 @@ const CategoriesPage = () => {
   };
 
   const openEditDrawer = (nodeId: string) => {
+    if (operationsDisabled) {
+      notifyOffline();
+      return;
+    }
     const node = map.get(nodeId);
     if (!node) {
       return;
@@ -407,6 +436,11 @@ const CategoriesPage = () => {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError(null);
+
+    if (operationsDisabled) {
+      setFormError(offlineMessage);
+      return;
+    }
 
     const code = formState.code.trim();
     const name = formState.name.trim();
@@ -460,6 +494,10 @@ const CategoriesPage = () => {
     if (!currentNodeId) {
       return;
     }
+    if (operationsDisabled) {
+      notifyOffline();
+      return;
+    }
     if (!window.confirm('Удалить категорию?')) {
       return;
     }
@@ -475,7 +513,7 @@ const CategoriesPage = () => {
     return <PageLoader />;
   }
 
-  if (catalogQuery.isError) {
+  if (catalogQuery.isError && !useFallback) {
     return <div style={infoCardStyle}>Не удалось загрузить категории: {(catalogQuery.error as Error).message}</div>;
   }
 
@@ -483,7 +521,17 @@ const CategoriesPage = () => {
     <section style={layoutStyle}>
       <header style={headerStyle}>
         <h1 style={headingStyle}>Категории номенклатуры</h1>
-        <button type='button' style={primaryButtonStyle} onClick={() => openCreateDrawer()}>
+        <button
+          type='button'
+          style={{
+            ...primaryButtonStyle,
+            opacity: operationsDisabled ? 0.6 : 1,
+            cursor: operationsDisabled ? 'not-allowed' : 'pointer'
+          }}
+          onClick={() => openCreateDrawer()}
+          disabled={operationsDisabled}
+          title={operationsDisabled ? offlineMessage : undefined}
+        >
           Новая категория
         </button>
       </header>
@@ -494,6 +542,11 @@ const CategoriesPage = () => {
           Используйте верхний уровень для основных групп, а кнопку «Подкатегория» в таблице — чтобы создать вложенную
           структуру. Все изменения выполняются в боковой панели без перезагрузки данных.
         </span>
+        {useFallback ? (
+          <span style={{ color: palette.textPrimary, fontWeight: 600 }}>
+            Сейчас отображаются резервные данные без связи с сервером. Изменение категорий временно недоступно.
+          </span>
+        ) : null}
       </div>
 
       <DataTable columns={columns} items={flatNodes} emptyMessage='Категории пока не созданы' />

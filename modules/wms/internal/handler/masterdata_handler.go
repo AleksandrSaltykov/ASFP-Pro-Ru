@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"asfppro/modules/wms/internal/entity"
+	"asfppro/modules/wms/internal/repository"
 	"asfppro/modules/wms/internal/service"
 )
 
@@ -142,9 +143,20 @@ func (h *MasterDataHandler) deleteCatalogNode(c *fiber.Ctx) error {
 	defer cancel()
 
 	if err := h.service.DeleteCatalogNode(ctx, typ, nodeID); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		switch {
+		case errors.Is(err, repository.ErrCatalogNodeNotFound):
+			return respondJSONError(c, fiber.StatusNotFound, "Каталог не найден")
+		case errors.Is(err, repository.ErrCatalogNodeInUse):
+			return respondJSONError(c, fiber.StatusConflict, err.Error())
+		default:
+			return respondJSONError(c, fiber.StatusBadRequest, err.Error())
+		}
 	}
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func respondJSONError(c *fiber.Ctx, status int, message string) error {
+	return c.Status(status).JSON(fiber.Map{"error": message})
 }
 
 // listAttributeTemplates returns dynamic attribute templates.
@@ -161,15 +173,15 @@ func (h *MasterDataHandler) listAttributeTemplates(c *fiber.Ctx) error {
 }
 
 type attributeTemplateRequest struct {
-	Code        string                 `json:"code"`
-	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
-	TargetType  string                 `json:"targetType"`
-	DataType    string                 `json:"dataType"`
-	IsRequired  *bool                  `json:"isRequired"`
-	Position    *int                   `json:"position"`
-	Metadata    map[string]any         `json:"metadata"`
-	UISchema    map[string]any         `json:"uiSchema"`
+	Code        string         `json:"code"`
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	TargetType  string         `json:"targetType"`
+	DataType    string         `json:"dataType"`
+	IsRequired  *bool          `json:"isRequired"`
+	Position    *int           `json:"position"`
+	Metadata    map[string]any `json:"metadata"`
+	UISchema    map[string]any `json:"uiSchema"`
 }
 
 func (r attributeTemplateRequest) toEntity() entity.AttributeTemplate {
@@ -944,18 +956,20 @@ func (r catalogLinkRequest) toEntity(leftType string, leftID uuid.UUID) (entity.
 
 // itemRequest describes item payload with dynamic attributes.
 type itemRequest struct {
-	SKU          string                  `json:"sku"`
-	Name         string                  `json:"name"`
-	Description  string                  `json:"description"`
-	CategoryID   string                  `json:"categoryId"`
-	UnitID       string                  `json:"unitId"`
-	Barcode      string                  `json:"barcode"`
-	WeightKg     *float64                `json:"weightKg"`
-	VolumeM3     *float64                `json:"volumeM3"`
-	WarehouseIDs []string                `json:"warehouseIds"`
-	Metadata     map[string]any          `json:"metadata"`
-	Attributes   []attributeValueRequest `json:"attributes"`
-	ActorID      string                  `json:"actorId"`
+	SKU               string                  `json:"sku"`
+	Name              string                  `json:"name"`
+	Description       string                  `json:"description"`
+	CategoryID        string                  `json:"categoryId"`
+	UnitID            string                  `json:"unitId"`
+	AlternativeUnitID string                  `json:"alternativeUnitId"`
+	ConversionRate    *float64                `json:"conversionRate"`
+	Barcode           string                  `json:"barcode"`
+	WeightKg          *float64                `json:"weightKg"`
+	VolumeM3          *float64                `json:"volumeM3"`
+	WarehouseIDs      []string                `json:"warehouseIds"`
+	Metadata          map[string]any          `json:"metadata"`
+	Attributes        []attributeValueRequest `json:"attributes"`
+	ActorID           string                  `json:"actorId"`
 }
 
 func (r itemRequest) toEntity() (entity.Item, []entity.AttributeValueUpsert, error) {
@@ -1013,6 +1027,17 @@ func (r itemRequest) toEntity() (entity.Item, []entity.AttributeValueUpsert, err
 	}
 	if categoryID != nil {
 		item.CategoryID = categoryID
+	}
+	if raw := strings.TrimSpace(r.AlternativeUnitID); raw != "" {
+		id, err := uuid.Parse(raw)
+		if err != nil {
+			return entity.Item{}, nil, fmt.Errorf("invalid alternativeUnitId")
+		}
+		item.AlternativeUnitID = &id
+	}
+	if r.ConversionRate != nil {
+		value := *r.ConversionRate
+		item.ConversionRate = &value
 	}
 	if actorID := strings.TrimSpace(r.ActorID); actorID != "" {
 		if actor, err := uuid.Parse(actorID); err == nil {

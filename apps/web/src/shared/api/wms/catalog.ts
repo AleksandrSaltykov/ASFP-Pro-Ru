@@ -1,14 +1,11 @@
-import { useMemo } from 'react';
 import {
   useMutation,
   UseMutationOptions,
   useQuery,
-  UseQueryOptions,
-  useQueryClient
+  UseQueryOptions
 } from '@tanstack/react-query';
 
-import { API_ENDPOINTS } from '@shared/api/endpoints';
-import { createHttpClient } from '@shared/api/http-client';
+import { useWmsHttpClient, type WmsHttpClient } from './client';
 import {
   AttributeTemplate,
   AttributeTemplatePayload,
@@ -33,7 +30,7 @@ const itemDetailsDisabledKey = [...CATALOG_PREFIX, 'items', 'detail-disabled'] a
 const catalogLinksKey = (leftType: string, leftId: string) => [...CATALOG_PREFIX, 'links', leftType, leftId] as const;
 const catalogLinksDisabledKey = [...CATALOG_PREFIX, 'links', 'disabled'] as const;
 
-type Http = ReturnType<typeof createHttpClient>;
+type Http = WmsHttpClient;
 
 type QueryOptionsOverride<TQueryFnData, TData> = Omit<
   UseQueryOptions<TQueryFnData, Error, TData>,
@@ -94,10 +91,7 @@ type ReplaceCatalogLinksVariables = {
   payload: CatalogLinkPayload[];
 };
 
-const useCatalogHttpClient = (): Http => {
-  const queryClient = useQueryClient();
-  return useMemo(() => createHttpClient(API_ENDPOINTS.wms, queryClient), [queryClient]);
-};
+const useCatalogHttpClient = (): Http => useWmsHttpClient();
 
 const invalidateCatalogNodes = (http: Http, catalogType: string) =>
   http.invalidate(catalogListKey(catalogType));
@@ -382,3 +376,4 @@ export const useReplaceCatalogLinksMutation = (
     ...rest
   });
 };
+
