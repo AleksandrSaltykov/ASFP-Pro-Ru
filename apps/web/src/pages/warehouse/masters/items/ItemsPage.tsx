@@ -271,7 +271,7 @@ const ItemsPage = () => {
     {
       id: 'unit',
       label: 'Основная ед. изм.',
-      render: (item) => item.unit?.code ?? '—',
+      render: (item) => item.unit?.name ?? '—',
       width: 120
     },
     {
@@ -664,3 +664,4 @@ const ItemsPage = () => {
 };
 
 export default ItemsPage;
+
