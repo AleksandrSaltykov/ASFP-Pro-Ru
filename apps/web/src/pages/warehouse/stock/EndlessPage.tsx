@@ -169,12 +169,15 @@ export const EndlessPage = () => {
     console.info("[stock/endless] export triggered", { filters: { warehouse, category, status, search } });
   };
 
-  const handleReset = (id: string) => {
-    resetMutation.mutate(id, {
-      onError: (mutationError) => {
-        setError(mutationError.message);
+  const handleReset = (policy: EndlessPolicy) => {
+    resetMutation.mutate(
+      { id: policy.id, itemCode: policy.itemCode, warehouse: policy.warehouse },
+      {
+        onError: (mutationError) => {
+          setError(mutationError.message);
+        }
       }
-    });
+    );
   };
 
   const criticalRowStyle = {
@@ -227,7 +230,7 @@ export const EndlessPage = () => {
           <button type='button' style={buttonStyle} onClick={() => openEditor(row)}>
             Редактировать
           </button>
-          <button type='button' style={buttonStyle} onClick={() => handleReset(row.id)}>
+          <button type='button' style={buttonStyle} onClick={() => handleReset(row)}>
             Сбросить
           </button>
         </div>
@@ -283,6 +286,7 @@ export const EndlessPage = () => {
 
     const payload = {
       id: editing.id,
+      itemCode: editing.itemCode,
       warehouse: formState.warehouse,
       policy: formState.policy,
       min: formState.policy === "MINMAX" ? Math.max(Number(formState.min ?? 0), 0) : null,

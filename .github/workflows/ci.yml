@@ -20,6 +20,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Ensure no vendored artifacts are committed
+        run: |
+          set -euo pipefail
+          forbidden=$(git ls-files | grep -E '(^|/)(node_modules|dist)/' || true)
+          if [ -n "$forbidden" ]; then
+            echo "::error::Remove build artifacts from git history"
+            echo "$forbidden"
+            exit 1
+          fi
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -136,6 +146,12 @@ jobs:
           timeout 180 bash -c 'until curl -sf http://localhost:8080/ready; do sleep 2; done'
           timeout 180 bash -c 'until curl -sf http://localhost:8081/ready; do sleep 2; done'
           timeout 180 bash -c 'until curl -sf http://localhost:8082/ready; do sleep 2; done'
+
+      - name: Run integration tests (ClickHouse & Tarantool)
+        env:
+          INTEGRATION_TARANTOOL_ADDR: localhost:3301
+          INTEGRATION_CLICKHOUSE_DSN: clickhouse://analytics:analytics123@localhost:9000/analytics
+        run: go test -tags=integration ./tests/integration
 
       - name: Reset MinIO bucket
         run: bash scripts/minio-reset.sh

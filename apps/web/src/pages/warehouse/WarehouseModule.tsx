@@ -1,10 +1,8 @@
 import { Suspense, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
-import { useAppSelector } from "@app/hooks";
 import { PageLoader } from "@shared/ui/PageLoader";
 import { palette, typography } from "@shared/ui/theme";
-import { selectIsFeatureEnabled } from "@shared/state/ui-selectors";
 import { WAREHOUSE_NAV, type WarehouseNavItem } from "./structure";
 
 const layoutStyle: CSSProperties = {
@@ -142,7 +140,7 @@ const collectTrail = (
 };
 
 export const WarehouseModule = () => {
-  const enabled = useAppSelector((state) => selectIsFeatureEnabled(state, "ui.warehouse.rebuild"));
+  const enabled = true;
   const location = useLocation();
 
   const relativePath = useMemo(() => {

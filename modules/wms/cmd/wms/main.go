@@ -48,6 +48,10 @@ func main() {
 	masterService := service.NewMasterDataService(masterRepo, auditor, logger)
 	masterHandler := handler.NewMasterDataHandler(masterService)
 
+	inboundRepo := repository.NewInboundRepository(pool)
+	inboundService := service.NewInboundService(inboundRepo, auditor, logger)
+	inboundHandler := handler.NewInboundHandler(inboundService)
+
 	openapi, err := readOpenAPI("modules/wms/docs/openapi/openapi.json", "WMS_OPENAPI_PATH")
 	if err != nil {
 		logger.Fatal().Err(err).Msg("load openapi")
@@ -65,6 +69,7 @@ func main() {
 	app.Get("/openapi.json", handler.OpenAPI(openapi))
 	stockHandler.Register(app)
 	masterHandler.Register(app)
+	inboundHandler.Register(app)
 
 	addr := ":" + cfg.HTTPPort
 	logger.Info().Str("addr", addr).Msg("wms listening")

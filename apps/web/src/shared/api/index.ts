@@ -11,3 +11,4 @@ export * from './wms/master-data';
 export * from './wms/catalog';
 export * from './wms/inventory';
 export * from './wms/stock';
+export * from './wms/receiving';

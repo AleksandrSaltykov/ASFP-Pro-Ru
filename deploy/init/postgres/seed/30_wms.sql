@@ -10,18 +10,42 @@ INSERT INTO wms.warehouse (
     contact,
     org_unit_code
 )
-VALUES (
+SELECT
     uuid_generate_v4(),
-    'msk-main',
-    'Центральный склад Москва',
-    'Основной склад компании',
-    '{"city":"Москва","street":"Промышленная, 1"}'::jsonb,
-    'Europe/Moscow',
-    'active',
-    '{"mon-fri":"08:00-20:00","sat":"09:00-15:00"}'::jsonb,
-    '{"manager":"Анна Волкова","phone":"+7 (495) 000-11-22"}'::jsonb,
-    'HQ-WMS'
-)
+    data.code,
+    data.name,
+    data.description,
+    data.address,
+    data.timezone,
+    data.status,
+    data.operating_hours,
+    data.contact,
+    data.org_unit
+FROM (
+    VALUES
+        (
+            'msk-main',
+            '����ࠫ�� ᪫�� ��᪢�',
+            '�᭮���� ᪫�� ��������',
+            '{"city":"��᪢�","street":"�஬�諥����, 1"}'::jsonb,
+            'Europe/Moscow',
+            'active',
+            '{"mon-fri":"08:00-20:00","sat":"09:00-15:00"}'::jsonb,
+            '{"manager":"���� �������","phone":"+7 (495) 000-11-22"}'::jsonb,
+            'HQ-WMS'
+        ),
+        (
+            'spb-hub',
+            '����ꥬ��ୠ� ����',
+            '�᭮���� ����� ���� ��� ���뢠��',
+            '{"city":"������","street":"��������, 45"}'::jsonb,
+            'Europe/Moscow',
+            'active',
+            '{"mon-fri":"09:00-21:00"}'::jsonb,
+            '{"manager":"������� ����","phone":"+7 (812) 000-33-44"}'::jsonb,
+            'HQ-WMS'
+        )
+) AS data(code, name, description, address, timezone, status, operating_hours, contact, org_unit)
 ON CONFLICT (code) DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
@@ -49,7 +73,7 @@ INSERT INTO wms.warehouse_zone (
 )
 SELECT
     uuid_generate_v4(),
-    id,
+    w.id,
     zone.code,
     zone.name,
     zone.zone_type,
@@ -61,14 +85,14 @@ SELECT
     zone.layout,
     zone.metadata
 FROM wms.warehouse w
-CROSS JOIN (
+JOIN (
     VALUES
-      ('RECEIVING', 'Зона приемки', 'receiving', TRUE, NULL::NUMERIC, NULL::NUMERIC, NULL::TEXT,
+      ('RECEIVING', '���� �ਥ���', 'receiving', TRUE, NULL::NUMERIC, NULL::NUMERIC, NULL::TEXT,
        '[]'::jsonb, '{"gates":["A1","A2"]}'::jsonb, '{}'::jsonb),
-      ('STORAGE', 'Основной склад', 'storage', FALSE, NULL::NUMERIC, NULL::NUMERIC, NULL::TEXT,
+      ('STORAGE', '�᭮���� ᪫��', 'storage', FALSE, NULL::NUMERIC, NULL::NUMERIC, NULL::TEXT,
        '[]'::jsonb, '{"rows":5,"levels":4}'::jsonb, '{}'::jsonb)
 ) AS zone(code, name, zone_type, is_buffer, temperature_min, temperature_max, hazard_class, access_restrictions, layout, metadata)
-WHERE w.code = 'msk-main'
+WHERE w.code IN ('msk-main', 'spb-hub')
 ON CONFLICT (warehouse_id, code) DO UPDATE SET
     name = EXCLUDED.name,
     zone_type = EXCLUDED.zone_type,
@@ -81,12 +105,12 @@ ON CONFLICT (warehouse_id, code) DO UPDATE SET
     metadata = EXCLUDED.metadata,
     updated_at = NOW();
 
-WITH wh AS (
-    SELECT id FROM wms.warehouse WHERE code = 'msk-main'
-), zr AS (
-    SELECT id FROM wms.warehouse_zone WHERE warehouse_id = (SELECT id FROM wh) AND code = 'RECEIVING'
-), zs AS (
-    SELECT id FROM wms.warehouse_zone WHERE warehouse_id = (SELECT id FROM wh) AND code = 'STORAGE'
+WITH zones AS (
+    SELECT wz.id, wz.code, wz.warehouse_id, w.code AS warehouse_code
+    FROM wms.warehouse_zone wz
+    JOIN wms.warehouse w ON w.id = wz.warehouse_id
+    WHERE w.code IN ('msk-main', 'spb-hub')
+      AND wz.code IN ('RECEIVING', 'STORAGE')
 )
 INSERT INTO wms.warehouse_cell (
     id,
@@ -108,55 +132,38 @@ INSERT INTO wms.warehouse_cell (
 )
 SELECT
     uuid_generate_v4(),
-    (SELECT id FROM wh),
-    cell.zone_id,
-    cell.code,
-    cell.label,
-    cell.address,
-    cell.cell_type,
-    cell.status,
-    cell.is_pick_face,
-    cell.length_mm,
-    cell.width_mm,
-    cell.height_mm,
-    cell.max_weight_kg,
-    cell.max_volume_l,
-    cell.allowed_handling,
-    cell.metadata
-FROM (
-    SELECT (SELECT id FROM zr) AS zone_id,
-           'RCV-GATE-01' AS code,
-           'Ворота 1' AS label,
-           '{"gate":"A1"}'::jsonb AS address,
-           'dock' AS cell_type,
-           'active' AS status,
-           TRUE AS is_pick_face,
-           NULL::NUMERIC AS length_mm,
-           NULL::NUMERIC AS width_mm,
-           NULL::NUMERIC AS height_mm,
-           NULL::NUMERIC AS max_weight_kg,
-           NULL::NUMERIC AS max_volume_l,
-           '[]'::jsonb AS allowed_handling,
-           '{}'::jsonb AS metadata
-    UNION ALL
-    SELECT (SELECT id FROM zs) AS zone_id,
-           'ST-ROW-A01' AS code,
-           'Стеллаж A01' AS label,
-           '{"row":"A","slot":"01"}'::jsonb AS address,
-           'shelf' AS cell_type,
-           'active' AS status,
-           FALSE AS is_pick_face,
-           1200::NUMERIC AS length_mm,
-           800::NUMERIC AS width_mm,
-           2500::NUMERIC AS height_mm,
-           500::NUMERIC AS max_weight_kg,
-           2.4::NUMERIC AS max_volume_l,
-           '{"handling":["manual","forklift"]}'::jsonb AS allowed_handling,
-           '{}'::jsonb AS metadata
-) AS cell
-WHERE cell.zone_id IS NOT NULL
+    z.warehouse_id,
+    z.id,
+    CASE
+        WHEN z.code = 'RECEIVING' THEN 'RCV-GATE-01-' || upper(replace(z.warehouse_code, '-', ''))
+        ELSE 'ST-ROW-A01-' || upper(replace(z.warehouse_code, '-', ''))
+    END,
+    CASE
+        WHEN z.code = 'RECEIVING' THEN '���� 1 ' || upper(replace(z.warehouse_code, '-', ''))
+        ELSE '�⥫��� A01 ' || upper(replace(z.warehouse_code, '-', ''))
+    END,
+    CASE
+        WHEN z.code = 'RECEIVING' THEN '{"gate":"A1"}'::jsonb
+        ELSE '{"row":"A","slot":"01"}'::jsonb
+    END,
+    CASE
+        WHEN z.code = 'RECEIVING' THEN 'dock'
+        ELSE 'shelf'
+    END,
+    'active',
+    CASE WHEN z.code = 'RECEIVING' THEN TRUE ELSE FALSE END,
+    CASE WHEN z.code = 'RECEIVING' THEN NULL ELSE 1200::NUMERIC END,
+    CASE WHEN z.code = 'RECEIVING' THEN NULL ELSE 800::NUMERIC END,
+    CASE WHEN z.code = 'RECEIVING' THEN NULL ELSE 2500::NUMERIC END,
+    CASE WHEN z.code = 'RECEIVING' THEN NULL ELSE 500::NUMERIC END,
+    CASE WHEN z.code = 'RECEIVING' THEN NULL ELSE 2.4::NUMERIC END,
+    CASE
+        WHEN z.code = 'RECEIVING' THEN '[]'::jsonb
+        ELSE '{"handling":["manual","forklift"]}'::jsonb
+    END,
+    '{}'::jsonb
+FROM zones z
 ON CONFLICT (warehouse_id, code) DO UPDATE SET
-    zone_id = EXCLUDED.zone_id,
     label = EXCLUDED.label,
     address = EXCLUDED.address,
     status = EXCLUDED.status,
@@ -169,6 +176,28 @@ ON CONFLICT (warehouse_id, code) DO UPDATE SET
     metadata = EXCLUDED.metadata,
     updated_at = NOW();
 
-INSERT INTO wms.stock (sku, warehouse, quantity, uom)
-VALUES ('banner-001', 'msk-main', 120, 'pcs')
-ON CONFLICT (sku, warehouse) DO UPDATE SET quantity = EXCLUDED.quantity;
+WITH items AS (
+    SELECT id, sku, unit_id FROM wms.item WHERE sku = 'DEMO-SIGN-001'
+), warehouses AS (
+    SELECT id, code FROM wms.warehouse WHERE code IN ('msk-main', 'spb-hub')
+)
+INSERT INTO wms.item_warehouse (item_id, warehouse_id, status, min_stock, max_stock)
+SELECT
+    items.id,
+    warehouses.id,
+    'active',
+    CASE WHEN warehouses.code = 'msk-main' THEN 60 ELSE 30 END,
+    CASE WHEN warehouses.code = 'msk-main' THEN 160 ELSE 90 END
+FROM items CROSS JOIN warehouses
+ON CONFLICT (item_id, warehouse_id) DO UPDATE SET
+    min_stock = EXCLUDED.min_stock,
+    max_stock = EXCLUDED.max_stock,
+    status = EXCLUDED.status;
+
+INSERT INTO wms.stock (sku, warehouse, quantity, uom, updated_at)
+VALUES
+    ('DEMO-SIGN-001', 'msk-main', 96, 'pcs', NOW() - INTERVAL '2 hours'),
+    ('DEMO-SIGN-001', 'spb-hub', 48, 'pcs', NOW() - INTERVAL '1 hour')
+ON CONFLICT (sku, warehouse) DO UPDATE SET
+    quantity = EXCLUDED.quantity,
+    updated_at = EXCLUDED.updated_at;

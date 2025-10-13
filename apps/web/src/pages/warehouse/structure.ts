@@ -89,7 +89,9 @@ const PLACEHOLDER_EXCLUDED_PATHS = new Set<string>([
   'masters/items',
   'masters/locations/warehouses',
   'masters/partners',
-  'masters/items/units'
+  'masters/items/units',
+  'inbound/receipts',
+  'moves/inter-warehouse'
 ]);
 
 export const WAREHOUSE_PLACEHOLDER_ROUTES = collectNav(WAREHOUSE_NAV, [])

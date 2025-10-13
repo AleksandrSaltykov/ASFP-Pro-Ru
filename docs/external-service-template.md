@@ -1,6 +1,6 @@
 # Внешние сервисы: требования и шаблон интеграции
 
-Этот документ описывает, как быстро сформировать независимое приложение/сервис, который в дальнейшем безболезненно подружится с текущей платформой ASFPPRO. Следуя инструкции, вы получите «скелет» нового сервиса, совместимый с нашими DevOps‑процессами, окружением и стандартами кода.
+Этот документ описывает, как быстро сформировать независимое приложение/сервис, который в дальнейшем безболезненно подружится с текущей платформой ASFPPRO. Следуя инструкции, вы получите «скелет» нового сервиса, совместимый с нашими DevOps‐процессами, окружением и стандартами кода.
 
 ---
 
@@ -9,7 +9,7 @@
 | Область            | Рекомендация                                                                                            |
 |--------------------|---------------------------------------------------------------------------------------------------------|
 | Язык/Runtime       | **Go 1.23** (совпадает с основными сервисами; позволяет переиспользовать `pkg/*`)                      |
-| HTTP‑фреймворк     | `github.com/gofiber/fiber/v2` (единый контракт на health/ready, middleware)                            |
+| HTTP‐фреймворк     | `github.com/gofiber/fiber/v2` (единый контракт на health/ready, middleware)                            |
 | БД                 | Postgres 16 (через `github.com/jackc/pgx/v5/pgxpool`)                                                   |
 | Миграции           | `pressly/goose v3` (вынести миграции в `migrations/0001_*.sql`, таблица по шаблону `goose_db_version_<service>`) |
 | Логирование        | `github.com/rs/zerolog` (общий формат JSON, уровни, трассировка)                                        |
@@ -32,12 +32,12 @@ modules/<service>/
     entity/                       # доменные структуры
   migrations/                     # SQL-файлы goose
   docs/openapi/openapi.json       # описание API (опционально, но желательно)
-Makefile                          # локальные цели (lint, test, migrate-…)
+Makefile                          # локальные цели (lint, test, migrate-...)
 Dockerfile                        # многостадийный образ
 README.md                         # специфические детали сервиса
 ```
 
-> **Важно**: храните код внутри `modules/<service>`, чтобы использовать Go‑модули проекта и пакет `pkg/*` без лишнего go mod init.
+> **Важно**: храните код внутри `modules/<service>`, чтобы использовать Go‐модули проекта и пакет `pkg/*` без лишнего go mod init.
 
 ---
 
@@ -66,7 +66,7 @@ cfg, err := config.Load("SERVICE")
 1. Создайте директорию `modules/<service>/migrations`.
 2. Именуйте файлы `0001_init.sql`, `0002_add_table.sql` и т.д. (уникальные номера!).
 3. Таблица версий: `goose_db_version_<service>`.
-4. Добавьте Makefile‑таргеты:
+4. Добавьте Makefile‐таргеты:
 
 ```make
 GOOSE_RUN := go run github.com/pressly/goose/v3/cmd/goose@latest
@@ -92,7 +92,7 @@ migrate-<service>-down:
 | `/health`            | GET   | Быстрый ответ `200 OK`     |
 | `/ready`             | GET   | Проверка БД/зависимостей   |
 | `/openapi.json`      | GET   | (опц.) публичный контракт  |
-| `/api/v1/<domain>/…` | REST  | Бизнес-операции            |
+| `/api/v1/<domain>/...` | REST  | Бизнес-операции            |
 
 Мидлвари:
 
@@ -114,7 +114,7 @@ app.Use(recover.New())
 logger := logpkg.Init(cfg.Env) // из pkg/log
 
 logger.Info().Str("component", "service").Msg("listening")
-logger.Error().Err(err).Msg("failed to …")
+logger.Error().Err(err).Msg("failed to ...")
 ```
 
 Все ошибки отдаём в JSON: `fiber.NewError(status, message)`. Игнорируемы логируем, критические возвращаемся вверх.
@@ -129,7 +129,7 @@ logger.Error().Err(err).Msg("failed to …")
 go test ./modules/<service>/...
 ```
 
-Юнит‑тесты (`*_test.go`) держать рядом с пакетом. Если нужны интеграционные тесты с Postgres, используйте `TEST_DATABASE_URL` и `t.Skip` при отсутствии переменной (см. пример `verify_alt_units_test.go`).
+Юнит‐тесты (`*_test.go`) держать рядом с пакетом. Если нужны интеграционные тесты с Postgres, используйте `TEST_DATABASE_URL` и `t.Skip` при отсутствии переменной (см. пример `verify_alt_units_test.go`).
 
 ---
 
@@ -154,15 +154,15 @@ USER app
 ENTRYPOINT ["./<service>"]
 ```
 
-Добавьте сервис в `deploy/docker-compose.yml` (по аналогии с `wms`, `crm`, …) и сконфигурируйте healthcheck.
+Добавьте сервис в `deploy/docker-compose.yml` (по аналогии с `wms`, `crm`, ...) и сконфигурируйте healthcheck.
 
 ---
 
 ## 9. Интеграция с gateway / фронтендом
 
-1. **Gateway**: добавьте прокси-маршруты в `gateway/internal/handlers/<new>.go` или `gateway/internal/wms/…`, предоставьте функции в `gateway/internal/<domain>/service.go`.
+1. **Gateway**: добавьте прокси-маршруты в `gateway/internal/handlers/<new>.go` или `gateway/internal/wms/...`, предоставьте функции в `gateway/internal/<domain>/service.go`.
 2. **Фронтенд**: создайте модуль в `apps/web/src/shared/api/<service>`:
-   * HTTP‑клиент через `createHttpClient(API_ENDPOINTS.<service>)`.
+   * HTTP‐клиент через `createHttpClient(API_ENDPOINTS.<service>)`.
    * Обновите `API_ENDPOINTS` / `.env`, чтобы сервис был доступен (`VITE_<SERVICE>_URL`).
    * Добавьте мок–обработчики (если нужны) в `apps/web/src/shared/api/mocks/handlers.ts`.
 
@@ -192,8 +192,8 @@ DATABASE_URL=... go run ./modules/<service>/cmd/<service>
 ```
 
 ## API
-- `GET /ready` …
-- `POST /api/v1/...` …
+- `GET /ready` ...
+- `POST /api/v1/...` ...
 
 ## Переменные окружения
 - `SERVICE_DATABASE_URL`

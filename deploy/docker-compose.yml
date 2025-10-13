@@ -20,6 +20,25 @@ services:
     mem_limit: 1536m
     cpus: "1.5"
 
+  postgres-backup:
+    image: ${POSTGRES_IMAGE}
+    container_name: asfp-postgres-backup
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-3600}
+    volumes:
+      - ../backups:/var/backups
+      - ./backup/run-backup.sh:/usr/local/bin/run-backup.sh:ro
+    entrypoint: ["sh", "/usr/local/bin/run-backup.sh"]
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: "0.25"
+
   clickhouse:
     image: ${CLICKHOUSE_IMAGE}
     container_name: asfp-clickhouse

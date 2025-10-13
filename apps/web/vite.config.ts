@@ -15,6 +15,7 @@ export default defineConfig({
     alias: {
       "@app": "/src/app",
       "@pages": "/src/pages",
+      "@modules": "/src/modules",
       "@shared": "/src/shared",
       "@widgets": "/src/widgets"
     }

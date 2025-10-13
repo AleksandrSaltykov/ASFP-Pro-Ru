@@ -36,6 +36,8 @@ const WarehouseUnitsPage = lazy(() => import("@pages/warehouse/masters/items/Uni
 const WarehouseAttributesPage = lazy(() => import("@pages/warehouse/masters/items/AttributesPage"));
 const WarehouseWarehousesPage = lazy(() => import("@pages/warehouse/masters/locations/WarehousesPage"));
 const WarehousePartnersPage = lazy(() => import("@pages/warehouse/masters/partners/PartnersPage"));
+const WarehouseInboundReceiptsPage = lazy(() => import("@pages/warehouse/inbound/ReceiptsPage"));
+const WarehouseInterWarehouseMovesPage = lazy(() => import("@pages/warehouse/moves/InterWarehousePage"));
 
 const warehousePlaceholderRoutes = WAREHOUSE_PLACEHOLDER_ROUTES.map(({ path, label }) => ({
   path,
@@ -70,6 +72,8 @@ export const router = createBrowserRouter([
           { path: 'masters/items/attributes', element: <WarehouseAttributesPage /> },
           { path: 'masters/locations/warehouses', element: <WarehouseWarehousesPage /> },
           { path: 'masters/partners', element: <WarehousePartnersPage /> },
+          { path: 'inbound/receipts', element: <WarehouseInboundReceiptsPage /> },
+          { path: 'moves/inter-warehouse', element: <WarehouseInterWarehouseMovesPage /> },
           ...warehousePlaceholderRoutes
         ]
       },

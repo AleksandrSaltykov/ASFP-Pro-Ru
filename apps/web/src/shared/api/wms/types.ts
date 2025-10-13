@@ -371,6 +371,7 @@ export type EndlessPolicy = {
 
 export type EndlessPolicyUpdatePayload = {
   id: UUID;
+  itemCode: string;
   warehouse: string;
   policy: EndlessPolicyKind;
   min?: number | null;
@@ -397,4 +398,87 @@ export type StockMovement = {
   reference?: string;
   actor?: string;
   note?: string;
+};
+
+export type ReceiptLine = {
+  id: UUID;
+  receiptId: UUID;
+  itemId: UUID;
+  sku: string;
+  itemName: string;
+  unitId: UUID;
+  unitCode: string;
+  quantity: number;
+  expectedQuantity: number;
+  receivedQuantity: number;
+  unitCost: number;
+  vatRate?: number | null;
+  vatAmount: number;
+  totalCost: number;
+  batchNumber?: string | null;
+  productionDate?: string | null;
+  expirationDate?: string | null;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Receipt = {
+  id: UUID;
+  code: string;
+  externalReference?: string | null;
+  status: string;
+  warehouseId: UUID;
+  warehouseName?: string;
+  supplierId?: UUID | null;
+  supplierName: string;
+  supplierInn?: string | null;
+  currency: string;
+  expectedAt?: string | null;
+  receivedAt?: string | null;
+  totalAmount: number;
+  totalVat: number;
+  linesCount: number;
+  notes?: string | null;
+  metadata?: Record<string, unknown>;
+  createdBy?: UUID | null;
+  updatedBy?: UUID | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ReceiptDetails = Receipt & {
+  lines: ReceiptLine[];
+};
+
+export type ReceiptLinePayload = {
+  id?: UUID;
+  itemId: UUID;
+  unitId?: UUID | null;
+  quantity: number;
+  expectedQuantity?: number | null;
+  receivedQuantity?: number | null;
+  unitCost: number;
+  vatRate?: number | null;
+  batchNumber?: string | null;
+  productionDate?: string | null;
+  expirationDate?: string | null;
+  metadata?: Record<string, unknown>;
+};
+
+export type ReceiptPayload = {
+  code?: string;
+  externalReference?: string;
+  status?: string;
+  warehouseId: UUID;
+  supplierId?: UUID | null;
+  supplierName: string;
+  supplierInn?: string;
+  currency?: string;
+  expectedAt?: string | null;
+  receivedAt?: string | null;
+  notes?: string;
+  metadata?: Record<string, unknown>;
+  lines: ReceiptLinePayload[];
+  actorId?: UUID;
 };

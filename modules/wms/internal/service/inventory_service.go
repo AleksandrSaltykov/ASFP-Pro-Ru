@@ -61,6 +61,36 @@ func (s *InventoryService) List(ctx context.Context, warehouse string, limit int
 	return s.repo.List(ctx, warehouse, limit)
 }
 
+// Balances returns enriched stock balances.
+func (s *InventoryService) Balances(ctx context.Context, warehouse, sku string, limit int) ([]entity.StockBalance, error) {
+	return s.repo.ListBalances(ctx, strings.TrimSpace(warehouse), sku, limit)
+}
+
+// Availability returns aggregated availability info.
+func (s *InventoryService) Availability(ctx context.Context, warehouse, sku string, limit int) ([]entity.StockAvailability, error) {
+	return s.repo.ListAvailability(ctx, strings.TrimSpace(warehouse), sku, limit)
+}
+
+// EndlessPolicies returns endless aisle policy list.
+func (s *InventoryService) EndlessPolicies(ctx context.Context, warehouse string) ([]entity.EndlessPolicy, error) {
+	return s.repo.ListEndlessPolicies(ctx, strings.TrimSpace(warehouse))
+}
+
+// Movements returns recent stock movements.
+func (s *InventoryService) Movements(ctx context.Context, warehouse string, limit int) ([]entity.StockMovement, error) {
+	return s.repo.ListMovements(ctx, strings.TrimSpace(warehouse), limit)
+}
+
+// UpdateEndlessPolicy updates endless aisle settings.
+func (s *InventoryService) UpdateEndlessPolicy(ctx context.Context, input entity.EndlessPolicyUpdate) (entity.EndlessPolicy, error) {
+	return s.repo.UpdateEndlessPolicy(ctx, input)
+}
+
+// ResetEndlessPolicy resets endless aisle settings for SKU/warehouse.
+func (s *InventoryService) ResetEndlessPolicy(ctx context.Context, input entity.EndlessPolicyReset) (entity.EndlessPolicy, error) {
+	return s.repo.ResetEndlessPolicy(ctx, input)
+}
+
 func (s *InventoryService) recordAudit(ctx context.Context, item entity.StockItem) {
 	if s.auditor == nil {
 		return
